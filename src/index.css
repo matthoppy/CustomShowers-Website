@@ -17,10 +17,10 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 20%;
 
-    /* Brand cyan/turquoise blue */
-    --primary: 194 55% 55%;
+    /* Brand blue */
+    --primary: 214 83% 44%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 194 55% 45%;
+    --primary-hover: 214 83% 34%;
 
     /* Light gray backgrounds */
     --secondary: 0 0% 96%;
@@ -29,7 +29,7 @@ All colors MUST be HSL.
     --muted: 0 0% 96%;
     --muted-foreground: 0 0% 40%;
 
-    --accent: 194 55% 55%;
+    --accent: 214 83% 44%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -37,7 +37,7 @@ All colors MUST be HSL.
 
     --border: 0 0% 80%;
     --input: 0 0% 80%;
-    --ring: 194 55% 55%;
+    --ring: 214 83% 44%;
 
     --radius: 0rem;
 
@@ -63,9 +63,9 @@ All colors MUST be HSL.
     --popover: 0 0% 23%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 194 55% 55%;
+    --primary: 214 83% 44%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 194 55% 45%;
+    --primary-hover: 214 83% 34%;
 
     --secondary: 0 0% 23%;
     --secondary-foreground: 0 0% 100%;
@@ -73,7 +73,7 @@ All colors MUST be HSL.
     --muted: 0 0% 23%;
     --muted-foreground: 0 0% 60%;
 
-    --accent: 194 55% 55%;
+    --accent: 214 83% 44%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 50%;
@@ -81,7 +81,7 @@ All colors MUST be HSL.
 
     --border: 0 0% 30%;
     --input: 0 0% 30%;
-    --ring: 194 55% 55%;
+    --ring: 214 83% 44%;
 
     --footer-bg: 0 0% 13%;
     --footer-dark: 0 0% 17%;
