@@ -56,11 +56,11 @@ const Navigation = () => {
           {/* Phone Number */}
           <div className="hidden md:flex items-center gap-4">
             <a
-              href="tel:1300123456"
+              href="tel:0982888858"
               className="flex items-center gap-2 text-primary hover:text-primary-hover transition-colors duration-300"
             >
               <Phone className="w-5 h-5" />
-              <span className="font-semibold text-lg">1300 123 456</span>
+              <span className="font-semibold text-lg">09 828 8858</span>
             </a>
           </div>
 
@@ -92,11 +92,11 @@ const Navigation = () => {
               </a>
             ))}
             <a
-              href="tel:1300123456"
+              href="tel:0982888858"
               className="flex items-center gap-2 py-3 text-primary hover:text-primary-hover transition-colors duration-300 font-semibold"
             >
               <Phone className="w-5 h-5" />
-              1300 123 456
+              09 828 8858
             </a>
           </nav>
         )}

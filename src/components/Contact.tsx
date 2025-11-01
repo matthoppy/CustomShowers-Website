@@ -27,10 +27,10 @@ const Contact = () => {
                   <div>
                     <h4 className="font-semibold text-foreground mb-1">Phone</h4>
                     <a
-                      href="tel:1300123456"
+                      href="tel:0982888858"
                       className="text-muted-foreground hover:text-primary transition-colors duration-300"
                     >
-                      1300 123 456
+                      09 828 8858
                     </a>
                   </div>
                 </div>
@@ -40,10 +40,10 @@ const Contact = () => {
                   <div>
                     <h4 className="font-semibold text-foreground mb-1">Email</h4>
                     <a
-                      href="mailto:info@balustradingconcepts.com.au"
+                      href="mailto:admin@balustrading.co.nz"
                       className="text-muted-foreground hover:text-primary transition-colors duration-300"
                     >
-                      info@balustradingconcepts.com.au
+                      admin@balustrading.co.nz
                     </a>
                   </div>
                 </div>
@@ -64,9 +64,8 @@ const Contact = () => {
             <div className="bg-secondary p-8">
               <h4 className="text-xl font-bold text-foreground mb-4">Business Hours</h4>
               <div className="space-y-2 text-muted-foreground">
-                <p><span className="font-semibold text-foreground">Monday - Friday:</span> 7:00 AM - 5:00 PM</p>
-                <p><span className="font-semibold text-foreground">Saturday:</span> 8:00 AM - 2:00 PM</p>
-                <p><span className="font-semibold text-foreground">Sunday:</span> Closed</p>
+                <p><span className="font-semibold text-foreground">Monday - Friday:</span> 7:00 AM - 1:00 PM</p>
+                <p><span className="font-semibold text-foreground">Weekends:</span> Closed</p>
               </div>
             </div>
           </div>

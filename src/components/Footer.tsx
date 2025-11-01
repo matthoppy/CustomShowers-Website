@@ -79,10 +79,10 @@ const Footer = () => {
               Ready to transform your space? Contact us today for a free quote.
             </p>
             <a
-              href="tel:1300123456"
+              href="tel:0982888858"
               className="inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground hover:bg-primary-hover transition-colors duration-300 font-semibold"
             >
-              Call 1300 123 456
+              Call 09 828 8858
             </a>
           </div>
         </div>
