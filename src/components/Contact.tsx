@@ -53,8 +53,8 @@ const Contact = () => {
                   <div>
                     <h4 className="font-semibold text-foreground mb-1">Location</h4>
                     <p className="text-muted-foreground">
-                      Sydney, NSW 2000<br />
-                      Australia
+                      661a Rosebank Road<br />
+                      Auckland, New Zealand
                     </p>
                   </div>
                 </div>
