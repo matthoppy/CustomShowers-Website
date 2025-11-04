@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Phone, Menu, X } from "lucide-react";
 import { Button } from "./ui/button";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/bsm-logo.png";
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -49,15 +49,11 @@ const Navigation = () => {
             ))}
           </nav>
 
-          {/* Phone Number */}
+          {/* Get Quote Button */}
           <div className="hidden md:flex items-center gap-4">
-            <a
-              href="tel:+447123456789"
-              className="flex items-center gap-2 text-primary hover:text-primary-hover transition-colors duration-300"
-            >
-              <Phone className="w-5 h-5" />
-              <span className="font-semibold text-lg">+44 7123 456789</span>
-            </a>
+            <Button variant="default" asChild>
+              <a href="#contact">Get A Free Quote</a>
+            </Button>
           </div>
 
           {/* Mobile Menu Button */}

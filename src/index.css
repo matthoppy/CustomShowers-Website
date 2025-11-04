@@ -17,27 +17,27 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 20%;
 
-    /* Brand blue */
-    --primary: 214 83% 44%;
+    /* Brand colors - Primary navy */
+    --primary: 210 50% 23%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 214 83% 34%;
+    --primary-hover: 210 50% 18%;
 
-    /* Light gray backgrounds */
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 20%;
+    /* Secondary light blue */
+    --secondary: 199 45% 63%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 0 0% 96%;
+    --muted: 210 33% 96%;
     --muted-foreground: 0 0% 40%;
 
-    --accent: 214 83% 44%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 210 19% 70%;
+    --accent-foreground: 210 50% 23%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 80%;
     --input: 0 0% 80%;
-    --ring: 214 83% 44%;
+    --ring: 210 50% 23%;
 
     --radius: 0rem;
 
@@ -63,25 +63,25 @@ All colors MUST be HSL.
     --popover: 0 0% 23%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 214 83% 44%;
+    --primary: 210 50% 23%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 214 83% 34%;
+    --primary-hover: 210 50% 18%;
 
-    --secondary: 0 0% 23%;
+    --secondary: 199 45% 63%;
     --secondary-foreground: 0 0% 100%;
 
     --muted: 0 0% 23%;
     --muted-foreground: 0 0% 60%;
 
-    --accent: 214 83% 44%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 210 19% 70%;
+    --accent-foreground: 210 50% 23%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 30%;
     --input: 0 0% 30%;
-    --ring: 214 83% 44%;
+    --ring: 210 50% 23%;
 
     --footer-bg: 0 0% 13%;
     --footer-dark: 0 0% 17%;
