@@ -30,10 +30,10 @@ const Navigation = () => {
       }`}
     >
       <div className="container mx-auto px-6">
-        <div className="flex items-center justify-between h-36">
+        <div className="flex items-center justify-between h-32">
           {/* Logo */}
           <a href="#home" className="flex items-center">
-            <img src={logo} alt="Bespoke Showers and Mirrors Ltd" className="h-32 w-auto" />
+            <img src={logo} alt="Bespoke Showers and Mirrors Ltd" className="h-28 w-auto" />
           </a>
 
           {/* Desktop Navigation */}
