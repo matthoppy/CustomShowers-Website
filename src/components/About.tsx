@@ -1,5 +1,6 @@
 import { CheckCircle } from "lucide-react";
 import aboutImage from "@/assets/about-image.jpg";
+import aboutImage2 from "@/assets/about-image-2.jpg";
 
 const About = () => {
   const features = [
@@ -44,11 +45,16 @@ const About = () => {
             </div>
           </div>
 
-          {/* Image */}
-          <div className="relative">
+          {/* Images */}
+          <div className="relative space-y-6">
             <img
               src={aboutImage}
               alt="Quality glass balustrading craftsmanship"
+              className="w-full h-[600px] object-cover shadow-2xl"
+            />
+            <img
+              src={aboutImage2}
+              alt="Aluminium deck balustrading installation example"
               className="w-full h-[600px] object-cover shadow-2xl"
             />
           </div>
