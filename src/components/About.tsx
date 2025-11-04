@@ -1,5 +1,6 @@
 import { CheckCircle } from "lucide-react";
 import aboutImage from "@/assets/about-image.jpg";
+import aboutImage2 from "@/assets/about-image-2.jpg";
 
 const About = () => {
   const features = [
@@ -7,7 +8,9 @@ const About = () => {
     "New Zealand owned and operated",
     "Premium quality materials",
     "Expert installation team",
-    "Full warranty coverage",
+    "Competitive pricing",
+    "10 year warranty on materials",
+    "5 year warranty on workmanship",
   ];
 
   return (
@@ -23,13 +26,10 @@ const About = () => {
               At Balustrading Concepts NZ, we specialise in the design, manufacture, and installation of premium glass and aluminium balustrades, fencing, and gates throughout Auckland.
             </p>
             <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-              With over a decade of experience, our expert team has worked with hundreds of residential and commercial clients, delivering solutions that combine style, strength, and safety. Whether you need a simple handrail, a modern glass balustrade for your balcony, a custom sliding driveway gate, or a compliant pool fence, we provide tailored products that suit your exact needs and meet all NZ building standards.
-            </p>
-            <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-              Our commitment to quality craftsmanship, innovative design, and reliable installation has made us one of Auckland's most trusted balustrading companies. Every project – from a private home to a large commercial development – is handled with precision and care, ensuring a result that looks exceptional and lasts for years to come.
+              With over a decade of experience, our expert team has worked with hundreds of residential and commercial clients, delivering solutions that combine style, strength, and safety. Whether you need a modern glass balustrade for your balcony, a custom sliding driveway gate, or a compliant pool fence, we provide tailored products that suit your exact needs and meet all NZ building standards.
             </p>
             <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-              👉 Contact Balustrading Concepts NZ today on 09 828 8858 to discuss your next project. Our friendly team will help you create the perfect glass balustrade, aluminium fence, or custom gate to enhance your property.
+              Our commitment to quality craftsmanship, innovative design, and reliable installation has made us one of Auckland's most trusted balustrading companies. Every project – from a private home to a large commercial development – is handled with precision and care, ensuring a result that looks exceptional and lasts for years to come.
             </p>
             
             {/* Features List */}
@@ -43,11 +43,16 @@ const About = () => {
             </div>
           </div>
 
-          {/* Image */}
-          <div className="relative">
+          {/* Images */}
+          <div className="relative space-y-6">
             <img
               src={aboutImage}
               alt="Quality glass balustrading craftsmanship"
+              className="w-full h-[600px] object-cover shadow-2xl"
+            />
+            <img
+              src={aboutImage2}
+              alt="Aluminium deck balustrading installation example"
               className="w-full h-[600px] object-cover shadow-2xl"
             />
           </div>
