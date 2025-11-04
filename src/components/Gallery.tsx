@@ -41,12 +41,12 @@ const Gallery = () => {
           {projects.map((project, index) => (
             <div
               key={index}
-              className="relative aspect-[4/3] overflow-hidden group cursor-pointer"
+              className="relative aspect-[3/4] overflow-hidden group cursor-pointer bg-background"
             >
               <img
                 src={project.image}
                 alt={project.alt}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-overlay/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                 <span className="text-primary-foreground text-lg font-semibold">
