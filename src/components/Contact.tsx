@@ -1,4 +1,4 @@
-import { Phone, Mail, MapPin } from "lucide-react";
+import { Mail } from "lucide-react";
 import { Button } from "./ui/button";
 
 const Contact = () => {
@@ -23,19 +23,6 @@ const Contact = () => {
               <h3 className="text-2xl font-bold text-foreground mb-6">Contact Information</h3>
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
-                  <Phone className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-foreground mb-1">Phone</h4>
-                    <a
-                      href="tel:+447123456789"
-                      className="text-muted-foreground hover:text-primary transition-colors duration-300"
-                    >
-                      +44 7123 456789
-                    </a>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-4">
                   <Mail className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
                   <div>
                     <h4 className="font-semibold text-foreground mb-1">Email</h4>
@@ -47,17 +34,6 @@ const Contact = () => {
                     </a>
                   </div>
                 </div>
-                
-                <div className="flex items-start gap-4">
-                  <MapPin className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-foreground mb-1">Location</h4>
-                    <p className="text-muted-foreground">
-                      United Kingdom<br />
-                      Serving all UK locations
-                    </p>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -65,7 +41,7 @@ const Contact = () => {
               <h4 className="text-xl font-bold text-foreground mb-4">Business Hours</h4>
               <div className="space-y-2 text-muted-foreground">
                 <p><span className="font-semibold text-foreground">Monday - Friday:</span> 8:00 AM - 6:00 PM</p>
-                <p><span className="font-semibold text-foreground">Saturday:</span> 9:00 AM - 4:00 PM</p>
+                <p><span className="font-semibold text-foreground">Saturday:</span> 9:00 AM - 1:00 PM</p>
                 <p><span className="font-semibold text-foreground">Sunday:</span> Closed</p>
               </div>
             </div>
@@ -126,6 +102,19 @@ const Contact = () => {
                   className="w-full px-4 py-3 bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors duration-300 resize-none"
                   placeholder="Tell us about your project..."
                 ></textarea>
+              </div>
+              
+              <div>
+                <label htmlFor="photo" className="block text-sm font-medium text-foreground mb-2">
+                  Photo <span className="text-muted-foreground">(Optional)</span>
+                </label>
+                <input
+                  type="file"
+                  id="photo"
+                  name="photo"
+                  accept="image/*"
+                  className="w-full px-4 py-3 bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors duration-300 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 file:cursor-pointer"
+                />
               </div>
               
               <Button type="submit" className="w-full">
