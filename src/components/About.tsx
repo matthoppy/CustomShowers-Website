@@ -21,7 +21,7 @@ const About = () => {
               About Balustrading Concepts NZ
             </h2>
             <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-              At Balustrading Concepts NZ, we specialise in the design, manufacture, and installation of premium glass and aluminium balustrades, fencing, and gates throughout Auckland and across New Zealand.
+              At Balustrading Concepts NZ, we specialise in the design, manufacture, and installation of premium glass and aluminium balustrades, fencing, and gates throughout Auckland.
             </p>
             <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
               With over a decade of experience, our expert team has worked with hundreds of residential and commercial clients, delivering solutions that combine style, strength, and safety. Whether you need a simple handrail, a modern glass balustrade for your balcony, a custom sliding driveway gate, or a compliant pool fence, we provide tailored products that suit your exact needs and meet all NZ building standards.
