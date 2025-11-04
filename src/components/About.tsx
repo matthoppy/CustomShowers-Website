@@ -21,10 +21,16 @@ const About = () => {
               About Balustrading Concepts NZ
             </h2>
             <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-              Balustrading Concepts NZ for all your glass and aluminium balustrades, fencing and gates.
+              At Balustrading Concepts NZ, we specialise in the design, manufacture, and installation of premium glass and aluminium balustrades, fencing, and gates throughout Auckland and across New Zealand.
+            </p>
+            <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+              With over a decade of experience, our expert team has worked with hundreds of residential and commercial clients, delivering solutions that combine style, strength, and safety. Whether you need a simple handrail, a modern glass balustrade for your balcony, a custom sliding driveway gate, or a compliant pool fence, we provide tailored products that suit your exact needs and meet all NZ building standards.
+            </p>
+            <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
+              Our commitment to quality craftsmanship, innovative design, and reliable installation has made us one of Auckland's most trusted balustrading companies. Every project – from a private home to a large commercial development – is handled with precision and care, ensuring a result that looks exceptional and lasts for years to come.
             </p>
             <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-              We work with residential and commercial clients, creating the balustrade, fence or gate that suits their exact needs. Whether you want a simple hand rail for your back steps, or an elegant glass balustrade for your high-rise apartment, a sliding gate for your driveway entrance, or a fence and gate for your pool – Our Balustrading experts in NZ can do it. We have been providing balustrading services for Auckland NZ homes and businesses with high quality balustrades for over a decade, it's no wonder we are one of City of Sail's preferred design, manufacturing and installation teams. Give us a call today on 09 828 8858 to learn more about how our experienced team can provide balustrades which exceed all your expectations.
+              👉 Contact Balustrading Concepts NZ today on 09 828 8858 to discuss your next project. Our friendly team will help you create the perfect glass balustrade, aluminium fence, or custom gate to enhance your property.
             </p>
             
             {/* Features List */}
