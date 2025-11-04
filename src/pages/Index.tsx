@@ -4,6 +4,7 @@ import About from "@/components/About";
 import Services from "@/components/Services";
 import Gallery from "@/components/Gallery";
 import Contact from "@/components/Contact";
+import Footer from "@/components/Footer";
 import FixedContactButtons from "@/components/FixedContactButtons";
 
 const Index = () => {
@@ -15,6 +16,7 @@ const Index = () => {
       <Services />
       <Gallery />
       <Contact />
+      <Footer />
       <FixedContactButtons />
     </div>
   );
