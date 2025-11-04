@@ -25,7 +25,7 @@ const Services = () => {
     {
       icon: Shield,
       title: "Safety Compliance",
-      description: "All installations meet Australian building codes and safety standards.",
+      description: "All installations meet New Zealand building codes and safety standards.",
     },
     {
       icon: Sparkles,

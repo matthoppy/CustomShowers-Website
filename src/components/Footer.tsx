@@ -14,7 +14,7 @@ const Footer = () => {
     <footer className="bg-footer-bg text-footer-text">
       {/* Main Footer Content */}
       <div className="container mx-auto px-6 py-12">
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Company Info */}
           <div>
             <div className="flex items-center gap-3 mb-4">
@@ -24,7 +24,7 @@ const Footer = () => {
               <span className="text-lg font-bold">Balustrading Concepts</span>
             </div>
             <p className="text-footer-text/80 leading-relaxed">
-              Premium glass balustrading solutions for residential and commercial projects across Australia.
+              Premium glass balustrading solutions for residential and commercial projects across Auckland.
             </p>
           </div>
 
@@ -42,33 +42,6 @@ const Footer = () => {
                   </a>
                 </li>
               ))}
-            </ul>
-          </div>
-
-          {/* Quick Links */}
-          <div>
-            <h4 className="text-lg font-bold mb-4 text-footer-text">Quick Links</h4>
-            <ul className="space-y-2">
-              <li>
-                <a href="#home" className="text-footer-text/80 hover:text-primary transition-colors duration-300 hover:underline">
-                  Home
-                </a>
-              </li>
-              <li>
-                <a href="#about" className="text-footer-text/80 hover:text-primary transition-colors duration-300 hover:underline">
-                  About Us
-                </a>
-              </li>
-              <li>
-                <a href="#gallery" className="text-footer-text/80 hover:text-primary transition-colors duration-300 hover:underline">
-                  Gallery
-                </a>
-              </li>
-              <li>
-                <a href="#contact" className="text-footer-text/80 hover:text-primary transition-colors duration-300 hover:underline">
-                  Contact
-                </a>
-              </li>
             </ul>
           </div>
 
