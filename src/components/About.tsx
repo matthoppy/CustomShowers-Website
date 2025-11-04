@@ -7,7 +7,6 @@ const About = () => {
     "New Zealand owned and operated",
     "Premium quality materials",
     "Expert installation team",
-    "Competitive pricing",
     "Full warranty coverage",
   ];
 
