@@ -66,6 +66,7 @@ const Gallery = () => {
               <img
                 src={project.image}
                 alt={project.alt}
+                loading="lazy"
                 className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-overlay/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
