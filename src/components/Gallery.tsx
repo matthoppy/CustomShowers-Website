@@ -2,24 +2,44 @@ import gallery1 from "@/assets/gallery-1.jpg";
 import gallery2 from "@/assets/gallery-2.jpg";
 import gallery3 from "@/assets/gallery-3.jpg";
 import gallery4 from "@/assets/gallery-4.jpg";
+import gallery5 from "@/assets/gallery-5.jpg";
+import gallery6 from "@/assets/gallery-6.jpg";
+import gallery7 from "@/assets/gallery-7.jpg";
+import gallery8 from "@/assets/gallery-8.jpg";
 
 const Gallery = () => {
   const projects = [
     {
       image: gallery1,
-      alt: "Commercial glass balustrading on modern building",
+      alt: "Bespoke shower enclosure with gold fixtures",
     },
     {
       image: gallery2,
-      alt: "Frameless glass staircase in luxury home",
+      alt: "Custom glass shower installation",
     },
     {
       image: gallery3,
-      alt: "Outdoor deck with glass panel railing",
+      alt: "Glass shower with blue tile finish",
     },
     {
       image: gallery4,
-      alt: "Shopping mall glass balustrading system",
+      alt: "Frameless glass shower with skylight",
+    },
+    {
+      image: gallery5,
+      alt: "Custom shower installation",
+    },
+    {
+      image: gallery6,
+      alt: "Bespoke glass shower enclosure",
+    },
+    {
+      image: gallery7,
+      alt: "Modern glass shower design",
+    },
+    {
+      image: gallery8,
+      alt: "Premium shower installation",
     },
   ];
 
