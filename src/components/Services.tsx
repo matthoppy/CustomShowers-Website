@@ -1,4 +1,4 @@
-import { Building2, Home, Wrench, Shield, Ruler, Sparkles } from "lucide-react";
+import { Home, Wrench, Shield, Ruler, Sparkles } from "lucide-react";
 
 const Services = () => {
   const services = [
@@ -6,11 +6,6 @@ const Services = () => {
       icon: Home,
       title: "Residential Showers",
       description: "Custom shower enclosures and wet rooms for luxury homes and apartments.",
-    },
-    {
-      icon: Building2,
-      title: "Commercial Projects",
-      description: "Large-scale installations for hotels, spas, gyms, and commercial developments.",
     },
     {
       icon: Ruler,
@@ -30,7 +25,7 @@ const Services = () => {
     {
       icon: Sparkles,
       title: "Custom Mirrors",
-      description: "Bespoke mirrors for bathrooms, bedrooms, and commercial spaces.",
+      description: "Bespoke mirrors for bathrooms, bedrooms, and living spaces.",
     },
   ];
 
@@ -43,7 +38,7 @@ const Services = () => {
             Our Services
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Comprehensive shower and mirror solutions for every need
+            Bespoke shower and mirror solutions for every need
           </p>
         </div>
 
