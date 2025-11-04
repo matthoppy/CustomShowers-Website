@@ -33,7 +33,7 @@ const Navigation = () => {
         <div className="flex items-center justify-between h-24">
           {/* Logo */}
           <a href="#home" className="flex items-center">
-            <img src={logo} alt="Balustrading Concepts NZ Ltd" className="h-16 w-auto" />
+            <img src={logo} alt="Bespoke Showers and Mirrors Ltd" className="h-16 w-auto" />
           </a>
 
           {/* Desktop Navigation */}
@@ -52,11 +52,11 @@ const Navigation = () => {
           {/* Phone Number */}
           <div className="hidden md:flex items-center gap-4">
             <a
-              href="tel:0982888858"
+              href="tel:+447123456789"
               className="flex items-center gap-2 text-primary hover:text-primary-hover transition-colors duration-300"
             >
               <Phone className="w-5 h-5" />
-              <span className="font-semibold text-lg">09 828 8858</span>
+              <span className="font-semibold text-lg">+44 7123 456789</span>
             </a>
           </div>
 
@@ -88,11 +88,11 @@ const Navigation = () => {
               </a>
             ))}
             <a
-              href="tel:0982888858"
+              href="tel:+447123456789"
               className="flex items-center gap-2 py-3 text-primary hover:text-primary-hover transition-colors duration-300 font-semibold"
             >
               <Phone className="w-5 h-5" />
-              09 828 8858
+              +44 7123 456789
             </a>
           </nav>
         )}

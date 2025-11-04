@@ -27,10 +27,10 @@ const Contact = () => {
                   <div>
                     <h4 className="font-semibold text-foreground mb-1">Phone</h4>
                     <a
-                      href="tel:0982888858"
+                      href="tel:+447123456789"
                       className="text-muted-foreground hover:text-primary transition-colors duration-300"
                     >
-                      09 828 8858
+                      +44 7123 456789
                     </a>
                   </div>
                 </div>
@@ -40,10 +40,10 @@ const Contact = () => {
                   <div>
                     <h4 className="font-semibold text-foreground mb-1">Email</h4>
                     <a
-                      href="mailto:admin@balustrading.co.nz"
+                      href="mailto:info@bespokeshowersandmirrors.co.uk"
                       className="text-muted-foreground hover:text-primary transition-colors duration-300"
                     >
-                      admin@balustrading.co.nz
+                      info@bespokeshowersandmirrors.co.uk
                     </a>
                   </div>
                 </div>
@@ -53,8 +53,8 @@ const Contact = () => {
                   <div>
                     <h4 className="font-semibold text-foreground mb-1">Location</h4>
                     <p className="text-muted-foreground">
-                      661a Rosebank Road<br />
-                      Auckland, New Zealand
+                      United Kingdom<br />
+                      Serving all UK locations
                     </p>
                   </div>
                 </div>
@@ -64,8 +64,9 @@ const Contact = () => {
             <div className="bg-secondary p-8">
               <h4 className="text-xl font-bold text-foreground mb-4">Business Hours</h4>
               <div className="space-y-2 text-muted-foreground">
-                <p><span className="font-semibold text-foreground">Monday - Friday:</span> 7:00 AM - 1:00 PM</p>
-                <p><span className="font-semibold text-foreground">Weekends:</span> Closed</p>
+                <p><span className="font-semibold text-foreground">Monday - Friday:</span> 8:00 AM - 6:00 PM</p>
+                <p><span className="font-semibold text-foreground">Saturday:</span> 9:00 AM - 4:00 PM</p>
+                <p><span className="font-semibold text-foreground">Sunday:</span> Closed</p>
               </div>
             </div>
           </div>

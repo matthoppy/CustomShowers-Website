@@ -16,10 +16,10 @@ const Hero = () => {
       <div className="relative h-full flex items-center justify-center text-center px-6">
         <div className="max-w-5xl">
           <h1 className="text-5xl md:text-7xl font-black text-primary-foreground uppercase tracking-wider mb-6 animate-fade-in">
-            Premium Balustrading Solutions
+            Bespoke Showers & Mirrors
           </h1>
           <p className="text-xl md:text-2xl text-primary-foreground/90 mb-8 max-w-3xl mx-auto font-light">
-            Transform your space with elegant glass and aluminium balustrades, fencing and gates
+            Transform your bathroom with luxury shower enclosures and custom mirrors
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button variant="hero" asChild>

@@ -4,11 +4,11 @@ import aboutImage2 from "@/assets/about-image-2.jpg";
 
 const About = () => {
   const features = [
-    "Over 15 years of industry experience",
-    "New Zealand owned and operated",
-    "Premium quality materials",
-    "Expert installation team",
-    "10 year warranty on materials",
+    "Expert craftsmanship and design",
+    "UK based and operated",
+    "Premium quality glass and materials",
+    "Professional installation team",
+    "Lifetime warranty on materials",
     "5 year warranty on workmanship",
   ];
 
@@ -19,16 +19,16 @@ const About = () => {
           {/* Text Content */}
           <div>
             <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 uppercase">
-              About Balustrading Concepts NZ
+              About Bespoke Showers and Mirrors Ltd
             </h2>
             <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-              At Balustrading Concepts NZ, we specialise in the design, manufacture, and installation of premium glass and aluminium balustrades, fencing, and gates throughout Auckland.
+              At Bespoke Showers and Mirrors Ltd, we specialise in the design, manufacture, and installation of premium shower enclosures and custom mirrors throughout the UK.
             </p>
             <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-              With over a decade of experience, our expert team has worked with hundreds of residential and commercial clients, delivering solutions that combine style, strength, and safety. Whether you need a modern glass balustrade for your balcony, a custom sliding driveway gate, or a compliant pool fence, we provide tailored products that suit your exact needs and meet all NZ building standards.
+              Our expert team works with residential and commercial clients, delivering bespoke solutions that combine elegance, functionality, and quality. Whether you need a frameless glass shower enclosure, a walk-in wet room, or custom-designed mirrors for your bathroom or commercial space, we provide tailored products that suit your exact specifications and meet all UK building standards.
             </p>
             <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-              Our commitment to quality craftsmanship, innovative design, and reliable installation has made us one of Auckland's most trusted balustrading companies. Every project – from a private home to a large commercial development – is handled with precision and care, ensuring a result that looks exceptional and lasts for years to come.
+              Our commitment to exceptional craftsmanship, innovative design, and reliable installation has made us a trusted name for luxury bathroom solutions. Every project – from a private residence to a hotel or spa development – is handled with precision and care, ensuring a result that looks stunning and stands the test of time.
             </p>
             
             {/* Features List */}
@@ -46,12 +46,12 @@ const About = () => {
           <div className="relative space-y-6">
             <img
               src={aboutImage}
-              alt="Quality glass balustrading craftsmanship"
+              alt="Premium shower enclosure installation"
               className="w-full h-[600px] object-cover shadow-2xl"
             />
             <img
               src={aboutImage2}
-              alt="Aluminium deck balustrading installation example"
+              alt="Bespoke mirror design and craftsmanship"
               className="w-full h-[600px] object-cover shadow-2xl"
             />
           </div>

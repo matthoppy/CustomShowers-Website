@@ -4,33 +4,33 @@ const Services = () => {
   const services = [
     {
       icon: Home,
-      title: "Residential Balustrading",
-      description: "Custom glass balustrading solutions for homes, balconies, and staircases.",
+      title: "Residential Showers",
+      description: "Custom shower enclosures and wet rooms for luxury homes and apartments.",
     },
     {
       icon: Building2,
       title: "Commercial Projects",
-      description: "Large-scale installations for offices, shopping centers, and public spaces.",
+      description: "Large-scale installations for hotels, spas, gyms, and commercial developments.",
     },
     {
       icon: Ruler,
-      title: "Custom Design",
-      description: "Bespoke designs tailored to your specific requirements and vision.",
+      title: "Bespoke Design",
+      description: "Custom designs tailored to your exact specifications and space requirements.",
     },
     {
       icon: Wrench,
       title: "Professional Installation",
-      description: "Expert installation by certified professionals with attention to detail.",
+      description: "Expert installation by certified professionals with meticulous attention to detail.",
     },
     {
       icon: Shield,
-      title: "Safety Compliance",
-      description: "All installations meet New Zealand building codes and safety standards.",
+      title: "Quality Assurance",
+      description: "All installations meet UK building regulations and safety standards.",
     },
     {
       icon: Sparkles,
-      title: "Maintenance & Repair",
-      description: "Comprehensive maintenance services to keep your systems looking pristine.",
+      title: "Custom Mirrors",
+      description: "Bespoke mirrors for bathrooms, bedrooms, and commercial spaces.",
     },
   ];
 
@@ -43,7 +43,7 @@ const Services = () => {
             Our Services
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Comprehensive glass balustrading solutions for every need
+            Comprehensive shower and mirror solutions for every need
           </p>
         </div>
 
