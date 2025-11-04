@@ -23,8 +23,11 @@ const About = () => {
             <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
               Balustrading Concepts NZ for all your glass and aluminium balustrades, fencing and gates.
             </p>
-            <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
+            <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
               We work with residential and commercial clients, creating the balustrade, fence or gate that suits their exact needs. Whether you want a simple hand rail for your back steps, or an elegant glass balustrade for your high-rise apartment, a sliding gate for your driveway entrance, or a fence and gate for your pool – Our Balustrading experts in NZ can do it.
+            </p>
+            <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
+              We have been providing balustrading services for Auckland NZ homes and businesses with high quality balustrades for over a decade, it's no wonder we are one of City of Sail's preferred design, manufacturing and installation teams. Give us a call today on 09 828 8858 to learn more about how our experienced team can provide balustrades which exceed all your expectations.
             </p>
             
             {/* Features List */}
