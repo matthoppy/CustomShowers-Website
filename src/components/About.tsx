@@ -4,7 +4,7 @@ import aboutImage from "@/assets/about-image.jpg";
 const About = () => {
   const features = [
     "Over 15 years of industry experience",
-    "Australian owned and operated",
+    "New Zealand owned and operated",
     "Premium quality materials",
     "Expert installation team",
     "Competitive pricing",
@@ -18,13 +18,13 @@ const About = () => {
           {/* Text Content */}
           <div>
             <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 uppercase">
-              About Balustrading Concepts
+              About Balustrading Concepts NZ
             </h2>
             <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-              We are a leading provider of premium glass balustrading solutions in Australia. Our team specializes in designing, manufacturing, and installing high-quality frameless glass systems for residential and commercial projects.
+              Balustrading Concepts NZ for all your glass and aluminium balustrades, fencing and gates.
             </p>
             <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-              With a commitment to excellence and attention to detail, we deliver stunning results that enhance the aesthetic appeal and value of your property.
+              We work with residential and commercial clients, creating the balustrade, fence or gate that suits their exact needs. Whether you want a simple hand rail for your back steps, or an elegant glass balustrade for your high-rise apartment, a sliding gate for your driveway entrance, or a fence and gate for your pool – Our Balustrading experts in NZ can do it.
             </p>
             
             {/* Features List */}
