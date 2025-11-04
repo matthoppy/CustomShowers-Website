@@ -47,12 +47,12 @@ const About = () => {
             <img
               src={aboutImage}
               alt="Quality glass balustrading craftsmanship"
-              className="w-full h-[600px] object-cover shadow-2xl"
+              className="w-full h-[400px] object-cover shadow-2xl"
             />
             <img
               src={aboutImage2}
               alt="Aluminium deck balustrading installation example"
-              className="w-full h-[600px] object-cover shadow-2xl"
+              className="w-full h-[400px] object-cover shadow-2xl"
             />
           </div>
         </div>
