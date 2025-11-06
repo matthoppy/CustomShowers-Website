@@ -1,4 +1,6 @@
 import { CheckCircle } from "lucide-react";
+import aboutShower1 from "@/assets/about-shower-1.jpg";
+import aboutShower2 from "@/assets/about-shower-2.jpg";
 
 const About = () => {
   const features = [
@@ -13,7 +15,7 @@ const About = () => {
   return (
     <section id="about" className="py-24 bg-secondary">
       <div className="container mx-auto px-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Text Content */}
           <div>
             <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 uppercase">
@@ -38,6 +40,20 @@ const About = () => {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Images */}
+          <div className="relative space-y-6">
+            <img
+              src={aboutShower1}
+              alt="Bespoke frameless glass shower enclosure with gold trim and geometric tile flooring"
+              className="w-full h-[600px] object-cover shadow-2xl"
+            />
+            <img
+              src={aboutShower2}
+              alt="Custom frameless shower installation with hexagonal tile design and black frame"
+              className="w-full h-[600px] object-cover shadow-2xl"
+            />
           </div>
         </div>
       </div>
