@@ -5,7 +5,6 @@ import Services from "@/components/Services";
 import Gallery from "@/components/Gallery";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
-import FixedContactButtons from "@/components/FixedContactButtons";
 
 const Index = () => {
   return (
@@ -17,7 +16,6 @@ const Index = () => {
       <Gallery />
       <Contact />
       <Footer />
-      <FixedContactButtons />
     </div>
   );
 };
