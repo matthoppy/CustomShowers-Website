@@ -18,7 +18,7 @@ const About = () => {
         <div className="grid lg:grid-cols-2 gap-8 items-center">
           {/* Text Content */}
           <div>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 uppercase">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 uppercase">
               About Bespoke Showers and Mirrors Ltd
             </h2>
             <p className="text-base text-muted-foreground mb-3 leading-relaxed">
