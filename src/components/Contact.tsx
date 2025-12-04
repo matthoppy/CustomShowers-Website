@@ -87,24 +87,16 @@ const Contact = () => {
                   <div>
                     <h4 className="font-semibold text-foreground mb-1">Email</h4>
                     <a
-                      href="mailto:info@bespokeshowersandmirrors.co.uk"
+                      href="mailto:sales@bespokeframelessshowers.co.uk"
                       className="text-muted-foreground hover:text-primary transition-colors duration-300"
                     >
-                      info@bespokeshowersandmirrors.co.uk
+                      sales@bespokeframelessshowers.co.uk
                     </a>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-secondary p-8">
-              <h4 className="text-xl font-bold text-foreground mb-4">Business Hours</h4>
-              <div className="space-y-2 text-muted-foreground">
-                <p><span className="font-semibold text-foreground">Monday - Friday:</span> 8:00 AM - 6:00 PM</p>
-                <p><span className="font-semibold text-foreground">Saturday:</span> 9:00 AM - 1:00 PM</p>
-                <p><span className="font-semibold text-foreground">Sunday:</span> Closed</p>
-              </div>
-            </div>
           </div>
 
           {/* Contact Form */}
