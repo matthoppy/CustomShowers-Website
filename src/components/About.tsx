@@ -19,10 +19,10 @@ const About = () => {
           {/* Text Content */}
           <div>
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 uppercase">
-              About Bespoke Showers and Mirrors Ltd
+              About Bespoke Frameless Showers
             </h2>
             <p className="text-base text-muted-foreground mb-3 leading-relaxed">
-              At Bespoke Showers and Mirrors Ltd, we specialise in the design, manufacture, and installation of premium shower enclosures and custom mirrors in London.
+              At Bespoke Frameless Showers, we specialise in the design, manufacture, and installation of premium shower enclosures and custom mirrors in London.
             </p>
             <p className="text-base text-muted-foreground mb-3 leading-relaxed">
               Our expert team works with residential and commercial clients, delivering bespoke solutions that combine elegance, functionality, and quality. Whether you need a frameless glass shower enclosure, a walk-in wet room, or custom-designed mirrors for your bathroom or commercial space, we provide tailored products that suit your exact specifications and meet all UK building standards.
