@@ -13,7 +13,7 @@ const About = () => {
   ];
 
   return (
-    <section id="about" className="py-16 bg-secondary">
+    <section id="about" className="py-16 bg-black">
       <div className="container mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-8 items-center">
           {/* Text Content */}
@@ -21,14 +21,14 @@ const About = () => {
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 uppercase">
               About Bespoke Frameless Showers
             </h2>
-            <p className="text-base text-muted-foreground mb-3 leading-relaxed">
-              At Bespoke Frameless Showers, we specialise in the design, manufacture, and installation of premium shower enclosures and custom mirrors in London.
+            <p className="text-base text-gray-300 mb-3 leading-relaxed">
+              At Bespoke Frameless Showers, we specialise in the design and supply of premium frameless shower enclosures and custom mirrors across London.
             </p>
-            <p className="text-base text-muted-foreground mb-3 leading-relaxed">
-              Our expert team works with residential and commercial clients, delivering bespoke solutions that combine elegance, functionality, and quality. Whether you need a frameless glass shower enclosure, a walk-in wet room, or custom-designed mirrors for your bathroom or commercial space, we provide tailored products that suit your exact specifications and meet all UK building standards.
+            <p className="text-base text-gray-300 mb-3 leading-relaxed">
+              We work closely with homeowners, interior designers, and contractors to create stunning bespoke glass solutions tailored to your exact specifications. From frameless shower screens and walk-in wet rooms to custom-designed mirrors, every product is crafted to the highest standards using premium quality materials.
             </p>
-            <p className="text-base text-muted-foreground mb-5 leading-relaxed">
-              Our commitment to exceptional craftsmanship, innovative design, and reliable installation has made us a trusted name for luxury bathroom solutions. Every project – from a private residence to a hotel or spa development – is handled with precision and care, ensuring a result that looks stunning and stands the test of time.
+            <p className="text-base text-gray-300 mb-5 leading-relaxed">
+              Whether you're looking for supply only or require professional installation, we offer flexible options to suit your project needs. Our experienced team can handle the complete process from design consultation through to fitting, or simply provide you with beautifully crafted glass products ready for your own installer.
             </p>
             
             {/* Features List */}
@@ -36,7 +36,7 @@ const About = () => {
               {features.map((feature, index) => (
                 <div key={index} className="flex items-center gap-3">
                   <CheckCircle className="w-6 h-6 text-primary flex-shrink-0" />
-                  <span className="text-foreground font-medium">{feature}</span>
+                  <span className="text-white font-medium">{feature}</span>
                 </div>
               ))}
             </div>
