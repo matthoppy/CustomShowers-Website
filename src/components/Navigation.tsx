@@ -33,7 +33,7 @@ const Navigation = () => {
         <div className="flex items-center justify-between h-32">
           {/* Logo */}
           <a href="#home" className="flex items-center">
-            <img src={logo} alt="Bespoke Frameless Showers" className="h-40 w-auto -my-4" />
+            <img src={logo} alt="Bespoke Frameless Showers" className="h-52 w-auto -my-10" />
           </a>
 
           {/* Desktop Navigation */}
