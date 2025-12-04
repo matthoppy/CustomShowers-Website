@@ -13,7 +13,7 @@ const About = () => {
   ];
 
   return (
-    <section id="about" className="py-16 bg-black">
+    <section id="about" className="py-16 bg-primary">
       <div className="container mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-8 items-center">
           {/* Text Content */}
