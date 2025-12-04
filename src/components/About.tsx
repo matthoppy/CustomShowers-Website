@@ -8,8 +8,6 @@ const About = () => {
     "London based and operated",
     "Premium quality glass and materials",
     "Professional installation team",
-    "Lifetime warranty on materials",
-    "5 year warranty on workmanship",
   ];
 
   return (
