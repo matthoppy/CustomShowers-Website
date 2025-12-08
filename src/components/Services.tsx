@@ -1,34 +1,6 @@
-import { Home, Wrench, Shield, Ruler, Sparkles } from "lucide-react";
+import { ClipboardCheck } from "lucide-react";
 
 const Services = () => {
-  const services = [
-    {
-      icon: Home,
-      title: "Residential Showers",
-      description: "Custom shower enclosures and wet rooms for luxury homes and apartments.",
-    },
-    {
-      icon: Ruler,
-      title: "Bespoke Design",
-      description: "Custom designs tailored to your exact specifications and space requirements.",
-    },
-    {
-      icon: Wrench,
-      title: "Professional Installation",
-      description: "Expert installation by certified professionals with meticulous attention to detail.",
-    },
-    {
-      icon: Shield,
-      title: "Quality Assurance",
-      description: "All installations meet UK building regulations and safety standards.",
-    },
-    {
-      icon: Sparkles,
-      title: "Custom Mirrors",
-      description: "Bespoke mirrors for bathrooms, bedrooms, and living spaces.",
-    },
-  ];
-
   return (
     <section id="services" className="py-24 bg-background">
       <div className="container mx-auto px-6">
@@ -38,31 +10,23 @@ const Services = () => {
             Our Services
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Bespoke shower and mirror solutions for every need
+            Bespoke frameless shower solutions for your home
           </p>
         </div>
 
-        {/* Services Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {services.map((service, index) => {
-            const Icon = service.icon;
-            return (
-              <div
-                key={index}
-                className="bg-card p-8 transition-all duration-300 hover:shadow-xl border border-border"
-              >
-                <div className="mb-6">
-                  <Icon className="w-14 h-14 text-primary" />
-                </div>
-                <h3 className="text-2xl font-bold text-card-foreground mb-4">
-                  {service.title}
-                </h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  {service.description}
-                </p>
-              </div>
-            );
-          })}
+        {/* Service Card */}
+        <div className="max-w-lg mx-auto">
+          <div className="bg-card p-8 transition-all duration-300 hover:shadow-xl border border-border text-center">
+            <div className="mb-6 flex justify-center">
+              <ClipboardCheck className="w-14 h-14 text-primary" />
+            </div>
+            <h3 className="text-2xl font-bold text-card-foreground mb-4">
+              Professional Survey
+            </h3>
+            <p className="text-muted-foreground leading-relaxed">
+              We offer a comprehensive on-site survey to assess your space and provide tailored recommendations for your bespoke frameless shower enclosure.
+            </p>
+          </div>
         </div>
       </div>
     </section>
