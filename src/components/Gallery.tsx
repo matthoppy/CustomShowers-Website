@@ -24,14 +24,14 @@ const Gallery = () => {
   ];
 
   return (
-    <section id="gallery" className="py-24 bg-secondary">
+    <section id="gallery" className="py-24 bg-primary">
       <div className="container mx-auto px-6">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4 uppercase">
+          <h2 className="text-4xl md:text-5xl font-bold text-primary-foreground mb-4 uppercase">
             Our Projects
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl text-primary-foreground/80 max-w-2xl mx-auto">
             Explore our portfolio of completed installations
           </p>
         </div>
