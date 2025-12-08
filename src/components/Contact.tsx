@@ -100,12 +100,12 @@ const Contact = () => {
           </div>
 
           {/* Contact Form */}
-          <div className="bg-secondary p-8">
-            <h3 className="text-2xl font-bold text-foreground mb-6">Request A Quote</h3>
+          <div className="bg-primary p-8">
+            <h3 className="text-2xl font-bold text-primary-foreground mb-6">Request A Quote</h3>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
+                  <label htmlFor="name" className="block text-sm font-medium text-primary-foreground mb-2">
                     Name
                   </label>
                   <input
@@ -118,7 +118,7 @@ const Contact = () => {
                   />
                 </div>
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-2">
+                  <label htmlFor="phone" className="block text-sm font-medium text-primary-foreground mb-2">
                     Phone
                   </label>
                   <input
@@ -133,7 +133,7 @@ const Contact = () => {
               </div>
               
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-primary-foreground mb-2">
                   Email
                 </label>
                 <input
@@ -147,7 +147,7 @@ const Contact = () => {
               </div>
               
               <div>
-                <label htmlFor="message" className="block text-sm font-medium text-foreground mb-2">
+                <label htmlFor="message" className="block text-sm font-medium text-primary-foreground mb-2">
                   Message
                 </label>
                 <textarea
