@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Phone, Menu, X } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import logo from "@/assets/bfs-logo.png";
 
@@ -18,7 +19,7 @@ const Navigation = () => {
   const menuItems = [
     { label: "Home", href: "#home" },
     { label: "About", href: "#about" },
-    { label: "Services", href: "#services" },
+    { label: "Services", href: "/design-shower" },
     { label: "Gallery", href: "#gallery" },
     { label: "Contact", href: "#contact" },
   ];
@@ -39,13 +40,23 @@ const Navigation = () => {
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-8">
             {menuItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="text-foreground hover:text-primary transition-colors duration-300 font-medium"
-              >
-                {item.label}
-              </a>
+              item.href.startsWith("/") ? (
+                <Link
+                  key={item.label}
+                  to={item.href}
+                  className="text-foreground hover:text-primary transition-colors duration-300 font-medium"
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className="text-foreground hover:text-primary transition-colors duration-300 font-medium"
+                >
+                  {item.label}
+                </a>
+              )
             ))}
           </nav>
 
@@ -74,14 +85,25 @@ const Navigation = () => {
         {isMobileMenuOpen && (
           <nav className="lg:hidden py-6 border-t border-border">
             {menuItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="block py-3 text-foreground hover:text-primary transition-colors duration-300 font-medium"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {item.label}
-              </a>
+              item.href.startsWith("/") ? (
+                <Link
+                  key={item.label}
+                  to={item.href}
+                  className="block py-3 text-foreground hover:text-primary transition-colors duration-300 font-medium"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className="block py-3 text-foreground hover:text-primary transition-colors duration-300 font-medium"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </a>
+              )
             ))}
             <a
               href="tel:+447123456789"

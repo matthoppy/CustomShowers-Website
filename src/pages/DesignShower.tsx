@@ -92,13 +92,13 @@ const DesignShower = () => {
       <Navigation />
       
       {/* Hero Section */}
-      <section className="pt-24 pb-16 bg-secondary">
+      <section className="pt-40 pb-16 bg-primary">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6 uppercase">
+            <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground mb-6 uppercase">
               Design Your Shower
             </h1>
-            <p className="text-xl text-muted-foreground mb-8">
+            <p className="text-xl text-primary-foreground/80 mb-8">
               Work with our experts to create your perfect bespoke frameless shower enclosure
             </p>
           </div>
@@ -221,7 +221,7 @@ const DesignShower = () => {
       </section>
 
       {/* Contact Form Section */}
-      <section className="py-16 bg-secondary">
+      <section className="py-16 bg-muted">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
