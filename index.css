@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 20%;
+
+    /* Brand colors - Primary navy */
+    --primary: 210 50% 23%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 210 50% 18%;
+
+    /* Secondary (dark blue) */
+    --secondary: 210 50% 28%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 33% 96%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 210 19% 70%;
+    --accent-foreground: 210 50% 23%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 80%;
+    --input: 0 0% 80%;
+    --ring: 210 50% 23%;
+
+    --radius: 0rem;
+
+    /* Dark footer colors */
+    --footer-bg: 0 0% 17%;
+    --footer-dark: 0 0% 23%;
+    --footer-text: 0 0% 90%;
+
+    /* Hero overlay */
+    --overlay: 0 0% 0%;
+    
+    /* Transitions */
+    --transition-smooth: all 0.3s ease-in-out;
+  }
+
+  .dark {
+    --background: 0 0% 17%;
+    --foreground: 0 0% 100%;
+
+    --card: 0 0% 23%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 23%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 210 50% 23%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 210 50% 18%;
+
+    --secondary: 210 50% 28%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 23%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 210 19% 70%;
+    --accent-foreground: 210 50% 23%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 30%;
+    --input: 0 0% 30%;
+    --ring: 210 50% 23%;
+
+    --footer-bg: 0 0% 13%;
+    --footer-dark: 0 0% 17%;
+    --footer-text: 0 0% 90%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.8s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
