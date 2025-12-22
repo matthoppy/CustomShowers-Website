@@ -12,6 +12,8 @@ import type {
   Measurements,
 } from '@/types';
 import type { ShowerTemplate, MountingType } from '@/lib/templates';
+import type { MeasurementPoint } from '@/lib/measurements';
+import { DEFAULT_INLINE_MEASUREMENTS, DEFAULT_CORNER_MEASUREMENTS } from '@/lib/measurements';
 
 export interface DesignConfiguration {
   // Template selection
@@ -34,6 +36,7 @@ export interface DesignConfiguration {
 
   // Measurements (in mm)
   measurements: Measurements | null;
+  measurementPoints: MeasurementPoint[];
 
   // Additional options
   includeInstallation: boolean;
@@ -45,6 +48,7 @@ interface DesignContextType {
   updateTemplate: (template: ShowerTemplate) => void;
   updateConfiguration: (config: Partial<DesignConfiguration>) => void;
   updateMeasurements: (measurements: Measurements) => void;
+  updateMeasurementPoint: (point: MeasurementPoint) => void;
   resetDesign: () => void;
 }
 
@@ -60,6 +64,7 @@ const DEFAULT_DESIGN: DesignConfiguration = {
   includeSeals: true,
   sealType: 'full',
   measurements: null,
+  measurementPoints: [],
   includeInstallation: false,
 };
 
@@ -67,6 +72,14 @@ export function DesignProvider({ children }: { children: ReactNode }) {
   const [design, setDesign] = useState<DesignConfiguration>(DEFAULT_DESIGN);
 
   const updateTemplate = useCallback((template: ShowerTemplate) => {
+    // Get default measurement points based on template category
+    let defaultPoints: MeasurementPoint[];
+    if (template.category === 'corner') {
+      defaultPoints = DEFAULT_CORNER_MEASUREMENTS;
+    } else {
+      defaultPoints = DEFAULT_INLINE_MEASUREMENTS;
+    }
+
     setDesign((prev) => ({
       ...prev,
       template,
@@ -80,6 +93,7 @@ export function DesignProvider({ children }: { children: ReactNode }) {
         depth: template.defaultMeasurements.depth,
         wall_to_wall: false,
       },
+      measurementPoints: defaultPoints,
     }));
   }, []);
 
@@ -94,6 +108,15 @@ export function DesignProvider({ children }: { children: ReactNode }) {
     setDesign((prev) => ({ ...prev, measurements }));
   }, []);
 
+  const updateMeasurementPoint = useCallback((point: MeasurementPoint) => {
+    setDesign((prev) => ({
+      ...prev,
+      measurementPoints: prev.measurementPoints.map((p) =>
+        p.id === point.id ? point : p
+      ),
+    }));
+  }, []);
+
   const resetDesign = useCallback(() => {
     setDesign(DEFAULT_DESIGN);
   }, []);
@@ -105,6 +128,7 @@ export function DesignProvider({ children }: { children: ReactNode }) {
         updateTemplate,
         updateConfiguration,
         updateMeasurements,
+        updateMeasurementPoint,
         resetDesign,
       }}
     >

@@ -14,11 +14,12 @@ import { useDesign, DesignProvider } from '@/contexts/DesignContext';
 import TemplateSelector from '@/components/designer/TemplateSelector';
 import ConfigurationPanel from '@/components/designer/ConfigurationPanel';
 import ShowerPreview3D from '@/components/designer/ShowerPreview3D';
+import MeasurementDiagram from '@/components/designer/MeasurementDiagram';
 
 type DesignStep = 'template' | 'configure' | 'measurements' | 'quote';
 
 function DesignerContent() {
-  const { design, updateTemplate, updateConfiguration, resetDesign } = useDesign();
+  const { design, updateTemplate, updateConfiguration, updateMeasurementPoint, resetDesign } = useDesign();
   const [step, setStep] = useState<DesignStep>('template');
 
   const stepNames: Record<DesignStep, string> = {
@@ -38,7 +39,9 @@ function DesignerContent() {
       case 'configure':
         return true; // Configuration always valid
       case 'measurements':
-        return design.measurements !== null;
+        // Check that all measurement points have valid values
+        return design.measurementPoints.length > 0 &&
+               design.measurementPoints.every(m => m.value > 0);
       default:
         return false;
     }
@@ -203,18 +206,16 @@ function DesignerContent() {
           )}
 
           {/* Step: Measurements */}
-          {step === 'measurements' && (
-            <div className="max-w-3xl mx-auto">
+          {step === 'measurements' && design.template && (
+            <div className="max-w-6xl mx-auto">
               <h2 className="text-3xl font-bold text-foreground uppercase mb-6">
                 Enter Measurements
               </h2>
-              <Card>
-                <CardContent className="p-8">
-                  <p className="text-center text-muted-foreground">
-                    Measurement form coming soon...
-                  </p>
-                </CardContent>
-              </Card>
+              <MeasurementDiagram
+                template={design.template}
+                measurements={design.measurementPoints}
+                onUpdateMeasurement={updateMeasurementPoint}
+              />
             </div>
           )}
 
