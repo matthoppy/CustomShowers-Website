@@ -14,6 +14,8 @@ import type {
 import type { ShowerTemplate, MountingType } from '@/lib/templates';
 import type { MeasurementPoint } from '@/lib/measurements';
 import { DEFAULT_INLINE_MEASUREMENTS, DEFAULT_CORNER_MEASUREMENTS } from '@/lib/measurements';
+import type { HingeType, HandleType } from '@/lib/constants';
+import { STANDARD_GLASS_THICKNESS } from '@/lib/constants';
 
 export interface DesignConfiguration {
   // Template selection
@@ -26,6 +28,8 @@ export interface DesignConfiguration {
   // Mounting and hardware
   mountingType: MountingType;
   hardwareFinish: HardwareFinish;
+  hingeType: HingeType;
+  handleType: HandleType;
 
   // Door configuration
   doorOpening: DoorOpening;
@@ -57,9 +61,11 @@ const DesignContext = createContext<DesignContextType | undefined>(undefined);
 const DEFAULT_DESIGN: DesignConfiguration = {
   template: null,
   glassType: 'clear',
-  glassThickness: 10,
+  glassThickness: STANDARD_GLASS_THICKNESS,
   mountingType: 'channel',
   hardwareFinish: 'chrome',
+  hingeType: 'geneva',
+  handleType: 'circular-8inch',
   doorOpening: 'inward',
   includeSeals: true,
   sealType: 'full',

@@ -1,6 +1,7 @@
 /**
- * BFS Website Constants
+ * BFS Website Constants - SIMPLIFIED SYSTEM
  * Pricing, hardware catalog, and business configuration
+ * Focused on 10mm glass with specific hardware options
  */
 
 import type {
@@ -8,7 +9,13 @@ import type {
   GlassThickness,
   HardwareFinish,
   HardwareCatalogItem,
+  DoorOpening,
 } from '@/types';
+
+/**
+ * SIMPLIFIED: 10mm glass only
+ */
+export const STANDARD_GLASS_THICKNESS: GlassThickness = 10;
 
 /**
  * UK VAT Rate (20%)
@@ -21,44 +28,18 @@ export const VAT_RATE = 0.20;
 export const QUOTE_VALIDITY_DAYS = 30;
 
 /**
- * Glass pricing per square meter (in GBP)
- * Base prices before complexity multipliers
+ * Glass pricing per square meter (in GBP) - 10mm only
  */
-export const GLASS_PRICING: Record<
-  GlassType,
-  Record<GlassThickness, number>
-> = {
-  clear: {
-    8: 150,
-    10: 180,
-    12: 220,
-  },
-  frosted: {
-    8: 170,
-    10: 200,
-    12: 240,
-  },
-  tinted: {
-    8: 180,
-    10: 210,
-    12: 250,
-  },
+export const GLASS_PRICING_10MM: Record<GlassType, number> = {
+  clear: 180,
+  frosted: 200,
+  tinted: 210,
 };
 
 /**
  * Installation rate per square meter (optional service)
  */
 export const INSTALLATION_RATE_PER_SQM = 85;
-
-/**
- * Complexity multipliers for design configurations
- */
-export const COMPLEXITY_FACTORS = {
-  standard: 1.0,
-  angled: 1.15, // Non-90° angles
-  curved: 1.30, // Curved glass
-  custom: 1.25, // Custom cuts or unusual shapes
-} as const;
 
 /**
  * Hardware finish display names
@@ -71,94 +52,248 @@ export const HARDWARE_FINISH_NAMES: Record<HardwareFinish, string> = {
 };
 
 /**
- * Hardware catalog - CRL Products
+ * Hinge Types
  */
-export const CRL_HARDWARE_CATALOG: HardwareCatalogItem[] = [
-  // Hinges
+export type HingeType = 'geneva' | 'vienna' | 'bellagio';
+
+export interface HingeOption {
+  type: HingeType;
+  name: string;
+  description: string;
+  part_number_base: string;
+  unit_cost: number;
+  max_door_width: number; // mm
+  max_door_weight: number; // kg
+  premium: boolean;
+  seal_type: 'h-seal' | 'bubble-seal';
+}
+
+/**
+ * Hinge selection catalog
+ * Automatically selected based on door size and weight
+ */
+export const HINGE_OPTIONS: HingeOption[] = [
   {
-    part_number: 'CRL-GENEVA037CH',
-    supplier: 'CRL',
-    category: 'hinge',
-    name: 'Geneva 037 Series Hinge',
-    description: 'Glass-to-wall hinge for 8-10mm glass',
+    type: 'geneva',
+    name: 'Geneva Series',
+    description: 'Standard hinge for smaller doors',
+    part_number_base: 'CRL-GENEVA',
     unit_cost: 45.0,
-    compatible_glass_thickness: [8, 10],
-    compatible_finishes: ['chrome', 'brushed-nickel', 'matte-black'],
-    specifications: {
-      material: 'Brass',
-      weight_capacity: '50kg per pair',
-      opening_angle: '90°',
-    },
-    in_stock: true,
+    max_door_width: 800, // Up to 800mm wide
+    max_door_weight: 40, // Up to 40kg
+    premium: false,
+    seal_type: 'h-seal',
   },
   {
-    part_number: 'CRL-COLOGNE044CH',
-    supplier: 'CRL',
-    category: 'hinge',
-    name: 'Cologne 044 Series Hinge',
-    description: 'Heavy-duty glass-to-wall hinge for 10-12mm glass',
-    unit_cost: 52.0,
-    compatible_glass_thickness: [10, 12],
-    compatible_finishes: ['chrome', 'brushed-nickel', 'matte-black', 'gold'],
-    specifications: {
-      material: 'Stainless Steel',
-      weight_capacity: '70kg per pair',
-      opening_angle: '90°',
-    },
-    in_stock: true,
-  },
-
-  // Handles
-  {
-    part_number: 'CRL-BTB12CH',
-    supplier: 'CRL',
-    category: 'handle',
-    name: 'Back-to-Back Tubular Handle - 12"',
-    description: '12" tubular ladder handle',
-    unit_cost: 65.0,
-    compatible_glass_thickness: [8, 10, 12],
-    compatible_finishes: ['chrome', 'brushed-nickel', 'matte-black'],
-    specifications: {
-      material: 'Stainless Steel',
-      diameter: '25mm',
-      length: '300mm',
-    },
-    in_stock: true,
+    type: 'vienna',
+    name: 'Vienna Series',
+    description: 'Mid-range hinge for standard doors',
+    part_number_base: 'CRL-VIENNA',
+    unit_cost: 55.0,
+    max_door_width: 1000, // Up to 1000mm wide
+    max_door_weight: 50, // Up to 50kg
+    premium: false,
+    seal_type: 'h-seal',
   },
   {
-    part_number: 'CRL-BTB18CH',
-    supplier: 'CRL',
-    category: 'handle',
-    name: 'Back-to-Back Tubular Handle - 18"',
-    description: '18" tubular ladder handle',
+    type: 'bellagio',
+    name: 'Bellagio Series',
+    description: 'Premium hinge for large/heavy doors',
+    part_number_base: 'CRL-BELLAGIO',
     unit_cost: 75.0,
-    compatible_glass_thickness: [8, 10, 12],
-    compatible_finishes: ['chrome', 'brushed-nickel', 'matte-black', 'gold'],
-    specifications: {
-      material: 'Stainless Steel',
-      diameter: '25mm',
-      length: '450mm',
-    },
-    in_stock: true,
+    max_door_width: 1200, // Up to 1200mm wide
+    max_door_weight: 65, // Up to 65kg
+    premium: true,
+    seal_type: 'bubble-seal',
   },
+];
 
-  // U-Channel
+/**
+ * Handle Types
+ */
+export type HandleType = 'circular-8inch' | 'square-d' | 'knob' | 'cutout-50mm';
+
+export interface HandleOption {
+  type: HandleType;
+  name: string;
+  description: string;
+  part_number_base: string;
+  unit_cost: number;
+  requires_cutout: boolean;
+}
+
+/**
+ * Handle options (4 types)
+ */
+export const HANDLE_OPTIONS: HandleOption[] = [
   {
-    part_number: 'CRL-UC8CH',
-    supplier: 'CRL',
-    category: 'channel',
-    name: 'U-Channel for 8mm Glass',
-    description: 'Aluminum U-channel, 2.5m length',
-    unit_cost: 28.0,
-    compatible_glass_thickness: [8],
-    compatible_finishes: ['chrome', 'brushed-nickel', 'matte-black'],
-    specifications: {
-      material: 'Aluminum',
-      length: '2500mm',
-      finish_type: 'Anodized',
-    },
-    in_stock: true,
+    type: 'circular-8inch',
+    name: '8" Circular Handle',
+    description: 'Round pull handle, 8 inch length',
+    part_number_base: 'CRL-CIRC-8',
+    unit_cost: 58.0,
+    requires_cutout: false,
   },
+  {
+    type: 'square-d',
+    name: 'Square D Handle',
+    description: 'Square profile D-shaped handle',
+    part_number_base: 'CRL-SQRD',
+    unit_cost: 65.0,
+    requires_cutout: false,
+  },
+  {
+    type: 'knob',
+    name: 'Knob Handle',
+    description: 'Compact knob style handle',
+    part_number_base: 'CRL-KNOB',
+    unit_cost: 45.0,
+    requires_cutout: false,
+  },
+  {
+    type: 'cutout-50mm',
+    name: '50mm Glass Cutout Handle',
+    description: 'Handle with 50mm glass cutout',
+    part_number_base: 'CRL-CUT-50',
+    unit_cost: 72.0,
+    requires_cutout: true,
+  },
+];
+
+/**
+ * Seal Types
+ */
+export type SealType = 'drip' | 'soft-fin-h' | 'bubble' | 'h-seal';
+
+export interface SealOption {
+  type: SealType;
+  name: string;
+  description: string;
+  part_number: string;
+  unit_cost: number;
+  location: 'door-bottom' | 'fixed-panel' | 'door-hinge-side';
+}
+
+/**
+ * Seal options
+ */
+export const SEAL_OPTIONS: SealOption[] = [
+  {
+    type: 'drip',
+    name: 'Drip Seal',
+    description: 'Bottom drip seal for door',
+    part_number: 'CRL-DRIP-10',
+    unit_cost: 18.0,
+    location: 'door-bottom',
+  },
+  {
+    type: 'soft-fin-h',
+    name: 'Soft Fin H Seal',
+    description: 'H seal for fixed panel (outward opening doors)',
+    part_number: 'CRL-FIN-H',
+    unit_cost: 22.0,
+    location: 'fixed-panel',
+  },
+  {
+    type: 'bubble',
+    name: 'Bubble Seal',
+    description: 'Bubble seal for door (both ways opening)',
+    part_number: 'CRL-BUBBLE',
+    unit_cost: 24.0,
+    location: 'door-hinge-side',
+  },
+  {
+    type: 'h-seal',
+    name: 'H Seal',
+    description: 'Standard H seal for door (Geneva/Vienna hinges)',
+    part_number: 'CRL-HSEAL',
+    unit_cost: 20.0,
+    location: 'door-hinge-side',
+  },
+];
+
+/**
+ * Automatically determine required seals based on door opening and hinge type
+ */
+export function getRequiredSeals(
+  doorOpening: DoorOpening,
+  hingeType: HingeType
+): SealOption[] {
+  const seals: SealOption[] = [];
+
+  // 1. Drip seal below door (ALWAYS)
+  seals.push(SEAL_OPTIONS.find((s) => s.type === 'drip')!);
+
+  // 2. Soft fin H seal on fixed panel (if door opens OUTWARD only)
+  if (doorOpening === 'outward') {
+    seals.push(SEAL_OPTIONS.find((s) => s.type === 'soft-fin-h')!);
+  }
+
+  // 3. Bubble seal on door (if door opens BOTH ways)
+  if (doorOpening === 'both') {
+    seals.push(SEAL_OPTIONS.find((s) => s.type === 'bubble')!);
+  }
+
+  // 4. Hinge-side seal based on hinge type
+  if (hingeType === 'bellagio') {
+    // Bellagio uses bubble seal on hinge side
+    seals.push(SEAL_OPTIONS.find((s) => s.type === 'bubble')!);
+  } else {
+    // Geneva and Vienna use H seal on door
+    seals.push(SEAL_OPTIONS.find((s) => s.type === 'h-seal')!);
+  }
+
+  return seals;
+}
+
+/**
+ * Automatically select hinge type based on door dimensions
+ */
+export function selectHingeType(
+  doorWidth: number, // mm
+  doorHeight: number, // mm
+  preferPremium: boolean = false
+): HingeType {
+  // Calculate door weight (approximate)
+  // 10mm glass = ~25kg per m²
+  const doorArea = (doorWidth * doorHeight) / 1_000_000; // Convert to m²
+  const doorWeight = doorArea * 25;
+
+  if (preferPremium) {
+    // User wants premium option
+    return 'bellagio';
+  }
+
+  // Auto-select based on size/weight
+  for (const hinge of HINGE_OPTIONS) {
+    if (doorWidth <= hinge.max_door_width && doorWeight <= hinge.max_door_weight) {
+      return hinge.type;
+    }
+  }
+
+  // Fallback to Bellagio for large/heavy doors
+  return 'bellagio';
+}
+
+/**
+ * Get hinge option by type
+ */
+export function getHingeOption(type: HingeType): HingeOption {
+  return HINGE_OPTIONS.find((h) => h.type === type)!;
+}
+
+/**
+ * Get handle option by type
+ */
+export function getHandleOption(type: HandleType): HandleOption {
+  return HANDLE_OPTIONS.find((h) => h.type === type)!;
+}
+
+/**
+ * Hardware catalog for 10mm glass - simplified
+ */
+export const HARDWARE_CATALOG_10MM: HardwareCatalogItem[] = [
+  // U-Channel for 10mm
   {
     part_number: 'CRL-UC10CH',
     supplier: 'CRL',
@@ -175,37 +310,21 @@ export const CRL_HARDWARE_CATALOG: HardwareCatalogItem[] = [
     },
     in_stock: true,
   },
-  {
-    part_number: 'CRL-UC12CH',
-    supplier: 'CRL',
-    category: 'channel',
-    name: 'U-Channel for 12mm Glass',
-    description: 'Aluminum U-channel, 2.5m length',
-    unit_cost: 36.0,
-    compatible_glass_thickness: [12],
-    compatible_finishes: ['chrome', 'brushed-nickel', 'matte-black', 'gold'],
-    specifications: {
-      material: 'Aluminum',
-      length: '2500mm',
-      finish_type: 'Anodized',
-    },
-    in_stock: true,
-  },
 
-  // Seals
+  // Glass Clamps
   {
-    part_number: 'CRL-DS4180',
-    supplier: 'CRL',
-    category: 'seal',
-    name: 'Bottom Door Seal',
-    description: 'Flexible vinyl door bottom seal',
-    unit_cost: 18.0,
-    compatible_glass_thickness: [8, 10, 12],
+    part_number: 'GP-CLAMP-10',
+    supplier: 'Glass Parts UK',
+    category: 'clamp',
+    name: 'Glass Panel Clamp - 10mm',
+    description: 'Wall mounting clamp for 10mm fixed panels',
+    unit_cost: 32.0,
+    compatible_glass_thickness: [10],
     compatible_finishes: ['chrome', 'brushed-nickel', 'matte-black', 'gold'],
     specifications: {
-      material: 'PVC',
-      length: '2200mm',
-      type: 'Wipe seal',
+      material: 'Brass',
+      type: 'Wall-to-glass',
+      glass_thickness: '10mm',
     },
     in_stock: true,
   },
@@ -218,7 +337,7 @@ export const CRL_HARDWARE_CATALOG: HardwareCatalogItem[] = [
     name: 'Clear Silicone Sealant',
     description: 'Premium bathroom silicone, 310ml',
     unit_cost: 12.0,
-    compatible_glass_thickness: [8, 10, 12],
+    compatible_glass_thickness: [10],
     compatible_finishes: ['chrome', 'brushed-nickel', 'matte-black', 'gold'],
     specifications: {
       volume: '310ml',
@@ -227,104 +346,6 @@ export const CRL_HARDWARE_CATALOG: HardwareCatalogItem[] = [
     },
     in_stock: true,
   },
-];
-
-/**
- * Hardware catalog - Glass Parts UK Products
- */
-export const GLASS_PARTS_UK_CATALOG: HardwareCatalogItem[] = [
-  // Hinges
-  {
-    part_number: 'GP-MINI-HINGE-CH',
-    supplier: 'Glass Parts UK',
-    category: 'hinge',
-    name: 'Mini Shower Hinge',
-    description: 'Compact glass-to-wall hinge for 8mm glass',
-    unit_cost: 38.0,
-    compatible_glass_thickness: [8],
-    compatible_finishes: ['chrome', 'brushed-nickel'],
-    specifications: {
-      material: 'Brass',
-      weight_capacity: '40kg per pair',
-      opening_angle: '90°',
-    },
-    in_stock: true,
-  },
-  {
-    part_number: 'GP-STD-HINGE-CH',
-    supplier: 'Glass Parts UK',
-    category: 'hinge',
-    name: 'Standard Shower Hinge',
-    description: 'Standard glass-to-wall hinge for 10mm glass',
-    unit_cost: 42.0,
-    compatible_glass_thickness: [10],
-    compatible_finishes: ['chrome', 'brushed-nickel', 'matte-black'],
-    specifications: {
-      material: 'Brass',
-      weight_capacity: '55kg per pair',
-      opening_angle: '90°',
-    },
-    in_stock: true,
-  },
-  {
-    part_number: 'GP-HD-HINGE-CH',
-    supplier: 'Glass Parts UK',
-    category: 'hinge',
-    name: 'Heavy Duty Shower Hinge',
-    description: 'Heavy-duty glass-to-wall hinge for 12mm glass',
-    unit_cost: 48.0,
-    compatible_glass_thickness: [12],
-    compatible_finishes: ['chrome', 'brushed-nickel', 'matte-black', 'gold'],
-    specifications: {
-      material: 'Stainless Steel',
-      weight_capacity: '75kg per pair',
-      opening_angle: '90°',
-    },
-    in_stock: true,
-  },
-
-  // Handles
-  {
-    part_number: 'GP-PULL-300-CH',
-    supplier: 'Glass Parts UK',
-    category: 'handle',
-    name: 'Pull Handle 300mm',
-    description: 'Straight pull handle for shower doors',
-    unit_cost: 58.0,
-    compatible_glass_thickness: [8, 10, 12],
-    compatible_finishes: ['chrome', 'brushed-nickel', 'matte-black'],
-    specifications: {
-      material: 'Stainless Steel',
-      length: '300mm',
-      diameter: '19mm',
-    },
-    in_stock: true,
-  },
-
-  // Clamps
-  {
-    part_number: 'GP-CLAMP-CH',
-    supplier: 'Glass Parts UK',
-    category: 'clamp',
-    name: 'Glass Panel Clamp',
-    description: 'Wall mounting clamp for fixed panels',
-    unit_cost: 32.0,
-    compatible_glass_thickness: [8, 10, 12],
-    compatible_finishes: ['chrome', 'brushed-nickel', 'matte-black'],
-    specifications: {
-      material: 'Brass',
-      type: 'Wall-to-glass',
-    },
-    in_stock: true,
-  },
-];
-
-/**
- * Combined hardware catalog
- */
-export const HARDWARE_CATALOG: HardwareCatalogItem[] = [
-  ...CRL_HARDWARE_CATALOG,
-  ...GLASS_PARTS_UK_CATALOG,
 ];
 
 /**
@@ -343,29 +364,6 @@ export const SUPPLIER_CONTACTS = {
     phone: '+44 (0)1234 567890',
     website: 'https://www.glassparts.co.uk',
   },
-} as const;
-
-/**
- * Measurement units
- */
-export const UNITS = {
-  metric: {
-    length: 'mm',
-    area: 'm²',
-  },
-  imperial: {
-    length: 'in',
-    area: 'ft²',
-  },
-} as const;
-
-/**
- * Conversion factors
- */
-export const CONVERSIONS = {
-  MM_TO_INCHES: 0.0393701,
-  INCHES_TO_MM: 25.4,
-  SQM_TO_SQFT: 10.7639,
 } as const;
 
 /**

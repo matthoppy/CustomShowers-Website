@@ -7,17 +7,17 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import type { HardwareFinish, DoorOpening, GlassType, GlassThickness } from '@/types';
+import type { HardwareFinish, DoorOpening, GlassType } from '@/types';
 import type { MountingType, ShowerTemplate } from '@/lib/templates';
-import { HARDWARE_FINISH_NAMES } from '@/lib/constants';
+import {
+  HARDWARE_FINISH_NAMES,
+  HANDLE_OPTIONS,
+  STANDARD_GLASS_THICKNESS,
+  type HandleType,
+  type HingeType,
+  getRequiredSeals,
+} from '@/lib/constants';
 
 interface ConfigurationPanelProps {
   template: ShowerTemplate;
@@ -25,8 +25,9 @@ interface ConfigurationPanelProps {
     mountingType: MountingType;
     doorOpening: DoorOpening;
     hardwareFinish: HardwareFinish;
+    handleType: HandleType;
+    hingeType: HingeType;
     glassType: GlassType;
-    glassThickness: GlassThickness;
     includeSeals: boolean;
     sealType?: string;
   };
@@ -42,11 +43,15 @@ export default function ConfigurationPanel({
     mountingType,
     doorOpening,
     hardwareFinish,
+    handleType,
+    hingeType,
     glassType,
-    glassThickness,
     includeSeals,
     sealType,
   } = configuration;
+
+  // Calculate required seals based on door opening and hinge type
+  const requiredSeals = getRequiredSeals(doorOpening, hingeType);
 
   return (
     <div className="space-y-6">
@@ -86,36 +91,15 @@ export default function ConfigurationPanel({
 
           <Separator />
 
-          {/* Glass Thickness */}
+          {/* Glass Thickness - Fixed at 10mm */}
           <div className="space-y-2">
             <Label>Glass Thickness</Label>
-            <RadioGroup
-              value={glassThickness.toString()}
-              onValueChange={(value) =>
-                onChange({ glassThickness: parseInt(value) as GlassThickness })
-              }
-            >
-              {template.recommendedThickness.map((thickness) => (
-                <div key={thickness} className="flex items-center space-x-2">
-                  <RadioGroupItem
-                    value={thickness.toString()}
-                    id={`thickness-${thickness}`}
-                  />
-                  <Label
-                    htmlFor={`thickness-${thickness}`}
-                    className="cursor-pointer"
-                  >
-                    {thickness}mm
-                    {template.recommendedThickness.length > 1 &&
-                      thickness === Math.max(...template.recommendedThickness) && (
-                        <Badge variant="secondary" className="ml-2 text-xs">
-                          Recommended
-                        </Badge>
-                      )}
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
+            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-md">
+              <Badge variant="default">{STANDARD_GLASS_THICKNESS}mm</Badge>
+              <span className="text-sm text-muted-foreground">
+                Standard thickness for all our shower enclosures
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -263,7 +247,42 @@ export default function ConfigurationPanel({
         </CardContent>
       </Card>
 
-      {/* Seals */}
+      {/* Handle Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Door Handle</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <RadioGroup
+            value={handleType}
+            onValueChange={(value) =>
+              onChange({ handleType: value as HandleType })
+            }
+          >
+            {HANDLE_OPTIONS.map((handle) => (
+              <div key={handle.type} className="flex items-center space-x-2">
+                <RadioGroupItem
+                  value={handle.type}
+                  id={`handle-${handle.type}`}
+                />
+                <div className="flex-1">
+                  <Label
+                    htmlFor={`handle-${handle.type}`}
+                    className="cursor-pointer font-medium"
+                  >
+                    {handle.name}
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    £{handle.unit_cost.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </RadioGroup>
+        </CardContent>
+      </Card>
+
+      {/* Seals - Automatically Selected */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Door Seals</CardTitle>
@@ -283,22 +302,28 @@ export default function ConfigurationPanel({
           </div>
 
           {includeSeals && (
-            <div className="space-y-2">
-              <Label htmlFor="seal-type">Seal Type</Label>
-              <Select
-                value={sealType}
-                onValueChange={(value) => onChange({ sealType: value })}
-              >
-                <SelectTrigger id="seal-type">
-                  <SelectValue placeholder="Select seal type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bottom">Bottom Seal Only</SelectItem>
-                  <SelectItem value="side">Side Seals Only</SelectItem>
-                  <SelectItem value="magnetic">Magnetic Seal</SelectItem>
-                  <SelectItem value="full">Full Seal Package</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Based on your door opening direction and hinge type, the following seals are included:
+              </p>
+              <div className="space-y-2">
+                {requiredSeals.map((seal) => (
+                  <div
+                    key={seal.type}
+                    className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
+                  >
+                    <div>
+                      <p className="font-medium text-sm">{seal.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {seal.description}
+                      </p>
+                    </div>
+                    <Badge variant="secondary">
+                      £{seal.unit_cost.toFixed(2)}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
               <p className="text-xs text-muted-foreground">
                 Seals help prevent water leakage and improve door closure
               </p>
