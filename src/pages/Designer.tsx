@@ -155,8 +155,9 @@ function DesignerContent() {
                     mountingType: design.mountingType,
                     doorOpening: design.doorOpening,
                     hardwareFinish: design.hardwareFinish,
+                    handleType: design.handleType,
+                    hingeType: design.hingeType,
                     glassType: design.glassType,
-                    glassThickness: design.glassThickness,
                     includeSeals: design.includeSeals,
                     sealType: design.sealType,
                   }}
@@ -195,6 +196,10 @@ function DesignerContent() {
                         <dd className="font-medium capitalize">
                           {design.hardwareFinish.replace('-', ' ')}
                         </dd>
+                        <dt className="text-muted-foreground">Hinges:</dt>
+                        <dd className="font-medium capitalize">{design.hingeType}</dd>
+                        <dt className="text-muted-foreground">Handle:</dt>
+                        <dd className="font-medium capitalize">{design.handleType.replace('-', ' ')}</dd>
                         <dt className="text-muted-foreground">Door Opens:</dt>
                         <dd className="font-medium capitalize">{design.doorOpening}</dd>
                       </dl>
