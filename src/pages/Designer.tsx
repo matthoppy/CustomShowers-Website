@@ -15,6 +15,7 @@ import TemplateSelector from '@/components/designer/TemplateSelector';
 import ConfigurationPanel from '@/components/designer/ConfigurationPanel';
 import ShowerPreview3D from '@/components/designer/ShowerPreview3D';
 import MeasurementDiagram from '@/components/designer/MeasurementDiagram';
+import QuoteSummary from '@/components/designer/QuoteSummary';
 
 type DesignStep = 'template' | 'configure' | 'measurements' | 'quote';
 
@@ -159,6 +160,7 @@ function DesignerContent() {
                     hingeType: design.hingeType,
                     glassType: design.glassType,
                     includeSeals: design.includeSeals,
+                    includeInstallation: design.includeInstallation,
                     sealType: design.sealType,
                   }}
                   onChange={updateConfiguration}
@@ -226,17 +228,8 @@ function DesignerContent() {
 
           {/* Step: Quote */}
           {step === 'quote' && (
-            <div className="max-w-3xl mx-auto">
-              <h2 className="text-3xl font-bold text-foreground uppercase mb-6">
-                Your Quote
-              </h2>
-              <Card>
-                <CardContent className="p-8">
-                  <p className="text-center text-muted-foreground">
-                    Quote calculator coming soon...
-                  </p>
-                </CardContent>
-              </Card>
+            <div className="max-w-4xl mx-auto">
+              <QuoteSummary design={design} />
             </div>
           )}
         </div>

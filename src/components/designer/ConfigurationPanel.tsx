@@ -29,6 +29,7 @@ interface ConfigurationPanelProps {
     hingeType: HingeType;
     glassType: GlassType;
     includeSeals: boolean;
+    includeInstallation: boolean;
     sealType?: string;
   };
   onChange: (config: Partial<ConfigurationPanelProps['configuration']>) => void;
@@ -47,6 +48,7 @@ export default function ConfigurationPanel({
     hingeType,
     glassType,
     includeSeals,
+    includeInstallation,
     sealType,
   } = configuration;
 
@@ -329,6 +331,30 @@ export default function ConfigurationPanel({
               </p>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Installation */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Installation</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="include-installation"
+              checked={includeInstallation}
+              onChange={(e) => onChange({ includeInstallation: e.target.checked })}
+              className="w-4 h-4"
+            />
+            <Label htmlFor="include-installation" className="cursor-pointer">
+              Include professional installation
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Our certified installers will measure, fit, and seal your shower enclosure to the highest standards. Installation typically takes 1-2 days depending on complexity.
+          </p>
         </CardContent>
       </Card>
     </div>
