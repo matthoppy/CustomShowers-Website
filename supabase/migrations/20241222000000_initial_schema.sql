@@ -528,8 +528,8 @@ CREATE POLICY admin_users_select ON admin_users
 -- ============================================
 
 -- Insert a default admin user (update email as needed)
-INSERT INTO admin_users (email, role, name, is_active)
-VALUES ('admin@bespokeframelessshowers.co.uk', 'admin', 'System Admin', TRUE)
+INSERT INTO admin_users (email, password_hash, full_name, role, is_active)
+VALUES ('admin@bespokeframelessshowers.co.uk', 'changeme', 'System Admin', 'admin', TRUE)
 ON CONFLICT (email) DO NOTHING;
 
 -- ============================================
