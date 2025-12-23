@@ -347,9 +347,10 @@ CREATE TRIGGER trigger_log_order_status
 CREATE TABLE admin_users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  full_name TEXT,
   role TEXT NOT NULL DEFAULT 'admin',
   -- Roles: admin, manager, viewer
-  name TEXT,
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
