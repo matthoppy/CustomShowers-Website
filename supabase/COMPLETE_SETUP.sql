@@ -810,7 +810,7 @@ VALUES (
   'admin@bfs.co.uk',
   'admin123', -- CHANGE THIS IN PRODUCTION!
   'BFS Admin',
-  'super_admin',
+  'admin',
   true
 )
 ON CONFLICT (email) DO NOTHING;
