@@ -3,6 +3,7 @@
  * Displays itemized quote breakdown for the shower design
  */
 
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -10,19 +11,19 @@ import { Button } from '@/components/ui/button';
 import { Download, Mail, CheckCircle } from 'lucide-react';
 import type { DesignConfiguration } from '@/contexts/DesignContext';
 import { generateQuote, formatCurrency, formatDate } from '@/lib/quoteCalculator';
+import RequestQuoteDialog from './RequestQuoteDialog';
 
 interface QuoteSummaryProps {
   design: DesignConfiguration;
-  onRequestQuote?: () => void;
   onDownloadQuote?: () => void;
 }
 
 export default function QuoteSummary({
   design,
-  onRequestQuote,
   onDownloadQuote,
 }: QuoteSummaryProps) {
   const quote = generateQuote(design);
+  const [showRequestDialog, setShowRequestDialog] = useState(false);
 
   const categoryLabels = {
     glass: 'Glass',
@@ -184,12 +185,10 @@ export default function QuoteSummary({
             Download Quote (PDF)
           </Button>
         )}
-        {onRequestQuote && (
-          <Button className="flex-1" onClick={onRequestQuote}>
-            <Mail className="w-4 h-4 mr-2" />
-            Request Final Quote
-          </Button>
-        )}
+        <Button className="flex-1" onClick={() => setShowRequestDialog(true)}>
+          <Mail className="w-4 h-4 mr-2" />
+          Request Final Quote
+        </Button>
       </div>
 
       {/* Notes */}
@@ -202,6 +201,13 @@ export default function QuoteSummary({
           </p>
         </CardContent>
       </Card>
+
+      {/* Request Quote Dialog */}
+      <RequestQuoteDialog
+        open={showRequestDialog}
+        onOpenChange={setShowRequestDialog}
+        design={design}
+      />
     </div>
   );
 }
