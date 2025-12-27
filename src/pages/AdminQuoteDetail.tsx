@@ -33,6 +33,7 @@ import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency, formatDate } from '@/lib/quoteCalculator';
 import { useToast } from '@/hooks/use-toast';
+import { sendQuoteEmail } from '@/lib/emailService';
 
 interface QuoteLineItem {
   id: string;
@@ -216,11 +217,49 @@ export default function AdminQuoteDetail() {
     }
   };
 
-  const handleSendEmail = () => {
-    toast({
-      title: 'Coming Soon',
-      description: 'Email functionality will be implemented next',
-    });
+  const handleSendEmail = async () => {
+    if (!quote || !customer) return;
+
+    const confirmed = confirm(
+      `Send quote ${quote.quote_number} to ${customer.email}?\n\nThis will email the customer with a link to view and accept their quote.`
+    );
+
+    if (!confirmed) return;
+
+    setIsSaving(true);
+    try {
+      const result = await sendQuoteEmail({
+        quoteId: quote.id,
+        customerEmail: customer.email,
+        customerName: customer.full_name || 'Customer',
+        quoteNumber: quote.quote_number,
+        totalAmount: quote.total_amount,
+        validUntil: new Date(quote.valid_until),
+      });
+
+      if (result.success) {
+        toast({
+          title: 'Email Sent!',
+          description: `Quote sent to ${customer.email}`,
+        });
+        loadQuote(); // Reload to show updated status
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Email Failed',
+          description: result.error || 'Failed to send email. Please try again.',
+        });
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'An unexpected error occurred',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (isLoading) {
