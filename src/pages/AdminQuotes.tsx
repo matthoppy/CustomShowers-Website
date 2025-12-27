@@ -26,11 +26,10 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
-  LogOut,
 } from 'lucide-react';
-import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/quoteCalculator';
+import AdminLayout from '@/components/admin/AdminLayout';
 
 interface Quote {
   id: string;
@@ -52,7 +51,6 @@ interface Quote {
 }
 
 export default function AdminQuotes() {
-  const { user, logout } = useAdmin();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [filteredQuotes, setFilteredQuotes] = useState<Quote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -158,37 +156,24 @@ export default function AdminQuotes() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading quotes...</p>
+      <AdminLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading quotes...</p>
+          </div>
         </div>
-      </div>
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-muted">
-      {/* Header */}
-      <header className="bg-primary text-primary-foreground shadow">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Link to="/admin/dashboard" className="text-sm opacity-80 hover:opacity-100">
-                ← Back to Dashboard
-              </Link>
-              <h1 className="text-2xl font-bold mt-1">Quote Management</h1>
-            </div>
-            <Button variant="secondary" onClick={logout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
-          </div>
+    <AdminLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Quotes</h1>
+          <p className="text-muted-foreground">Manage all customer quotes</p>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
         {/* Filters and Search */}
         <Card className="mb-6">
           <CardContent className="pt-6">
@@ -321,7 +306,7 @@ export default function AdminQuotes() {
             )}
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </AdminLayout>
   );
 }

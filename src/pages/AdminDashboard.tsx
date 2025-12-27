@@ -13,14 +13,13 @@ import {
   FileText,
   Package,
   TrendingUp,
-  LogOut,
   Clock,
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
-import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/quoteCalculator';
+import AdminLayout from '@/components/admin/AdminLayout';
 
 interface DashboardStats {
   totalCustomers: number;
@@ -31,7 +30,6 @@ interface DashboardStats {
 }
 
 export default function AdminDashboard() {
-  const { user, logout } = useAdmin();
   const [stats, setStats] = useState<DashboardStats>({
     totalCustomers: 0,
     pendingQuotes: 0,
@@ -127,35 +125,20 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading dashboard...</p>
+      <AdminLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading dashboard...</p>
+          </div>
         </div>
-      </div>
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-muted">
-      {/* Header */}
-      <header className="bg-primary text-primary-foreground shadow">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">BFS Admin Dashboard</h1>
-              <p className="text-primary-foreground/80">Welcome back, {user?.full_name}</p>
-            </div>
-            <Button variant="secondary" onClick={logout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
+    <AdminLayout>
+      <div className="space-y-6">
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
@@ -270,7 +253,7 @@ export default function AdminDashboard() {
             )}
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </AdminLayout>
   );
 }

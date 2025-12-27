@@ -27,13 +27,12 @@ import {
   Plus,
   Trash2,
   CheckCircle,
-  LogOut,
 } from 'lucide-react';
-import { useAdmin } from '@/contexts/AdminContext';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency, formatDate } from '@/lib/quoteCalculator';
 import { useToast } from '@/hooks/use-toast';
 import { sendQuoteEmail } from '@/lib/emailService';
+import AdminLayout from '@/components/admin/AdminLayout';
 
 interface QuoteLineItem {
   id: string;
@@ -49,7 +48,6 @@ interface QuoteLineItem {
 export default function AdminQuoteDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { logout } = useAdmin();
   const { toast } = useToast();
 
   const [quote, setQuote] = useState<any>(null);
@@ -264,25 +262,32 @@ export default function AdminQuoteDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading quote...</p>
+      <AdminLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading quote...</p>
+          </div>
         </div>
-      </div>
+      </AdminLayout>
     );
   }
 
   if (!quote) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-xl font-semibold mb-2">Quote not found</p>
-          <Link to="/admin/quotes">
-            <Button>Back to Quotes</Button>
-          </Link>
+      <AdminLayout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <p className="text-xl font-semibold mb-2">Quote not found</p>
+            <Link to="/admin/quotes">
+              <Button>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Quotes
+              </Button>
+            </Link>
+          </div>
         </div>
-      </div>
+      </AdminLayout>
     );
   }
 
@@ -290,28 +295,18 @@ export default function AdminQuoteDetail() {
   const customer = quote.designs?.customers;
 
   return (
-    <div className="min-h-screen bg-muted">
-      {/* Header */}
-      <header className="bg-primary text-primary-foreground shadow">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Link to="/admin/quotes" className="text-sm opacity-80 hover:opacity-100 flex items-center gap-2">
-                <ArrowLeft className="w-4 h-4" />
-                Back to Quotes
-              </Link>
-              <h1 className="text-2xl font-bold mt-1">Quote {quote.quote_number}</h1>
-            </div>
-            <Button variant="secondary" onClick={logout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <Link to="/admin/quotes" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 mb-2">
+              <ArrowLeft className="w-4 h-4" />
+              Back to Quotes
+            </Link>
+            <h1 className="text-3xl font-bold">Quote {quote.quote_number}</h1>
           </div>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left Column - Quote Details */}
           <div className="lg:col-span-2 space-y-6">
@@ -570,7 +565,7 @@ export default function AdminQuoteDetail() {
             </Card>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </AdminLayout>
   );
 }
