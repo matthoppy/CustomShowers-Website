@@ -22,14 +22,18 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency, formatDate } from '@/lib/quoteCalculator';
+import { createCheckoutSession, getPaymentStatus, clearPaymentStatus } from '@/lib/stripeService';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import { useToast } from '@/hooks/use-toast';
 
 export default function QuoteView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [quote, setQuote] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -37,6 +41,29 @@ export default function QuoteView() {
       loadQuote();
     }
   }, [id]);
+
+  // Handle payment status from URL params
+  useEffect(() => {
+    const paymentStatus = getPaymentStatus();
+
+    if (paymentStatus === 'success') {
+      toast({
+        title: 'Payment Successful!',
+        description: 'Thank you for your payment. We\'ll be in touch shortly to arrange installation.',
+        variant: 'default',
+      });
+      clearPaymentStatus();
+      // Reload quote to show updated status
+      if (id) loadQuote();
+    } else if (paymentStatus === 'cancelled') {
+      toast({
+        title: 'Payment Cancelled',
+        description: 'Your payment was cancelled. The quote is still available if you change your mind.',
+        variant: 'destructive',
+      });
+      clearPaymentStatus();
+    }
+  }, [id, toast]);
 
   const loadQuote = async () => {
     try {
@@ -70,9 +97,34 @@ export default function QuoteView() {
     }
   };
 
-  const handleAcceptQuote = () => {
-    // TODO: Implement Stripe payment
-    alert('Payment integration coming soon!');
+  const handleAcceptQuote = async () => {
+    if (!id) return;
+
+    setIsProcessingPayment(true);
+
+    try {
+      const result = await createCheckoutSession({
+        quoteId: id,
+      });
+
+      if (!result.success) {
+        toast({
+          title: 'Payment Error',
+          description: result.error || 'Unable to process payment. Please try again or contact us.',
+          variant: 'destructive',
+        });
+        setIsProcessingPayment(false);
+      }
+      // If successful, user will be redirected to Stripe checkout
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      toast({
+        title: 'Payment Error',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
+      });
+      setIsProcessingPayment(false);
+    }
   };
 
   const handleRejectQuote = async () => {
@@ -315,11 +367,32 @@ export default function QuoteView() {
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button size="lg" variant="secondary" onClick={handleAcceptQuote} className="min-w-[200px]">
-                    <CreditCard className="w-5 h-5 mr-2" />
-                    Accept & Pay Now
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    onClick={handleAcceptQuote}
+                    disabled={isProcessingPayment}
+                    className="min-w-[200px]"
+                  >
+                    {isProcessingPayment ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current mr-2" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="w-5 h-5 mr-2" />
+                        Accept & Pay Now
+                      </>
+                    )}
                   </Button>
-                  <Button size="lg" variant="outline" onClick={handleRejectQuote} className="min-w-[200px]">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={handleRejectQuote}
+                    disabled={isProcessingPayment}
+                    className="min-w-[200px]"
+                  >
                     <XCircle className="w-5 h-5 mr-2" />
                     Decline Quote
                   </Button>
