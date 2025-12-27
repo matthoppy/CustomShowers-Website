@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Designer from "./pages/Designer";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminQuotes from "./pages/AdminQuotes";
 import ProtectedRoute from "./components/admin/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -29,6 +30,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/quotes"
+              element={
+                <ProtectedRoute>
+                  <AdminQuotes />
                 </ProtectedRoute>
               }
             />
