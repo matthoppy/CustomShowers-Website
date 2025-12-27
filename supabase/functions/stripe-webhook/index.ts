@@ -47,10 +47,18 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      // Fetch the quote to get details
+      // Fetch the quote to get details including customer info
       const { data: quote, error: quoteError } = await supabase
         .from("quotes")
-        .select("*")
+        .select(`
+          *,
+          designs (
+            *,
+            customers (
+              *
+            )
+          )
+        `)
         .eq("id", quoteId)
         .single();
 
@@ -101,7 +109,39 @@ const handler = async (req: Request): Promise<Response> => {
 
       console.log("Order created successfully:", order.order_number);
 
-      // TODO: Send confirmation email to customer
+      // Send confirmation email to customer
+      const customer = quote.designs?.customers;
+      if (customer?.email) {
+        try {
+          const emailResponse = await fetch(
+            `${supabaseUrl}/functions/v1/send-order-confirmation`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${supabaseKey}`,
+              },
+              body: JSON.stringify({
+                to: customer.email,
+                customerName: customer.full_name || "Customer",
+                orderNumber: order.order_number,
+                quoteNumber: quoteNumber,
+                totalAmount: order.total_amount,
+              }),
+            }
+          );
+
+          if (emailResponse.ok) {
+            console.log("Order confirmation email sent to:", customer.email);
+          } else {
+            console.error("Failed to send order confirmation email:", await emailResponse.text());
+          }
+        } catch (emailError) {
+          console.error("Error sending order confirmation email:", emailError);
+          // Don't fail the webhook if email fails - order is still created
+        }
+      }
+
       // TODO: Generate DXF files and hardware specifications
       // TODO: Notify admin of new paid order
 
