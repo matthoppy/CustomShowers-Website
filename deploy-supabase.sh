@@ -23,10 +23,8 @@ supabase secrets set STRIPE_SECRET_KEY="sk_test_51Sj5nLDO87gISe57a8Z9VgNT4z5BB0W
 supabase secrets set SUPABASE_URL="https://plprhxtkpwklrgqaoxyj.supabase.co"
 supabase secrets set SUPABASE_SERVICE_ROLE_KEY="sb_secret_YIv8mLlf4v3nPrdcUHBKVQ_vuwWj22D"
 
-# Resend API key (you need to add yours)
-echo "⚠️  Please run this command with your Resend API key:"
-echo "   supabase secrets set RESEND_API_KEY=re_your_key_here"
-echo ""
+# Resend API key
+supabase secrets set RESEND_API_KEY="re_ZzBMdDwN_4N7M8FDLcReeuSRpuYr3LT5A"
 
 # Stripe webhook secret (will be set after webhook is created)
 echo "⚠️  After creating Stripe webhook, run:"
