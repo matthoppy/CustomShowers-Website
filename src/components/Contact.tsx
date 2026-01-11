@@ -1,32 +1,47 @@
 import { Mail } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState, useRef } from "react";
-import emailjs from "@emailjs/browser";
+import ReCAPTCHA from "react-google-recaptcha";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-// Replace these with your actual EmailJS credentials
-const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
-const EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY";
+const RECAPTCHA_SITE_KEY = "6Lf2vwQsAAAAAF8TpHeeHhN28sKolp_c5-xNKqwP";
 
 const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    const recaptchaToken = recaptchaRef.current?.getValue();
+    if (!recaptchaToken) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please complete the reCAPTCHA verification",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      if (!formRef.current) return;
+      const formData = new FormData(e.currentTarget);
+      const data = {
+        name: formData.get("name") as string,
+        email: formData.get("email") as string,
+        phone: formData.get("phone") as string,
+        message: formData.get("message") as string,
+        recaptchaToken,
+      };
 
-      await emailjs.sendForm(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE_ID,
-        formRef.current,
-        EMAILJS_PUBLIC_KEY
-      );
+      const { error } = await supabase.functions.invoke("send-contact-email", {
+        body: data,
+      });
+
+      if (error) throw error;
 
       toast({
         title: "Success!",
@@ -34,6 +49,7 @@ const Contact = () => {
       });
 
       e.currentTarget.reset();
+      recaptchaRef.current?.reset();
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -86,7 +102,7 @@ const Contact = () => {
           {/* Contact Form */}
           <div className="bg-primary p-8">
             <h3 className="text-2xl font-bold text-primary-foreground mb-6">Request A Quote</h3>
-            <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-primary-foreground mb-2">
@@ -95,7 +111,7 @@ const Contact = () => {
                   <input
                   type="text"
                   id="name"
-                  name="user_name"
+                  name="name"
                   required
                   className="w-full px-4 py-3 bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors duration-300"
                   placeholder="Your name"
@@ -108,7 +124,7 @@ const Contact = () => {
                   <input
                   type="tel"
                   id="phone"
-                  name="user_phone"
+                  name="phone"
                   required
                   className="w-full px-4 py-3 bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors duration-300"
                   placeholder="Your phone"
@@ -123,7 +139,7 @@ const Contact = () => {
                 <input
                   type="email"
                   id="email"
-                  name="user_email"
+                  name="email"
                   required
                   className="w-full px-4 py-3 bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors duration-300"
                   placeholder="your@email.com"
@@ -142,6 +158,14 @@ const Contact = () => {
                   className="w-full px-4 py-3 bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors duration-300 resize-none"
                   placeholder="Tell us about your project..."
                 ></textarea>
+              </div>
+              
+              <div>
+                <ReCAPTCHA
+                  ref={recaptchaRef}
+                  sitekey={RECAPTCHA_SITE_KEY}
+                  theme="light"
+                />
               </div>
               
               <Button type="submit" className="w-full" disabled={isSubmitting}>

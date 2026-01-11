@@ -22,8 +22,8 @@ All colors MUST be HSL.
     --primary-foreground: 0 0% 100%;
     --primary-hover: 210 50% 18%;
 
-    /* Secondary light blue */
-    --secondary: 199 45% 63%;
+    /* Secondary (dark blue) */
+    --secondary: 210 50% 28%;
     --secondary-foreground: 0 0% 100%;
 
     --muted: 210 33% 96%;
@@ -67,7 +67,7 @@ All colors MUST be HSL.
     --primary-foreground: 0 0% 100%;
     --primary-hover: 210 50% 18%;
 
-    --secondary: 199 45% 63%;
+    --secondary: 210 50% 28%;
     --secondary-foreground: 0 0% 100%;
 
     --muted: 0 0% 23%;
