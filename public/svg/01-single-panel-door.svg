@@ -1,0 +1,63 @@
+<svg viewBox="0 0 300 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- 
+    Single Panel Door Template
+    Base dimensions: 800mm x 2000mm (real world) = 250px x 550px (Figma)
+    
+    Required IDs for dynamic manipulation:
+    - panel-door: The main glass door panel
+    - hinge-top: Top hinge hardware
+    - hinge-bottom: Bottom hinge hardware  
+    - handle: Door handle
+  -->
+  
+  <!-- Background reference (optional) -->
+  <rect x="0" y="0" width="300" height="600" fill="none" stroke="#e5e5e5" stroke-width="1" stroke-dasharray="4"/>
+  
+  <!-- Glass Door Panel -->
+  <rect 
+    id="panel-door" 
+    x="25" 
+    y="25" 
+    width="250" 
+    height="550" 
+    fill="#d4e6d4" 
+    fill-opacity="0.6"
+    stroke="#9cb89c" 
+    stroke-width="2"
+    rx="2"
+  />
+  
+  <!-- Top Hinge -->
+  <rect 
+    id="hinge-top" 
+    x="25" 
+    y="85" 
+    width="12" 
+    height="30" 
+    fill="#b0b0b0"
+    rx="2"
+  />
+  
+  <!-- Bottom Hinge -->
+  <rect 
+    id="hinge-bottom" 
+    x="25" 
+    y="485" 
+    width="12" 
+    height="30" 
+    fill="#b0b0b0"
+    rx="2"
+  />
+  
+  <!-- Handle -->
+  <rect 
+    id="handle" 
+    x="243" 
+    y="250" 
+    width="12" 
+    height="100" 
+    fill="#b0b0b0"
+    rx="4"
+  />
+</svg>
+
