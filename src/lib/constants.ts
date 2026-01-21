@@ -370,7 +370,7 @@ export const SUPPLIER_CONTACTS = {
  * Business contact information
  */
 export const BUSINESS_CONTACT = {
-  name: 'Bespoke Frameless Showers',
+  name: 'Custom Showers Website',
   email: 'sales@bespokeframelessshowers.co.uk',
   phone: '+44 (0)20 1234 5678',
   address: {
