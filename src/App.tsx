@@ -6,6 +6,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AdminProvider } from "./contexts/AdminContext";
 import Index from "./pages/Index";
 import Designer from "./pages/Designer";
+import DesignerDesktop from "./pages/DesignerDesktop";
+import DesignerDesktopNew from "./pages/DesignerDesktopNew";
+import ShowerConfiguratorWizard from "./pages/ShowerConfiguratorWizard";
+import ShowerConfigurationsShowcase from "./pages/ShowerConfigurationsShowcase";
 import QuoteView from "./pages/QuoteView";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -28,6 +32,11 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/designer" element={<Designer />} />
+            <Route path="/designer-desktop" element={<DesignerDesktop />} />
+            <Route path="/design-shower" element={<DesignerDesktopNew />} />
+            <Route path="/design-shower-new" element={<DesignerDesktopNew />} />
+            <Route path="/shower-configurator" element={<ShowerConfiguratorWizard />} />
+            <Route path="/shower-configurations" element={<ShowerConfigurationsShowcase />} />
             <Route path="/quote/:id" element={<QuoteView />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route
