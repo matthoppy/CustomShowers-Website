@@ -29,6 +29,7 @@ interface ConfigurationPanelProps {
     hingeType: HingeType;
     glassType: GlassType;
     includeSeals: boolean;
+    includeThreshold: boolean;
     includeInstallation: boolean;
     sealType?: string;
   };
@@ -48,6 +49,7 @@ export default function ConfigurationPanel({
     hingeType,
     glassType,
     includeSeals,
+    includeThreshold,
     includeInstallation,
     sealType,
   } = configuration;
@@ -220,23 +222,25 @@ export default function ConfigurationPanel({
                 <button
                   key={finish}
                   onClick={() => onChange({ hardwareFinish: finish })}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    hardwareFinish === finish
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border hover:border-primary/50'
-                  }`}
+                  className={`p-4 rounded-lg border-2 transition-all ${hardwareFinish === finish
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border hover:border-primary/50'
+                    }`}
                 >
                   <div className="flex flex-col items-center gap-2">
                     <div
-                      className={`w-12 h-12 rounded-full ${
-                        finish === 'chrome'
-                          ? 'bg-gradient-to-br from-gray-300 to-gray-100'
-                          : finish === 'brushed-nickel'
+                      className={`w-12 h-12 rounded-full ${finish === 'chrome'
+                        ? 'bg-gradient-to-br from-gray-300 to-gray-100'
+                        : finish === 'brushed-nickel'
                           ? 'bg-gradient-to-br from-gray-400 to-gray-300'
                           : finish === 'matte-black'
-                          ? 'bg-gradient-to-br from-gray-900 to-gray-700'
-                          : 'bg-gradient-to-br from-yellow-600 to-yellow-400'
-                      }`}
+                            ? 'bg-gradient-to-br from-gray-900 to-gray-700'
+                            : finish === 'gold' || finish === 'satin-brass' || finish === 'polished-brass' || finish === 'unlacquered-brass'
+                              ? 'bg-gradient-to-br from-yellow-600 to-yellow-200'
+                              : finish === 'oil-rubbed-bronze' || finish === 'brushed-bronze' || finish === 'antic-brass'
+                                ? 'bg-gradient-to-br from-orange-900 to-orange-800' // Dark brownish bronze
+                                : 'bg-gradient-to-br from-slate-500 to-slate-300' // Gun Metal / Polished Nickel / Satin Chrome / Satin Nickel / Default
+                        }`}
                     />
                     <span className="text-sm font-medium text-center">
                       {HARDWARE_FINISH_NAMES[finish]}
@@ -328,6 +332,21 @@ export default function ConfigurationPanel({
               </div>
               <p className="text-xs text-muted-foreground">
                 Seals help prevent water leakage and improve door closure
+              </p>
+              <div className="flex items-center space-x-2 mt-2 pt-2 border-t border-border">
+                <input
+                  type="checkbox"
+                  id="include-threshold"
+                  checked={includeThreshold}
+                  onChange={(e) => onChange({ includeThreshold: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                <Label htmlFor="include-threshold" className="cursor-pointer">
+                  Add Half-Round Threshold (+£14.12)
+                </Label>
+              </div>
+              <p className="text-xs text-muted-foreground ml-6">
+                Recommended for better water retention (16mm gap deduction instead of 10mm).
               </p>
             </div>
           )}

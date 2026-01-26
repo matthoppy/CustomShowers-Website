@@ -7,8 +7,8 @@ export type GlassType = 'clear' | 'frosted' | 'tinted';
 export type GlassThickness = 8 | 10 | 12;
 export type ConfigurationType = 'inline' | 'corner' | 'wetroom' | 'walk-in';
 export type DoorType = 'hinged' | 'sliding' | 'pivot' | 'fixed';
-export type DoorOpening = 'inward' | 'outward' | 'left' | 'right';
-export type HardwareFinish = 'chrome' | 'brushed-nickel' | 'matte-black' | 'gold';
+export type DoorOpening = 'inward' | 'outward' | 'left' | 'right' | 'both';
+export type HardwareFinish = 'chrome' | 'brushed-nickel' | 'matte-black' | 'gold' | 'polished-brass' | 'oil-rubbed-bronze' | 'brushed-bronze' | 'gun-metal' | 'polished-nickel' | 'satin-brass' | 'unlacquered-brass' | 'antic-brass' | 'satin-chrome' | 'satin-nickel';
 export type DesignStatus = 'draft' | 'quoted' | 'ordered' | 'archived';
 
 export interface Measurements {

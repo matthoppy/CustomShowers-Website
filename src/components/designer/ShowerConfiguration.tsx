@@ -1,447 +1,467 @@
-import { PanelFixed } from './PanelFixed';
+import { useState } from 'react';
+import { PanelFixed, PanelShapeProfile, PanelSegment } from './PanelFixed';
 import { PanelDoor } from './PanelDoor';
 import { Hinge } from './Hinge';
 import { Handle } from './Handle';
-import { Channel } from './Channel';
+import { DimensionLines, SegmentDimensions } from './DimensionLines';
+// import { Channel } from './Channel'; // Removed as it is not used directly here
 
-export type ShowerTemplateType = 
-  | 'single-door' 
-  | 'double-door' 
-  | 'left-panel' 
-  | 'right-panel' 
-  | 'three-panel' 
-  | 'corner-left' 
-  | 'corner-right' 
-  | '90-return' 
-  | '90-return-left' 
-  | '90-return-right' 
-  | 'angled-ceiling';
+export type DoorVariant = 'left' | 'right' | 'double';
+export type ConfigurationCategory = 'inline' | 'square' | 'quadrant';
+// Adding ShowerTemplateType alias as it seems to be expected by the wrapper
+export type ShowerTemplateType = string;
 
-interface ShowerConfigurationProps {
-  type: ShowerTemplateType;
-  width?: number;
-  height?: number;
+
+import type { MountingType } from '@/lib/templates';
+
+export interface ShowerPanelDefinition {
+  id: string;
+  type: 'door' | 'fixed' | 'return';
+  width: number;
+  height: number;
+  x: number;
+  y: number;
+  orientation?: 'front' | 'left' | 'right';
+  topRake?: { drop: number; direction: 'left' | 'right' };
+  channels?: ('bottom' | 'left' | 'right' | 'top')[];
+  useClampsMode?: boolean;
+  hingePositions?: number[];
+  clampEdge?: 'left' | 'right' | 'center';
 }
 
-export function ShowerConfiguration({ 
-  type, 
-  width = 320, 
-  height = 400 
+interface ShowerConfigurationProps {
+  category: ConfigurationCategory;
+  baseType: string;
+  doorVariant?: DoorVariant;
+  mountingType?: MountingType; // Replaces useClampsMode
+  mountingSide?: 'left' | 'right'; // New prop for side-specific mounting
+  width?: number;
+  height?: number;
+  realWidthMm?: number; // New: Actual width to display in dimension labels
+  realHeightMm?: number; // New: Actual height to display in dimension labels
+  onWidthClick?: () => void; // New: Callback when width label is clicked
+  onHeightClick?: () => void; // New: Callback when height label is clicked
+  floorRake?: { amount: number; direction: 'left' | 'right' };
+  wallRake?: { amount: number; direction: 'in' | 'out' };
+  notches?: Array<{ corner: string; widthMm: number; heightMm: number }>;
+  panels?: ShowerPanelDefinition[]; // New prop for dynamic panels
+  shapeProfile?: PanelShapeProfile;
+  slopedTop?: { leftMm: number; rightMm: number };
+  isFloorToCeiling?: boolean;
+  isActive?: boolean;
+}
+
+export function ShowerConfiguration({
+  category,
+  baseType,
+  doorVariant = 'right',
+  mountingType = 'channel', // Default to channel
+  mountingSide = 'left', // Default to left wall
+  width = 320,
+  height = 400,
+  realWidthMm,
+  realHeightMm,
+  onWidthClick,
+  onHeightClick,
+  floorRake,
+  wallRake,
+  notches = [],
+  panels = [],
+  shapeProfile = 'standard',
+  slopedTop,
+  isFloorToCeiling = false,
+  isActive = false,
 }: ShowerConfigurationProps) {
-  const panelHeight = 260;
-  const panelWidth = 90;
+  const [segments, setSegments] = useState<PanelSegment[]>([]);
+
+  // Calculate scaling (Reference: 2000mm height -> 260px height)
+
+  const scale = 0.13;
+  const panelHeight = realHeightMm ? Math.max(100, Math.min(300, realHeightMm * scale)) : 260;
+  const panelWidth = realWidthMm ? Math.max(50, Math.min(220, realWidthMm * scale)) : 90;
+
   const startX = (width - panelWidth) / 2;
-  const startY = (height - panelHeight) / 2 + 20;
+  const startY = (height - panelHeight) / 2 - 5; // Centered vertically, offset for labels below
 
-  const renderConfiguration = () => {
-    switch (type) {
-      case 'single-door':
-        return (
-          <>
-            <PanelDoor width={panelWidth} height={panelHeight} x={startX} y={startY} />
-            <Hinge x={startX} y={startY + 30} orientation="left" type="wall" />
-            <Hinge x={startX} y={startY + 220} orientation="left" type="wall" />
-            <Handle x={startX + panelWidth} y={startY + panelHeight / 2 - 20 + panelHeight * 0.10} orientation="right" />
-          </>
-        );
+  // ... (inside render method or main function)
+  if (panels && panels.length > 0) {
+    return (
+      <g>
+        {panels.map((p) => {
+          if (p.type === 'fixed') {
+            return (
+              <PanelFixed
+                key={p.id}
+                width={p.width}
+                height={p.height}
+                x={p.x}
+                y={p.y}
+                orientation={p.orientation}
+                channels={p.channels}
+                useClampsMode={mountingType === 'clamps'} // Force override or use panel specific? Using override for consistency
+                hingePositions={p.hingePositions}
+                clampEdge={p.clampEdge}
+                topRake={p.topRake}
+              />
+            );
+          } else if (p.type === 'door') {
+            // Door logic - similar but simplified for now (no rake on door usually, or same logic)
+            return (
+              <PanelDoor
+                key={p.id}
+                width={p.width}
+                height={p.height}
+                x={p.x}
+                y={p.y}
+                orientation={p.orientation === 'left' ? 'left' : 'front'} // Map generic orientation
+              />
+            );
+          }
+          return null;
+        })}
+        {/* Render Hinges/Handles separately or include in definition? for now separate or assume standard */}
+      </g>
+    );
+  }
 
-      case 'double-door':
-        return (
-          <>
-            <PanelDoor width={panelWidth} height={panelHeight} x={startX - panelWidth / 2} y={startY} />
-            <PanelFixed width={panelWidth} height={panelHeight} x={startX + panelWidth / 2} y={startY} channels={['bottom', 'right']} />
-            <Hinge x={startX - panelWidth / 2} y={startY + 30} orientation="left" type="wall" />
-            <Hinge x={startX - panelWidth / 2} y={startY + 220} orientation="left" type="wall" />
-            <Handle x={startX - panelWidth / 2 + panelWidth} y={startY + panelHeight / 2 - 20 + panelHeight * 0.10} orientation="right" />
-          </>
-        );
-
-      case 'left-panel':
-        return (
-          <>
-            <PanelDoor width={panelWidth} height={panelHeight} x={startX - panelWidth / 2} y={startY} />
-            <PanelFixed width={panelWidth} height={panelHeight * 0.75} x={startX + panelWidth / 2} y={startY} channels={['bottom', 'right']} />
-            <Hinge x={startX - panelWidth / 2} y={startY + 30} orientation="left" type="wall" />
-            <Hinge x={startX - panelWidth / 2} y={startY + 220} orientation="left" type="wall" />
-            <Handle x={startX - panelWidth / 2 + panelWidth} y={startY + panelHeight / 2 - 20 + panelHeight * 0.10} orientation="right" />
-          </>
-        );
-
-      case 'right-panel':
-        return (
-          <>
-            <PanelDoor width={panelWidth} height={panelHeight} x={startX - panelWidth / 2} y={startY} />
-            {/* Custom stepped fixed panel - full height on left, notched down on right */}
-            <g transform={`translate(${startX + panelWidth / 2}, ${startY})`}>
-              {/* Main glass panel with stepped shape */}
-              <path
-                d={`M 0 0 L ${panelWidth} 0 L ${panelWidth} ${panelHeight * 0.75} L ${panelWidth / 2} ${panelHeight * 0.75} L ${panelWidth / 2} ${panelHeight} L 0 ${panelHeight} Z`}
-                fill="#C5D9C9"
-                stroke="#8B9D8F"
-                strokeWidth="1.5"
-              />
-              {/* Bottom channel - runs continuously across both sections */}
-              <rect
-                x="0"
-                y={panelHeight - 2}
-                width={panelWidth / 2}
-                height={2}
-                fill="#A0A0A0"
-                stroke="#707070"
-                strokeWidth="0.5"
-              />
-              <rect
-                x={panelWidth / 2}
-                y={panelHeight * 0.75 - 2}
-                width={panelWidth / 2}
-                height={2}
-                fill="#A0A0A0"
-                stroke="#707070"
-                strokeWidth="0.5"
-              />
-              {/* Right channel on notched section */}
-              <rect
-                x={panelWidth - 2}
-                y="0"
-                width={2}
-                height={panelHeight * 0.75 - 2}
-                fill="#A0A0A0"
-                stroke="#707070"
-                strokeWidth="0.5"
-              />
-              {/* Vertical channel on step - sits on bottom channel */}
-              <rect
-                x={panelWidth / 2}
-                y={panelHeight * 0.75}
-                width={2}
-                height={panelHeight * 0.25 - 2}
-                fill="#A0A0A0"
-                stroke="#707070"
-                strokeWidth="0.5"
-              />
-            </g>
-            <Hinge x={startX - panelWidth / 2} y={startY + 30} orientation="left" type="wall" />
-            <Hinge x={startX - panelWidth / 2} y={startY + 220} orientation="left" type="wall" />
-            <Handle x={startX - panelWidth / 2 + panelWidth} y={startY + panelHeight / 2 - 20 + panelHeight * 0.10} orientation="right" />
-          </>
-        );
-
-      case 'three-panel':
-        return (
-          <>
-            <PanelFixed width={panelWidth * 0.6} height={panelHeight} x={startX - panelWidth * 0.8} y={startY} channels={['bottom', 'left']} />
-            <PanelDoor width={panelWidth * 0.8} height={panelHeight} x={startX - panelWidth * 0.2} y={startY} />
-            <PanelFixed width={panelWidth * 0.6} height={panelHeight} x={startX + panelWidth * 0.6} y={startY} channels={['bottom', 'right']} />
-            <Hinge x={startX - panelWidth * 0.2} y={startY + 30} orientation="left" type="glass" />
-            <Hinge x={startX - panelWidth * 0.2} y={startY + 220} orientation="left" type="glass" />
-            <Handle x={startX + panelWidth * 0.6} y={startY + panelHeight / 2 - 20} orientation="right" />
-          </>
-        );
-
-      case 'corner-left':
-        return (
-          <>
-            <PanelFixed width={panelWidth * 0.6} height={panelHeight * 0.75} x={startX - panelWidth * 0.8} y={startY} channels={['bottom', 'left']} />
-            <PanelDoor width={panelWidth * 0.8} height={panelHeight} x={startX - panelWidth * 0.2} y={startY} />
-            <PanelFixed width={panelWidth * 0.6} height={panelHeight * 0.75} x={startX + panelWidth * 0.6} y={startY} channels={['bottom', 'right']} />
-            <Hinge x={startX - panelWidth * 0.2} y={startY + 30} orientation="left" type="glass" />
-            <Hinge x={startX - panelWidth * 0.2} y={startY + 220} orientation="left" type="wall" />
-            <Handle x={startX + panelWidth * 0.6} y={startY + panelHeight / 2 - 20 + panelHeight * 0.10} orientation="right" />
-          </>
-        );
-
-      case 'corner-right':
-        return (
-          <>
-            {/* Left fixed panel with stepped notch - flipped: notched on left, full height on right */}
-            <g transform={`translate(${startX - panelWidth * 0.8}, ${startY})`}>
-              <path
-                d={`M 0 ${panelHeight * 0.75} L 0 0 L ${panelWidth * 0.6} 0 L ${panelWidth * 0.6} ${panelHeight} L ${panelWidth * 0.3} ${panelHeight} L ${panelWidth * 0.3} ${panelHeight * 0.75} Z`}
-                fill="#C5D9C9"
-                stroke="#8B9D8F"
-                strokeWidth="1.5"
-              />
-              {/* Bottom channel - runs continuously across both sections */}
-              <rect
-                x="0"
-                y={panelHeight * 0.75 - 2}
-                width={panelWidth * 0.3}
-                height={2}
-                fill="#A0A0A0"
-                stroke="#707070"
-                strokeWidth="0.5"
-              />
-              <rect
-                x={panelWidth * 0.3}
-                y={panelHeight - 2}
-                width={panelWidth * 0.3}
-                height={2}
-                fill="#A0A0A0"
-                stroke="#707070"
-                strokeWidth="0.5"
-              />
-              {/* Left channel - at wall edge, only on tall section */}
-              <rect
-                x="0"
-                y="0"
-                width={2}
-                height={panelHeight * 0.75 - 2}
-                fill="#A0A0A0"
-                stroke="#707070"
-                strokeWidth="0.5"
-              />
-              {/* Right channel - full height */}
-              <rect
-                x={panelWidth * 0.6 - 2}
-                y="0"
-                width={2}
-                height={panelHeight - 2}
-                fill="#A0A0A0"
-                stroke="#707070"
-                strokeWidth="0.5"
-              />
-              {/* Vertical channel on step - sits on bottom channel */}
-              <rect
-                x={panelWidth * 0.3}
-                y={panelHeight * 0.75}
-                width={2}
-                height={panelHeight * 0.25 - 2}
-                fill="#A0A0A0"
-                stroke="#707070"
-                strokeWidth="0.5"
-              />
-            </g>
-            
-            <PanelDoor width={panelWidth * 0.8} height={panelHeight} x={startX - panelWidth * 0.2} y={startY} />
-            
-            {/* Right fixed panel with stepped notch - flipped: full height on left, notched on right */}
-            <g transform={`translate(${startX + panelWidth * 0.6}, ${startY})`}>
-              <path
-                d={`M 0 0 L ${panelWidth * 0.6} 0 L ${panelWidth * 0.6} ${panelHeight * 0.75} L ${panelWidth * 0.3} ${panelHeight * 0.75} L ${panelWidth * 0.3} ${panelHeight} L 0 ${panelHeight} Z`}
-                fill="#C5D9C9"
-                stroke="#8B9D8F"
-                strokeWidth="1.5"
-              />
-              {/* Bottom channel - runs continuously across both sections */}
-              <rect
-                x="0"
-                y={panelHeight - 2}
-                width={panelWidth * 0.3}
-                height={2}
-                fill="#A0A0A0"
-                stroke="#707070"
-                strokeWidth="0.5"
-              />
-              <rect
-                x={panelWidth * 0.3}
-                y={panelHeight * 0.75 - 2}
-                width={panelWidth * 0.3}
-                height={2}
-                fill="#A0A0A0"
-                stroke="#707070"
-                strokeWidth="0.5"
-              />
-              {/* Left channel - full height */}
-              <rect
-                x="0"
-                y="0"
-                width={2}
-                height={panelHeight - 2}
-                fill="#A0A0A0"
-                stroke="#707070"
-                strokeWidth="0.5"
-              />
-              {/* Right channel - at wall edge, only on tall section */}
-              <rect
-                x={panelWidth * 0.6 - 2}
-                y="0"
-                width={2}
-                height={panelHeight * 0.75 - 2}
-                fill="#A0A0A0"
-                stroke="#707070"
-                strokeWidth="0.5"
-              />
-              {/* Vertical channel on step - sits on bottom channel */}
-              <rect
-                x={panelWidth * 0.3}
-                y={panelHeight * 0.75}
-                width={2}
-                height={panelHeight * 0.25 - 2}
-                fill="#A0A0A0"
-                stroke="#707070"
-                strokeWidth="0.5"
-              />
-            </g>
-            
-            <Hinge x={startX - panelWidth * 0.2} y={startY + 30} orientation="left" type="glass" />
-            <Hinge x={startX - panelWidth * 0.2} y={startY + 220} orientation="left" type="glass" />
-            <Handle x={startX + panelWidth * 0.6} y={startY + panelHeight / 2 - 20 + panelHeight * 0.10} orientation="right" />
-          </>
-        );
-
-      case '90-return':
-        return (
-          <>
-            {/* Front door panel */}
-            <PanelDoor
+  // Fallback to existing renderContent
+  const renderContent = () => {
+    // --- INLINE CONFIGURATIONS ---
+    if (category === 'inline') {
+      switch (baseType) {
+        case 'fixed-panel':
+          return (
+            <PanelFixed
               width={panelWidth}
               height={panelHeight}
               x={startX}
               y={startY}
+              channels={mountingType === 'clamps' ? [] : [
+                ...(mountingSide === 'left' ? ['left' as const] : ['right' as const]),
+                'bottom' as const,
+                ...(isFloorToCeiling ? ['top' as const] : [])
+              ]}
+              useClampsMode={mountingType === 'clamps'}
+              hingePositions={[40, panelHeight - 40]} // Standard clamp positions
+              clampEdge={mountingSide}
+              bottomRake={floorRake}
+              slopedTop={slopedTop}
+              shapeProfile={shapeProfile}
+              isFloorToCeiling={isFloorToCeiling}
+              isActive={isActive}
+              onSegmentsUpdate={setSegments}
             />
-            
-            {/* Wall hinges on the left side of the door */}
-            <Hinge x={startX} y={startY + 40} orientation="left" type="wall" />
-            <Hinge x={startX} y={startY + panelHeight - 52} orientation="left" type="wall" />
-            
-            {/* Handle on the right side of the door */}
-            <Handle x={startX + panelWidth} y={startY + panelHeight / 2 - 20} orientation="right" />
-            
-            {/* Return panel angled back at 90 degrees - positioned to touch door's right edge */}
-            <PanelFixed 
-              width={panelWidth * 0.8} 
-              height={panelHeight} 
-              x={startX + panelWidth} 
-              y={startY} 
-              orientation="right"
-              channels={['bottom', 'right']}
-            />
-          </>
-        );
+          );
 
-      case '90-return-left':
-        return (
-          <>
-            {/* Door panel */}
-            <PanelDoor
-              width={panelWidth}
-              height={panelHeight}
-              x={startX}
-              y={startY}
-            />
-            
-            {/* Wall hinges on the left side of the door */}
-            <Hinge x={startX} y={startY + 40} orientation="left" type="wall" />
-            <Hinge x={startX} y={startY + panelHeight - 52} orientation="left" type="wall" />
-            
-            {/* Handle on the right side of the door */}
-            <Handle x={startX + panelWidth} y={startY + panelHeight / 2 - 20} orientation="right" />
-            
-            {/* Return panel angled back at 90 degrees - goes off to the left */}
-            <PanelFixed 
-              width={panelWidth * 0.8} 
-              height={panelHeight} 
-              x={startX} 
-              y={startY} 
-              orientation="left"
-              channels={['bottom', 'left']}
-            />
-            
-            {/* 90-degree hinges along the seam between door and angled panel */}
-            <Hinge x={startX} y={startY + 40} orientation="left" type="90-degree" />
-            <Hinge x={startX} y={startY + panelHeight - 52} orientation="left" type="90-degree" />
-          </>
-        );
+        case 'single':
+          // Simple single door
+          const hingeX = doorVariant === 'left' ? startX : startX + panelWidth;
+          const hingeOrientation = doorVariant === 'left' ? 'left' : 'right'; // Hinges on wall
 
-      case '90-return-right':
-        return (
-          <>
-            {/* Door panel */}
-            <PanelDoor
-              width={panelWidth}
-              height={panelHeight}
-              x={startX}
-              y={startY}
-            />
-            
-            {/* Handle on the left side of the door */}
-            <Handle x={startX} y={startY + panelHeight / 2 - 20} orientation="left" />
-            
-            {/* Return panel angled back at 90 degrees - goes off to the right */}
-            <PanelFixed 
-              width={panelWidth * 0.8} 
-              height={panelHeight} 
-              x={startX + panelWidth} 
-              y={startY} 
-              orientation="right"
-              channels={['bottom', 'right']}
-            />
-            
-            {/* 90-degree hinges along the seam between door and angled panel */}
-            <Hinge x={startX + panelWidth} y={startY + 40} orientation="right" type="90-degree" />
-            <Hinge x={startX + panelWidth} y={startY + panelHeight - 52} orientation="right" type="90-degree" />
-          </>
-        );
+          return (
+            <>
+              <PanelDoor
+                width={panelWidth}
+                height={panelHeight}
+                x={startX}
+                y={startY}
+                orientation={doorVariant === 'left' ? 'left' : 'front'} // Just for visual distinction if needed
+              />
+              <Hinge x={hingeX} y={startY + 40} orientation={hingeOrientation} type="wall" />
+              <Hinge x={hingeX} y={startY + panelHeight - 40} orientation={hingeOrientation} type="wall" />
+              <Handle
+                x={doorVariant === 'left' ? startX + panelWidth : startX}
+                y={startY + panelHeight / 2}
+                orientation={doorVariant === 'left' ? 'right' : 'left'}
+              />
+            </>
+          );
 
-      case 'angled-ceiling':
-        return (
-          <>
-            {/* Front door panel */}
-            <PanelDoor
-              width={panelWidth}
-              height={panelHeight}
-              x={startX}
-              y={startY}
-            />
-            
-            {/* Wall hinges on the left side of the door */}
-            <Hinge x={startX} y={startY + 40} orientation="left" type="wall" />
-            <Hinge x={startX} y={startY + panelHeight - 52} orientation="left" type="wall" />
-            
-            {/* Handle on the right side of the door */}
-            <Handle x={startX + panelWidth} y={startY + panelHeight / 2 - 20} orientation="right" />
-            
-            {/* Fixed panel with angled top edge (ceiling slope) */}
-            <g transform={`translate(${startX + panelWidth}, ${startY})`}>
-              {/* Main glass panel with angled top */}
-              <path
-                d={`M 0 0 L ${panelWidth * 0.8} ${panelHeight * 0.4} L ${panelWidth * 0.8} ${panelHeight} L 0 ${panelHeight} Z`}
-                fill="#C5D9C9"
-                stroke="#8B9D8F"
-                strokeWidth="1.5"
+        case 'panel-and-door':
+          // Fixed Panel + Door
+          // If door is right: Fixed(Left) + Door(Right)
+          // If door is left: Door(Left) + Fixed(Right) (equivalent to door-and-panel visually, but logic might differ)
+          // Standard: Fixed on Left, Door on Right
+          return (
+            <>
+              <PanelFixed
+                width={panelWidth}
+                height={panelHeight}
+                x={startX - panelWidth}
+                y={startY}
+                channels={['bottom', 'left']}
+                useClampsMode={mountingType === 'clamps'}
+                hingePositions={[40, panelHeight - 40]}
+                clampEdge="left"
               />
-              {/* Bottom channel */}
-              <rect
-                x="0"
-                y={panelHeight - 2}
-                width={panelWidth * 0.8}
-                height={2}
-                fill="#A0A0A0"
-                stroke="#707070"
-                strokeWidth="0.5"
+              <PanelDoor
+                width={panelWidth}
+                height={panelHeight}
+                x={startX}
+                y={startY}
               />
-              {/* Right channel */}
-              <rect
-                x={panelWidth * 0.8 - 2}
-                y={panelHeight * 0.4}
-                width={2}
-                height={panelHeight * 0.6 - 2}
-                fill="#A0A0A0"
-                stroke="#707070"
-                strokeWidth="0.5"
-              />
-              {/* Angled top channel (follows ceiling slope) */}
-              <line
-                x1="0"
-                y1="0"
-                x2={panelWidth * 0.8}
-                y2={panelHeight * 0.4}
-                stroke="#707070"
-                strokeWidth="2"
-                fill="none"
-              />
-            </g>
-          </>
-        );
+              {/* Hinges connect door to fixed panel */}
+              <Hinge x={startX} y={startY + 40} orientation="left" type="glass" />
+              <Hinge x={startX} y={startY + panelHeight - 40} orientation="left" type="glass" />
+              <Handle x={startX + panelWidth} y={startY + panelHeight / 2} orientation="right" />
+            </>
+          );
 
-      default:
-        return null;
+        case 'door-and-panel':
+          // Door + Fixed Panel
+          // Standard: Door on Left, Fixed on Right
+          return (
+            <>
+              <PanelDoor
+                width={panelWidth}
+                height={panelHeight}
+                x={startX - panelWidth}
+                y={startY}
+              />
+              <PanelFixed
+                width={panelWidth}
+                height={panelHeight}
+                x={startX}
+                y={startY}
+                channels={['bottom', 'right']}
+                useClampsMode={mountingType === 'clamps'}
+                hingePositions={[40, panelHeight - 40]}
+                clampEdge="right"
+              />
+              {/* Hinges connect door to fixed panel */}
+              <Hinge x={startX} y={startY + 40} orientation="right" type="glass" />
+              <Hinge x={startX} y={startY + panelHeight - 40} orientation="right" type="glass" />
+              <Handle x={startX - panelWidth} y={startY + panelHeight / 2} orientation="left" />
+            </>
+          );
+
+        case 'center-door':
+          // Fixed + Door + Fixed
+          const sidePanelWidth = panelWidth * 0.75;
+          return (
+            <>
+              <PanelFixed
+                width={sidePanelWidth}
+                height={panelHeight}
+                x={startX - sidePanelWidth}
+                y={startY}
+                channels={['bottom', 'left']}
+                useClampsMode={mountingType === 'clamps'}
+                hingePositions={[40, panelHeight - 40]}
+                clampEdge="left"
+              />
+              <PanelDoor
+                width={panelWidth}
+                height={panelHeight}
+                x={startX}
+                y={startY}
+              />
+              <PanelFixed
+                width={sidePanelWidth}
+                height={panelHeight}
+                x={startX + panelWidth}
+                y={startY}
+                channels={['bottom', 'right']}
+                useClampsMode={mountingType === 'clamps'}
+                hingePositions={[40, panelHeight - 40]}
+                clampEdge="right"
+              />
+              {/* Hinges on left side of door (connecting to left fixed) */}
+              <Hinge x={startX} y={startY + 40} orientation="left" type="glass" />
+              <Hinge x={startX} y={startY + panelHeight - 40} orientation="left" type="glass" />
+              <Handle x={startX + panelWidth} y={startY + panelHeight / 2} orientation="right" />
+            </>
+          );
+
+        default:
+          return <text x="50%" y="50%" textAnchor="middle">Unknown Inline Type</text>;
+      }
     }
+
+    // --- SQUARE CONFIGURATIONS ---
+    if (category === 'square') {
+      const returnPanelWidth = panelWidth * 0.8;
+
+      switch (baseType) {
+        case 'l-left':
+          // Return Left + Door
+          return (
+            <>
+              {/* Return Panel (Left) */}
+              <PanelFixed
+                width={returnPanelWidth}
+                height={panelHeight}
+                x={startX}
+                y={startY}
+                orientation="left"
+                channels={['bottom', 'left']}
+                useClampsMode={mountingType === 'clamps'}
+                hingePositions={[40, panelHeight - 40]}
+                clampEdge="left"
+              />
+              {/* Door */}
+              <PanelDoor
+                width={panelWidth}
+                height={panelHeight}
+                x={startX}
+                y={startY}
+              />
+              {/* Corner Hinges (90 degree) */}
+              <Hinge x={startX} y={startY + 40} orientation="left" type="90-degree" />
+              <Hinge x={startX} y={startY + panelHeight - 40} orientation="left" type="90-degree" />
+              <Handle x={startX + panelWidth} y={startY + panelHeight / 2} orientation="right" />
+            </>
+          );
+
+        case 'l-right':
+          // Door + Return Right
+          return (
+            <>
+              {/* Door */}
+              <PanelDoor
+                width={panelWidth}
+                height={panelHeight}
+                x={startX}
+                y={startY}
+              />
+              {/* Return Panel (Right) */}
+              <PanelFixed
+                width={returnPanelWidth}
+                height={panelHeight}
+                x={startX + panelWidth}
+                y={startY}
+                orientation="right"
+                channels={['bottom', 'right']}
+                useClampsMode={mountingType === 'clamps'}
+                hingePositions={[40, panelHeight - 40]}
+                clampEdge="right"
+              />
+              {/* Corner Hinges (90 degree) */}
+              <Hinge x={startX + panelWidth} y={startY + 40} orientation="right" type="90-degree" />
+              <Hinge x={startX + panelWidth} y={startY + panelHeight - 40} orientation="right" type="90-degree" />
+              <Handle x={startX} y={startY + panelHeight / 2} orientation="left" />
+            </>
+          );
+
+        case 'fixed-door-return-left':
+          // Return Left + Fixed + Door
+          // Logic: Return Left attaches to... ? Usually Return Left attaches to Fixed Panel
+          // Layout: Return(L) -> Fixed -> Door
+          return (
+            <>
+              {/* Return Panel (Left) */}
+              <PanelFixed
+                width={returnPanelWidth}
+                height={panelHeight}
+                x={startX - panelWidth}
+                y={startY}
+                orientation="left"
+                channels={['bottom', 'left']}
+                useClampsMode={mountingType === 'clamps'}
+                hingePositions={[40, panelHeight - 40]}
+                clampEdge="left"
+              />
+              {/* Fixed Panel */}
+              <PanelFixed
+                width={panelWidth}
+                height={panelHeight}
+                x={startX - panelWidth}
+                y={startY}
+                channels={['bottom']} // No side channels where it meets return/door
+                useClampsMode={mountingType === 'clamps'}
+                hingePositions={[40, panelHeight - 40]}
+                clampEdge="center"
+              />
+              {/* Door */}
+              <PanelDoor
+                width={panelWidth}
+                height={panelHeight}
+                x={startX}
+                y={startY}
+              />
+              {/* Corner Clamp/Hinge for Return-Fixed connection? Usually a bracket or silicone */}
+              {/* Use 90-degree hinge visual for corner connection */}
+              <Hinge x={startX - panelWidth} y={startY + 40} orientation="left" type="return-fixed" />
+              <Hinge x={startX - panelWidth} y={startY + panelHeight - 40} orientation="left" type="return-fixed" />
+
+              {/* Glass-Glass Hinges for Fixed-Door */}
+              <Hinge x={startX} y={startY + 40} orientation="left" type="glass" />
+              <Hinge x={startX} y={startY + panelHeight - 40} orientation="left" type="glass" />
+
+              <Handle x={startX + panelWidth} y={startY + panelHeight / 2} orientation="right" />
+            </>
+          );
+
+        // Add more square cases as needed based on the list
+        // Implementing a generic fallback for other square types to show *something*
+        default:
+          // Simple placeholder for complex types
+          return (
+            <>
+              <text x={width / 2} y={height / 2} textAnchor="middle" fontSize="10" fill="#888">
+                {baseType} (Visual Placeholder)
+              </text>
+              {/* Just render a box to show bounds */}
+              <rect x={startX} y={startY} width={panelWidth} height={panelHeight} fill="none" stroke="#ccc" />
+            </>
+          );
+      }
+    }
+
+    // --- QUADRANT CONFIGURATIONS ---
+    if (category === 'quadrant') {
+      // Placeholder for quadrant logic
+      return (
+        <text x={width / 2} y={height / 2} textAnchor="middle" fill="#888">
+          Quadrant: {baseType}
+        </text>
+      );
+    }
+
+    return null;
   };
 
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-      {renderConfiguration()}
-    </svg>
+    <div className="flex flex-col items-center justify-center w-full h-full min-h-[450px]">
+      <svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full h-full max-w-[450px]"
+        style={{ overflow: 'visible' }}
+      >
+        <g transform="scale(1.1) translate(-15, -35)">
+          {renderContent()}
+
+          {/* Extra dimensions for complex profiles */}
+          {segments.length > 0 && shapeProfile !== 'standard' && (
+            <SegmentDimensions
+              segments={segments.filter(seg => {
+                // Heuristic: filter out segments that coincide with main boundaries
+                const isMainWidth = Math.abs(seg.y1 - seg.y2) < 1 && (seg.y1 < 10 || Math.abs(seg.y1 - panelHeight) < 10);
+                const isMainHeight = Math.abs(seg.x1 - seg.x2) < 1 && (seg.x1 < 10 || Math.abs(seg.x1 - panelWidth) < 10);
+                return !(isMainWidth || isMainHeight);
+              })}
+            />
+          )}
+
+          {/* Main Dimension Lines */}
+          {(realWidthMm || realHeightMm) && (
+            <DimensionLines
+              x={startX}
+              y={startY}
+              width={panelWidth}
+              height={panelHeight}
+              widthValue={realWidthMm || 0}
+              heightValue={realHeightMm || 0}
+              onWidthClick={onWidthClick}
+              onHeightClick={onHeightClick}
+              editable={false}
+            />
+          )}
+        </g>
+      </svg>
+    </div>
   );
 }
+

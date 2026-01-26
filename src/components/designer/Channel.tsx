@@ -5,15 +5,15 @@ interface ChannelProps {
   type?: 'top' | 'bottom';
 }
 
-export function Channel({ 
-  width = 80, 
-  x = 0, 
+export function Channel({
+  width = 80,
+  x = 0,
   y = 0,
   type = 'top'
 }: ChannelProps) {
   const depth = 4;
   const channelHeight = 6;
-  
+
   return (
     <g transform={`translate(${x}, ${y})`}>
       {/* Channel front face */}

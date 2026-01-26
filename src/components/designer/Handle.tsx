@@ -8,7 +8,7 @@ export function Handle({ x = 0, y = 0, orientation = 'left' }: HandleProps) {
   const offsetX = orientation === 'right' ? -12 : 12;
   const handleWidth = 3;
   const handleHeight = 40;
-  
+
   return (
     <g transform={`translate(${x}, ${y})`}>
       {/* Handle bar */}

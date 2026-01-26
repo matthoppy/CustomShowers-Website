@@ -16,8 +16,8 @@ import { Separator } from '@/components/ui/separator';
 import { RotateCcw, Download, Save, ArrowLeft, ArrowRight } from 'lucide-react';
 
 type DoorSwing = 'in' | 'out' | 'in-out';
-type HandleType = 'knob' | 'pull';
-type ThresholdType = 'standard' | 'low-profile' | 'flush';
+type HandleType = 'knob' | 'pull' | 'sph8' | 'victorian' | 'sq8' | 'bowtie' | 'paddle' | 'crescent' | 'ez-grip';
+type ThresholdType = 'standard' | 'low-profile' | 'flush' | 'half-round';
 type FloorRakeDirection = 'none' | 'left' | 'right';
 type WallRakeDirection = 'none' | 'in' | 'out';
 
@@ -27,6 +27,7 @@ interface DesignState {
   templateType: ShowerTemplateType | null;
   doorSwing: DoorSwing;
   handleType: HandleType;
+  mountingType: 'channel' | 'clamps';
   thresholdType: ThresholdType;
   width: number;
   height: number;
@@ -44,7 +45,8 @@ export default function DesignerDesktopNew() {
   const [design, setDesign] = useState<DesignState>({
     templateType: null,
     doorSwing: 'out',
-    handleType: 'pull',
+    handleType: 'sph8', // Default to the new handle
+    mountingType: 'channel',
     thresholdType: 'standard',
     width: 900,
     height: 2000,
@@ -87,8 +89,8 @@ export default function DesignerDesktopNew() {
 
   const handleTemplateSelect = (type: ShowerTemplateType) => {
     const defaultDims = getDefaultDimensions(type);
-    const newDesign = { 
-      ...design, 
+    const newDesign = {
+      ...design,
       templateType: type,
       width: defaultDims.width,
       height: defaultDims.height,
@@ -113,6 +115,7 @@ export default function DesignerDesktopNew() {
         ...design,
         doorSwing: 'out',
         handleType: 'pull',
+        mountingType: 'channel',
         thresholdType: 'standard',
         width: defaultDims.width,
         height: defaultDims.height,
@@ -130,6 +133,7 @@ export default function DesignerDesktopNew() {
         templateType: null,
         doorSwing: 'out',
         handleType: 'pull',
+        mountingType: 'channel',
         thresholdType: 'standard',
         width: 900,
         height: 2000,
@@ -222,14 +226,18 @@ export default function DesignerDesktopNew() {
                       type={design.templateType}
                       width={design.width}
                       height={design.height}
+                      mountingType={design.mountingType}
                       doorSwing={design.doorSwing}
                       floorRake={design.floorRake}
                       floorRakeDirection={design.floorRakeDirection}
                       leftWallRake={design.leftWallRake}
                       leftWallRakeDirection={design.leftWallRakeDirection}
-                      showNotch={design.showNotch}
-                      notchWidth={design.notchWidth}
-                      notchHeight={design.notchHeight}
+                      notches={design.showNotch ? [{
+                        panel: 'panel-door', // defaulting to door for this simple toggle
+                        corner: 'bottom-left', // defaulting to bottom-left
+                        widthMm: design.notchWidth,
+                        heightMm: design.notchHeight
+                      }] : []}
                       onDimensionsChange={(width, height) => {
                         handleDesignChange({ width, height });
                       }}
@@ -250,7 +258,7 @@ export default function DesignerDesktopNew() {
           <div className="p-6 space-y-6">
             <div>
               <h2 className="text-lg font-semibold text-slate-900 mb-4">Design Configuration</h2>
-              
+
               {!design.templateType && (
                 <Card>
                   <CardContent className="pt-6">
@@ -269,8 +277,8 @@ export default function DesignerDesktopNew() {
                       <CardTitle className="text-sm font-semibold">Door Direction</CardTitle>
                     </CardHeader>
                     <CardContent className="pt-4">
-                      <RadioGroup 
-                        value={design.doorSwing} 
+                      <RadioGroup
+                        value={design.doorSwing}
                         onValueChange={(value) => handleDesignChange({ doorSwing: value as DoorSwing })}
                       >
                         <div className="flex items-center space-x-2 py-2">
@@ -293,7 +301,7 @@ export default function DesignerDesktopNew() {
                         </div>
                       </RadioGroup>
                       <p className="text-xs text-slate-500 mt-3">
-                        {design.doorSwing === 'in-out' 
+                        {design.doorSwing === 'in-out'
                           ? 'Door swings both directions. Bubble seal will be shown on door edge.'
                           : 'Door swings one direction. H-seal will be shown on fixed panel edge.'}
                       </p>
@@ -341,14 +349,90 @@ export default function DesignerDesktopNew() {
 
                   <Separator />
 
+                  {/* Mounting Type */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm">Mounting Method</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <RadioGroup
+                        value={design.mountingType}
+                        onValueChange={(value) => handleDesignChange({ mountingType: value as 'channel' | 'clamps' })}
+                      >
+                        <div className="flex items-center space-x-2 py-2">
+                          <RadioGroupItem value="channel" id="mount-channel" />
+                          <div className="flex-1">
+                            <Label htmlFor="mount-channel" className="cursor-pointer font-medium">
+                              U-Channel
+                            </Label>
+                            <p className="text-xs text-slate-500">
+                              Adjustable wall profile (Standard)
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2 py-2">
+                          <RadioGroupItem value="clamps" id="mount-clamps" />
+                          <div className="flex-1">
+                            <Label htmlFor="mount-clamps" className="cursor-pointer font-medium">
+                              Clamps
+                            </Label>
+                            <p className="text-xs text-slate-500">
+                              Minimalist clips (Premium)
+                            </p>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </CardContent>
+                  </Card>
+
+                  <Separator />
+
+                  {/* Mounting Type */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm">Mounting Method</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <RadioGroup
+                        value={design.mountingType}
+                        onValueChange={(value) => handleDesignChange({ mountingType: value as 'channel' | 'clamps' })}
+                      >
+                        <div className="flex items-center space-x-2 py-2">
+                          <RadioGroupItem value="channel" id="mount-channel" />
+                          <div className="flex-1">
+                            <Label htmlFor="mount-channel" className="cursor-pointer font-medium">
+                              U-Channel
+                            </Label>
+                            <p className="text-xs text-slate-500">
+                              Adjustable wall profile (Standard)
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2 py-2">
+                          <RadioGroupItem value="clamps" id="mount-clamps" />
+                          <div className="flex-1">
+                            <Label htmlFor="mount-clamps" className="cursor-pointer font-medium">
+                              Clamps
+                            </Label>
+                            <p className="text-xs text-slate-500">
+                              Minimalist clips (Premium)
+                            </p>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </CardContent>
+                  </Card>
+
+                  <Separator />
+
                   {/* Door Swing */}
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm">Door Swing</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <RadioGroup 
-                        value={design.doorSwing} 
+                      <RadioGroup
+                        value={design.doorSwing}
                         onValueChange={(value) => handleDesignChange({ doorSwing: value as DoorSwing })}
                       >
                         <div className="flex items-center space-x-2 py-2">
@@ -381,8 +465,8 @@ export default function DesignerDesktopNew() {
                       <CardTitle className="text-sm">Handle Type</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <RadioGroup 
-                        value={design.handleType} 
+                      <RadioGroup
+                        value={design.handleType}
                         onValueChange={(value) => handleDesignChange({ handleType: value as HandleType })}
                       >
                         <div className="flex items-center space-x-2 py-2">
@@ -394,7 +478,13 @@ export default function DesignerDesktopNew() {
                         <div className="flex items-center space-x-2 py-2">
                           <RadioGroupItem value="pull" id="handle-pull" />
                           <Label htmlFor="handle-pull" className="cursor-pointer flex-1">
-                            Pull Handle
+                            Standard Pull
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2 py-2">
+                          <RadioGroupItem value="sph8" id="handle-sph8" />
+                          <Label htmlFor="handle-sph8" className="cursor-pointer flex-1">
+                            8" Solid Pull (SPH8)
                           </Label>
                         </div>
                       </RadioGroup>
@@ -417,6 +507,7 @@ export default function DesignerDesktopNew() {
                         <option value="standard">Standard</option>
                         <option value="low-profile">Low Profile</option>
                         <option value="flush">Flush</option>
+                        <option value="half-round">CRL Half-Round (£14.12)</option>
                       </select>
                     </CardContent>
                   </Card>
