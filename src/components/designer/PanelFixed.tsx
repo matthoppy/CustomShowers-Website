@@ -25,6 +25,7 @@ interface PanelFixedProps {
   clampEdge?: 'left' | 'right' | 'center';
   topRake?: { drop: number; direction: 'left' | 'right' };
   bottomRake?: { amount: number; direction: 'left' | 'right' };
+  wallRake?: { amount: number; direction: 'in' | 'out' };
   slopedTop?: { leftMm: number; rightMm: number };
   shapeProfile?: PanelShapeProfile;
   isActive?: boolean;
@@ -44,6 +45,7 @@ export function PanelFixed({
   clampEdge = 'center',
   topRake,
   bottomRake,
+  wallRake,
   slopedTop,
   shapeProfile = 'standard',
   isActive = false,
@@ -59,6 +61,7 @@ export function PanelFixed({
 
   if (orientation === 'front') {
     const notchSize = 25; // Visual notch size
+    const rakeOffset = wallRake ? (wallRake.amount * 0.13 * (wallRake.direction === 'out' ? -1 : 1)) : 0;
 
     // Determine Top Y coordinates
     let yTL = 0;
@@ -72,41 +75,41 @@ export function PanelFixed({
     }
 
     if (shapeProfile === 'notch-bl') {
-      points.push({ x: 0, y: yTL, side: 'left' });
-      points.push({ x: width, y: yTR, side: 'top' });
-      points.push({ x: width, y: height, side: 'right' });
+      points.push({ x: rakeOffset, y: yTL, side: 'top' });
+      points.push({ x: width + rakeOffset, y: yTR, side: 'right' });
+      points.push({ x: width, y: height, side: 'bottom' });
       points.push({ x: notchSize, y: height, side: 'bottom' });
       points.push({ x: notchSize, y: height - notchSize, side: 'bottom' });
       points.push({ x: 0, y: height - notchSize, side: 'left' });
     } else if (shapeProfile === 'notch-br') {
-      points.push({ x: 0, y: yTL, side: 'left' });
-      points.push({ x: width, y: yTR, side: 'top' });
-      points.push({ x: width, y: height - notchSize, side: 'right' });
+      points.push({ x: rakeOffset, y: yTL, side: 'top' });
+      points.push({ x: width + rakeOffset, y: yTR, side: 'right' });
+      points.push({ x: width, y: height - notchSize, side: 'bottom' });
       points.push({ x: width - notchSize, y: height - notchSize, side: 'bottom' });
       points.push({ x: width - notchSize, y: height, side: 'bottom' });
       points.push({ x: 0, y: height, side: 'left' });
     } else if (shapeProfile === 'double-notch-bl') {
-      points.push({ x: 0, y: yTL, side: 'left' });
-      points.push({ x: width, y: yTR, side: 'top' });
-      points.push({ x: width, y: height, side: 'right' });
+      points.push({ x: rakeOffset, y: yTL, side: 'top' });
+      points.push({ x: width + rakeOffset, y: yTR, side: 'right' });
+      points.push({ x: width, y: height, side: 'bottom' });
       points.push({ x: notchSize * 2, y: height, side: 'bottom' });
       points.push({ x: notchSize * 2, y: height - notchSize, side: 'bottom' });
       points.push({ x: notchSize, y: height - notchSize, side: 'bottom' });
-      points.push({ x: notchSize, y: height - notchSize * 2, side: 'left' });
+      points.push({ x: notchSize, y: height - notchSize * 2, side: 'bottom' });
       points.push({ x: 0, y: height - notchSize * 2, side: 'left' });
     } else if (shapeProfile === 'double-notch-br') {
-      points.push({ x: 0, y: yTL, side: 'left' });
-      points.push({ x: width, y: yTR, side: 'top' });
-      points.push({ x: width, y: height - notchSize * 2, side: 'right' });
+      points.push({ x: rakeOffset, y: yTL, side: 'top' });
+      points.push({ x: width + rakeOffset, y: yTR, side: 'right' });
+      points.push({ x: width, y: height - notchSize * 2, side: 'bottom' });
       points.push({ x: width - notchSize, y: height - notchSize * 2, side: 'bottom' });
       points.push({ x: width - notchSize, y: height - notchSize, side: 'bottom' });
       points.push({ x: width - notchSize * 2, y: height - notchSize, side: 'bottom' });
       points.push({ x: width - notchSize * 2, y: height, side: 'bottom' });
       points.push({ x: 0, y: height, side: 'left' });
     } else if (shapeProfile === 'notch-bl-br') {
-      points.push({ x: 0, y: yTL, side: 'left' });
-      points.push({ x: width, y: yTR, side: 'top' });
-      points.push({ x: width, y: height - notchSize, side: 'right' });
+      points.push({ x: rakeOffset, y: yTL, side: 'top' });
+      points.push({ x: width + rakeOffset, y: yTR, side: 'right' });
+      points.push({ x: width, y: height - notchSize, side: 'bottom' });
       points.push({ x: width - notchSize, y: height - notchSize, side: 'bottom' });
       points.push({ x: width - notchSize, y: height, side: 'bottom' });
       points.push({ x: notchSize, y: height, side: 'bottom' });
@@ -119,10 +122,18 @@ export function PanelFixed({
         if (bottomRake.direction === 'left') yBL -= bottomRake.amount;
         else yBR -= bottomRake.amount;
       }
-      points.push({ x: 0, y: yTL, side: 'left' });
-      points.push({ x: width, y: yTR, side: 'top' });
-      points.push({ x: width, y: yBR, side: 'right' });
-      points.push({ x: 0, y: yBL, side: 'bottom' });
+
+      // If mounted on right, the rake applies to the right wall
+      const isRightWall = clampEdge === 'right';
+      const xTL = isRightWall ? 0 : rakeOffset;
+      const xTR = isRightWall ? width + rakeOffset : width;
+      const xBR = width;
+      const xBL = 0;
+
+      points.push({ x: xTL, y: yTL, side: 'top' });
+      points.push({ x: xTR, y: yTR, side: 'right' });
+      points.push({ x: xBR, y: yBR, side: 'bottom' });
+      points.push({ x: xBL, y: yBL, side: 'left' });
     }
 
     const pathD = `M ${points.map(p => `${p.x} ${p.y}`).join(' L ')} Z`;

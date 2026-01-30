@@ -49,6 +49,9 @@ interface DesignData {
       heightMm: number;
     }>;
     rakes: {
+      plumbEntryMethod: 'direct' | 'laser';
+      laserDistanceBottom: number;
+      laserDistanceTop: number;
       floor: { amountMm: number; direction: 'none' | 'left' | 'right' | 'front' | 'back' };
       wallLeft: { amountMm: number; direction: 'none' | 'in' | 'out' };
       wallRight: { amountMm: number; direction: 'none' | 'in' | 'out' };
@@ -99,6 +102,9 @@ const INITIAL_DATA: DesignData = {
     fixedPanelWidthMm: 600,
     notches: [],
     rakes: {
+      plumbEntryMethod: 'direct',
+      laserDistanceBottom: 50,
+      laserDistanceTop: 50,
       floor: { amountMm: 0, direction: 'none' },
       wallLeft: { amountMm: 0, direction: 'none' },
       wallRight: { amountMm: 0, direction: 'none' },
@@ -886,33 +892,113 @@ export default function ShowerConfiguratorWizard() {
           >
             <div className="space-y-5">
               <div className="p-3 bg-slate-50 rounded-lg border space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-8 bg-slate-400 rounded-full" />
-                    <div>
-                      <Label className="text-xs font-bold block">
-                        {data.configuration.mountingSide === 'left' ? 'Left Wall Plumb' : 'Right Wall Plumb'}
+                <div className="flex flex-col space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Plumb Entry Method</Label>
+                    <RadioGroup
+                      value={data.configuration.rakes.plumbEntryMethod}
+                      onValueChange={(val) => updateConfiguration({ rakes: { ...data.configuration.rakes, plumbEntryMethod: val as any } })}
+                      className="flex gap-2"
+                    >
+                      <Label className={`flex items-center space-x-1.5 px-3 py-1.5 border rounded-full cursor-pointer transition-all ${data.configuration.rakes.plumbEntryMethod === 'direct' ? 'border-primary bg-primary/10 text-primary' : 'hover:bg-slate-100'}`}>
+                        <RadioGroupItem value="direct" className="w-3 h-3" />
+                        <span className="text-[10px] font-bold">Direct Rake</span>
                       </Label>
-                      <span className="text-[10px] text-slate-500">Is the wall leaning in or out?</span>
+                      <Label className={`flex items-center space-x-1.5 px-3 py-1.5 border rounded-full cursor-pointer transition-all ${data.configuration.rakes.plumbEntryMethod === 'laser' ? 'border-primary bg-primary/10 text-primary' : 'hover:bg-slate-100'}`}>
+                        <RadioGroupItem value="laser" className="w-3 h-3" />
+                        <span className="text-[10px] font-bold">Laser Tool</span>
+                      </Label>
+                    </RadioGroup>
+                  </div>
+
+                  {data.configuration.rakes.plumbEntryMethod === 'laser' ? (
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold text-slate-400">Laser Distance (Bottom)</Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            value={data.configuration.rakes.laserDistanceBottom}
+                            onChange={(e) => {
+                              const bottom = Number(e.target.value) || 0;
+                              const top = data.configuration.rakes.laserDistanceTop;
+                              const amount = Math.abs(top - bottom);
+                              const direction = top === bottom ? 'none' : (top > bottom ? 'out' : 'in');
+                              const side = data.configuration.mountingSide;
+
+                              updateConfiguration({
+                                rakes: {
+                                  ...data.configuration.rakes,
+                                  laserDistanceBottom: bottom,
+                                  [side === 'left' ? 'wallLeft' : 'wallRight']: { amountMm: amount, direction }
+                                }
+                              });
+                            }}
+                            className="h-8 text-xs font-bold"
+                          />
+                          <span className="text-[10px] font-bold text-slate-400">mm</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold text-slate-400">Laser Distance (Top)</Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            value={data.configuration.rakes.laserDistanceTop}
+                            onChange={(e) => {
+                              const top = Number(e.target.value) || 0;
+                              const bottom = data.configuration.rakes.laserDistanceBottom;
+                              const amount = Math.abs(top - bottom);
+                              const direction = top === bottom ? 'none' : (top > bottom ? 'out' : 'in');
+                              const side = data.configuration.mountingSide;
+
+                              updateConfiguration({
+                                rakes: {
+                                  ...data.configuration.rakes,
+                                  laserDistanceTop: top,
+                                  [side === 'left' ? 'wallLeft' : 'wallRight']: { amountMm: amount, direction }
+                                }
+                              });
+                            }}
+                            className="h-8 text-xs font-bold"
+                          />
+                          <span className="text-[10px] font-bold text-slate-400">mm</span>
+                        </div>
+                      </div>
+                      <p className="col-span-2 text-[10px] text-primary bg-primary/5 p-2 rounded-md italic">
+                        The wall leans <b>{Math.abs(data.configuration.rakes.laserDistanceTop - data.configuration.rakes.laserDistanceBottom)}mm {data.configuration.rakes.laserDistanceTop > data.configuration.rakes.laserDistanceBottom ? 'OUT (away from glass)' : (data.configuration.rakes.laserDistanceTop < data.configuration.rakes.laserDistanceBottom ? 'IN (towards glass)' : '')}</b>
+                      </p>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      value={data.configuration.mountingSide === 'left' ? (data.configuration.rakes.wallLeft.amountMm || '') : (data.configuration.rakes.wallRight.amountMm || '')}
-                      onChange={(e) => {
-                        const val = Number(e.target.value) || 0;
-                        if (data.configuration.mountingSide === 'left') {
-                          updateConfiguration({ rakes: { ...data.configuration.rakes, wallLeft: { ...data.configuration.rakes.wallLeft, amountMm: val } } });
-                        } else {
-                          updateConfiguration({ rakes: { ...data.configuration.rakes, wallRight: { ...data.configuration.rakes.wallRight, amountMm: val } } });
-                        }
-                      }}
-                      className="w-16 h-8 text-xs text-center"
-                      placeholder="0"
-                    />
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">mm</span>
-                  </div>
+                  ) : (
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-8 bg-slate-400 rounded-full" />
+                        <div>
+                          <Label className="text-xs font-bold block">
+                            {data.configuration.mountingSide === 'left' ? 'Left Wall Plumb' : 'Right Wall Plumb'}
+                          </Label>
+                          <span className="text-[10px] text-slate-500">Is the wall leaning in or out?</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={data.configuration.mountingSide === 'left' ? (data.configuration.rakes.wallLeft.amountMm || '') : (data.configuration.rakes.wallRight.amountMm || '')}
+                          onChange={(e) => {
+                            const val = Number(e.target.value) || 0;
+                            if (data.configuration.mountingSide === 'left') {
+                              updateConfiguration({ rakes: { ...data.configuration.rakes, wallLeft: { ...data.configuration.rakes.wallLeft, amountMm: val } } });
+                            } else {
+                              updateConfiguration({ rakes: { ...data.configuration.rakes, wallRight: { ...data.configuration.rakes.wallRight, amountMm: val } } });
+                            }
+                          }}
+                          className="w-16 h-8 text-xs text-center"
+                          placeholder="0"
+                        />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">mm</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {(data.configuration.mountingSide === 'left' ? data.configuration.rakes.wallLeft.amountMm > 0 : data.configuration.rakes.wallRight.amountMm > 0) && (

@@ -144,6 +144,7 @@ export function ShowerConfiguration({
               useClampsMode={mountingType === 'clamps'}
               hingePositions={[40, panelHeight - 40]} // Standard clamp positions
               clampEdge={mountingSide}
+              wallRake={wallRake}
               bottomRake={floorRake}
               slopedTop={slopedTop}
               shapeProfile={shapeProfile}
@@ -179,9 +180,6 @@ export function ShowerConfiguration({
 
         case 'panel-and-door':
           // Fixed Panel + Door
-          // If door is right: Fixed(Left) + Door(Right)
-          // If door is left: Door(Left) + Fixed(Right) (equivalent to door-and-panel visually, but logic might differ)
-          // Standard: Fixed on Left, Door on Right
           return (
             <>
               <PanelFixed
@@ -193,6 +191,7 @@ export function ShowerConfiguration({
                 useClampsMode={mountingType === 'clamps'}
                 hingePositions={[40, panelHeight - 40]}
                 clampEdge="left"
+                wallRake={wallRake}
               />
               <PanelDoor
                 width={panelWidth}
@@ -209,7 +208,6 @@ export function ShowerConfiguration({
 
         case 'door-and-panel':
           // Door + Fixed Panel
-          // Standard: Door on Left, Fixed on Right
           return (
             <>
               <PanelDoor
@@ -227,6 +225,7 @@ export function ShowerConfiguration({
                 useClampsMode={mountingType === 'clamps'}
                 hingePositions={[40, panelHeight - 40]}
                 clampEdge="right"
+                wallRake={wallRake}
               />
               {/* Hinges connect door to fixed panel */}
               <Hinge x={startX} y={startY + 40} orientation="right" type="glass" />
@@ -249,6 +248,7 @@ export function ShowerConfiguration({
                 useClampsMode={mountingType === 'clamps'}
                 hingePositions={[40, panelHeight - 40]}
                 clampEdge="left"
+                wallRake={wallRake}
               />
               <PanelDoor
                 width={panelWidth}
@@ -265,6 +265,7 @@ export function ShowerConfiguration({
                 useClampsMode={mountingType === 'clamps'}
                 hingePositions={[40, panelHeight - 40]}
                 clampEdge="right"
+                wallRake={wallRake}
               />
               {/* Hinges on left side of door (connecting to left fixed) */}
               <Hinge x={startX} y={startY + 40} orientation="left" type="glass" />
@@ -458,6 +459,32 @@ export function ShowerConfiguration({
               onHeightClick={onHeightClick}
               editable={false}
             />
+          )}
+
+          {/* Laser Plumb Line Visualization */}
+          {wallRake && (
+            <g>
+              <line
+                x1={mountingSide === 'left' ? startX : startX + panelWidth}
+                y1={startY - 20}
+                x2={mountingSide === 'left' ? startX : startX + panelWidth}
+                y2={startY + panelHeight + 20}
+                stroke="#ef4444"
+                strokeWidth="1"
+                strokeDasharray="4 4"
+              />
+              <text
+                x={mountingSide === 'left' ? startX - 5 : startX + panelWidth + 5}
+                y={startY - 25}
+                textAnchor={mountingSide === 'left' ? 'end' : 'start'}
+                fill="#ef4444"
+                fontSize="8"
+                fontWeight="bold"
+                className="uppercase tracking-tighter"
+              >
+                Laser Plumb
+              </text>
+            </g>
           )}
         </g>
       </svg>
