@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Clamp } from './Clamp';
+import { HardwareFinish, getHardwareColors } from './Hinge';
 
 export type PanelShapeProfile = 'standard' | 'notch-bl' | 'notch-br' | 'double-notch-bl' | 'double-notch-br' | 'notch-bl-br';
 
@@ -26,11 +27,14 @@ interface PanelFixedProps {
   topRake?: { drop: number; direction: 'left' | 'right' };
   bottomRake?: { amount: number; direction: 'left' | 'right' };
   wallRake?: { amount: number; direction: 'in' | 'out' };
+  top_edge?: { type: 'level' | 'sloped'; direction: 'left' | 'right' | null; drop_mm: number | null };
   slopedTop?: { leftMm: number; rightMm: number };
+  notches?: { bottom_left: boolean; bottom_right: boolean; width_mm: number | null; height_mm: number | null };
   shapeProfile?: PanelShapeProfile;
   isActive?: boolean;
   isFloorToCeiling?: boolean;
   onSegmentsUpdate?: (segments: PanelSegment[]) => void;
+  finish?: HardwareFinish;
 }
 
 export function PanelFixed({
@@ -46,10 +50,13 @@ export function PanelFixed({
   topRake,
   bottomRake,
   wallRake,
+  top_edge,
   slopedTop,
+  notches,
   shapeProfile = 'standard',
   isActive = false,
   onSegmentsUpdate,
+  finish = 'chrome'
 }: PanelFixedProps) {
   const depth = 4;
   const channelThickness = 2;
@@ -60,13 +67,15 @@ export function PanelFixed({
   const points: { x: number; y: number; side?: string }[] = [];
 
   if (orientation === 'front') {
-    const notchSize = 25; // Visual notch size
     const rakeOffset = wallRake ? (wallRake.amount * 0.13 * (wallRake.direction === 'out' ? -1 : 1)) : 0;
 
     // Determine Top Y coordinates
     let yTL = 0;
     let yTR = 0;
-    if (slopedTop) {
+    if (top_edge?.type === 'sloped') {
+      if (top_edge.direction === 'left') yTL = (top_edge.drop_mm || 0) * 0.13;
+      else yTR = (top_edge.drop_mm || 0) * 0.13;
+    } else if (slopedTop) {
       yTL = slopedTop.leftMm * 0.13;
       yTR = slopedTop.rightMm * 0.13;
     } else if (topRake) {
@@ -74,47 +83,32 @@ export function PanelFixed({
       else yTR = topRake.drop;
     }
 
-    if (shapeProfile === 'notch-bl') {
+    const notchW = (notches?.width_mm || 50) * 0.13; // default 50mm
+    const notchH = (notches?.height_mm || 50) * 0.13; // default 50mm
+
+    if (notches?.bottom_left && notches?.bottom_right) {
+      points.push({ x: rakeOffset, y: yTL, side: 'top' });
+      points.push({ x: width + rakeOffset, y: yTR, side: 'right' });
+      points.push({ x: width, y: height - notchH, side: 'bottom' });
+      points.push({ x: width - notchW, y: height - notchH, side: 'bottom' });
+      points.push({ x: width - notchW, y: height, side: 'bottom' });
+      points.push({ x: notchW, y: height, side: 'bottom' });
+      points.push({ x: notchW, y: height - notchH, side: 'bottom' });
+      points.push({ x: 0, y: height - notchH, side: 'left' });
+    } else if (notches?.bottom_left) {
       points.push({ x: rakeOffset, y: yTL, side: 'top' });
       points.push({ x: width + rakeOffset, y: yTR, side: 'right' });
       points.push({ x: width, y: height, side: 'bottom' });
-      points.push({ x: notchSize, y: height, side: 'bottom' });
-      points.push({ x: notchSize, y: height - notchSize, side: 'bottom' });
-      points.push({ x: 0, y: height - notchSize, side: 'left' });
-    } else if (shapeProfile === 'notch-br') {
+      points.push({ x: notchW, y: height, side: 'bottom' });
+      points.push({ x: notchW, y: height - notchH, side: 'bottom' });
+      points.push({ x: 0, y: height - notchH, side: 'left' });
+    } else if (notches?.bottom_right) {
       points.push({ x: rakeOffset, y: yTL, side: 'top' });
       points.push({ x: width + rakeOffset, y: yTR, side: 'right' });
-      points.push({ x: width, y: height - notchSize, side: 'bottom' });
-      points.push({ x: width - notchSize, y: height - notchSize, side: 'bottom' });
-      points.push({ x: width - notchSize, y: height, side: 'bottom' });
+      points.push({ x: width, y: height - notchH, side: 'bottom' });
+      points.push({ x: width - notchW, y: height - notchH, side: 'bottom' });
+      points.push({ x: width - notchW, y: height, side: 'bottom' });
       points.push({ x: 0, y: height, side: 'left' });
-    } else if (shapeProfile === 'double-notch-bl') {
-      points.push({ x: rakeOffset, y: yTL, side: 'top' });
-      points.push({ x: width + rakeOffset, y: yTR, side: 'right' });
-      points.push({ x: width, y: height, side: 'bottom' });
-      points.push({ x: notchSize * 2, y: height, side: 'bottom' });
-      points.push({ x: notchSize * 2, y: height - notchSize, side: 'bottom' });
-      points.push({ x: notchSize, y: height - notchSize, side: 'bottom' });
-      points.push({ x: notchSize, y: height - notchSize * 2, side: 'bottom' });
-      points.push({ x: 0, y: height - notchSize * 2, side: 'left' });
-    } else if (shapeProfile === 'double-notch-br') {
-      points.push({ x: rakeOffset, y: yTL, side: 'top' });
-      points.push({ x: width + rakeOffset, y: yTR, side: 'right' });
-      points.push({ x: width, y: height - notchSize * 2, side: 'bottom' });
-      points.push({ x: width - notchSize, y: height - notchSize * 2, side: 'bottom' });
-      points.push({ x: width - notchSize, y: height - notchSize, side: 'bottom' });
-      points.push({ x: width - notchSize * 2, y: height - notchSize, side: 'bottom' });
-      points.push({ x: width - notchSize * 2, y: height, side: 'bottom' });
-      points.push({ x: 0, y: height, side: 'left' });
-    } else if (shapeProfile === 'notch-bl-br') {
-      points.push({ x: rakeOffset, y: yTL, side: 'top' });
-      points.push({ x: width + rakeOffset, y: yTR, side: 'right' });
-      points.push({ x: width, y: height - notchSize, side: 'bottom' });
-      points.push({ x: width - notchSize, y: height - notchSize, side: 'bottom' });
-      points.push({ x: width - notchSize, y: height, side: 'bottom' });
-      points.push({ x: notchSize, y: height, side: 'bottom' });
-      points.push({ x: notchSize, y: height - notchSize, side: 'bottom' });
-      points.push({ x: 0, y: height - notchSize, side: 'left' });
     } else {
       // Standard rectangle with rakes
       let yBR = height, yBL = height;
@@ -140,8 +134,6 @@ export function PanelFixed({
 
     const channelSegments = points.map((p1, i) => {
       const p2 = points[(i + 1) % points.length];
-      // A segment belongs to a side if its STARTING point is tagged with that side.
-      // If isFloorToCeiling is true, and the segment is 'top', it should have a channel.
       const segmentSide = p1.side;
       const belongsToChannel = channels.includes(segmentSide as any);
 
@@ -149,7 +141,7 @@ export function PanelFixed({
       return `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`;
     }).filter(Boolean).join(' ');
 
-    // Notify parent about segments to enable multi-segment measurements
+    // Notify parent about segments
     useEffect(() => {
       if (onSegmentsUpdate && points.length > 0) {
         const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -178,27 +170,42 @@ export function PanelFixed({
         {/* Main front face */}
         <path
           d={pathD}
-          fill="#B8D4E8"
-          fillOpacity="0.4"
-          stroke="#6B9DC4"
-          strokeWidth="1.5"
+          fill="#A8C7DC"
+          fillOpacity="0.55"
+          stroke="#4A7A9E"
+          strokeWidth="2"
         />
 
         {/* Channels (Perimeter following) */}
-        {channelSegments && (
-          <path
-            d={channelSegments}
-            fill="none"
-            stroke="#A0A0A0"
-            strokeWidth={channelThickness * 2}
-            strokeOpacity="0.6"
-            strokeLinejoin="round"
-          />
-        )}
+        {(() => {
+          const colors = getHardwareColors(finish);
+          return channelSegments && (
+            <g>
+              {/* Outer thicker stroke for the channel body */}
+              <path
+                d={channelSegments}
+                fill="none"
+                stroke={colors.fill}
+                strokeWidth={channelThickness * 3}
+                strokeOpacity="1"
+                strokeLinejoin="round"
+              />
+              {/* Inner detail stroke */}
+              <path
+                d={channelSegments}
+                fill="none"
+                stroke={colors.stroke}
+                strokeWidth="1"
+                strokeOpacity="0.5"
+                strokeLinejoin="round"
+              />
+            </g>
+          );
+        })()}
 
         {useClampsMode && hingePositions.map((pos, index) => {
           const clampX = clampEdge === 'left' ? 5 : (clampEdge === 'right' ? width - 5 : width / 2);
-          return <Clamp key={index} x={clampX} y={pos + 7} orientation="front" edge={clampEdge} />;
+          return <Clamp key={index} x={clampX} y={pos + 7} orientation="front" edge={clampEdge} finish={finish} />;
         })}
       </g>
     );
@@ -209,43 +216,18 @@ export function PanelFixed({
       <g transform={`translate(${x}, ${y})`}>
         {/* Side face - angled to the LEFT */}
         <path
-          d={`M 0 0 L ${-depth * 20} -${depth * 10} L ${-depth * 20} ${height - depth * 10} L 0 ${height} Z`}
+          d={`M 0 0 L -${depth * 10} -${depth * 2} L -${depth * 10} ${height - depth * 2} L 0 ${height} Z`}
           fill="#A8C7DC"
-          fillOpacity="0.45"
-          stroke="#6B9DC4"
-          strokeWidth="1.5"
+          fillOpacity="0.75"
+          stroke="#4A7A9E"
+          strokeWidth="2"
         />
-
-        {/* Bottom channel on angled panel */}
-        {channels.includes('bottom') && (
-          <path
-            d={`M 0 ${height} L ${-depth * 20} ${height - depth * 10} L ${-depth * 20} ${height - depth * 10 - channelThickness} L 0 ${height - channelThickness} Z`}
-            fill="#A0A0A0"
-            stroke="#707070"
-            strokeWidth="0.5"
-          />
-        )}
-
-        {/* Left side channel (vertical edge at back wall) on angled panel */}
-        {channels.includes('left') && (
-          <path
-            d={`M ${-depth * 20} -${depth * 10} L ${-depth * 20 + channelThickness} -${depth * 10} L ${-depth * 20 + channelThickness} ${channels.includes('bottom') ? height - depth * 10 - channelThickness : height - depth * 10} L ${-depth * 20} ${channels.includes('bottom') ? height - depth * 10 - channelThickness : height - depth * 10} Z`}
-            fill="#A0A0A0"
-            stroke="#707070"
-            strokeWidth="0.5"
-          />
-        )}
 
         {/* Clamps for left-angled panel */}
         {useClampsMode && hingePositions.map((pos, index) => {
-          const clampSize = 10;
-          let clampX = clampSize / 2; // at the front edge of glass
-          if (clampEdge === 'left') clampX = -depth * 20 + clampSize / 2; // at the back wall edge of glass
-
-          // Center clamps with hinges: hinges start at pos and center at pos + hingeSize/2
+          const clampX = -depth * 5; // visually center on the angled panel
           const clampY = pos + hingeSize / 2;
-
-          return <Clamp key={index} x={clampX} y={clampY} orientation="left" edge={clampEdge} />;
+          return <Clamp key={index} x={clampX} y={clampY} orientation="left" edge={clampEdge} finish={finish} />;
         })}
       </g>
     );
@@ -256,43 +238,18 @@ export function PanelFixed({
     <g transform={`translate(${x}, ${y})`}>
       {/* Side face - angled back at 90 degrees */}
       <path
-        d={`M 0 0 L ${depth * 20} -${depth * 10} L ${depth * 20} ${height - depth * 10} L 0 ${height} Z`}
+        d={`M 0 0 L ${depth * 10} -${depth * 2} L ${depth * 10} ${height - depth * 2} L 0 ${height} Z`}
         fill="#9CBDD6"
-        fillOpacity="0.5"
-        stroke="#6B9DC4"
-        strokeWidth="1.5"
+        fillOpacity="0.8"
+        stroke="#4A7A9E"
+        strokeWidth="2"
       />
-
-      {/* Bottom channel on side face */}
-      {channels.includes('bottom') && (
-        <path
-          d={`M 0 ${height} L ${depth * 20} ${height - depth * 10} L ${depth * 20} ${height - depth * 10 - channelThickness} L 0 ${height - channelThickness} Z`}
-          fill="#A0A0A0"
-          stroke="#707070"
-          strokeWidth="0.5"
-        />
-      )}
-
-      {/* Right side channel (vertical edge at back wall) on angled panel */}
-      {channels.includes('right') && (
-        <path
-          d={`M ${depth * 20} -${depth * 10} L ${depth * 20 - channelThickness} -${depth * 10} L ${depth * 20 - channelThickness} ${channels.includes('bottom') ? height - depth * 10 - channelThickness : height - depth * 10} L ${depth * 20} ${channels.includes('bottom') ? height - depth * 10 - channelThickness : height - depth * 10} Z`}
-          fill="#A0A0A0"
-          stroke="#707070"
-          strokeWidth="0.5"
-        />
-      )}
 
       {/* Clamps for right-angled panel */}
       {useClampsMode && hingePositions.map((pos, index) => {
-        const clampSize = 10;
-        let clampX = clampSize / 2; // at the front edge of glass
-        if (clampEdge === 'right') clampX = depth * 20 + clampSize / 2; // at the back wall edge of glass
-
-        // Center clamps with hinges: hinges start at pos and center at pos + hingeSize/2
+        const clampX = depth * 5; // visually center
         const clampY = pos + hingeSize / 2;
-
-        return <Clamp key={index} x={clampX} y={clampY} orientation="right" edge={clampEdge} />;
+        return <Clamp key={index} x={clampX} y={clampY} orientation="right" edge={clampEdge} finish={finish} />;
       })}
     </g>
   );

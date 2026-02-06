@@ -15,11 +15,14 @@ import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { DoorConfigurator } from '@/components/designer/DoorConfigurator';
+import { SquareConfigurator } from '@/components/designer/SquareConfigurator';
+import { Square1Configurator } from '@/components/designer/Square1Configurator';
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 interface DesignData {
-  category: 'fixed-panel' | 'single-door' | 'inline' | 'square' | null;
+  category: 'fixed-panel' | 'single-door' | 'inline' | 'square' | 'square1' | null;
   configType: 'door-only' | 'fixed-only' | 'door-fixed' | 'door-return' | 'custom';
   heightMm: number;
   doorWidthMm: number;
@@ -290,11 +293,17 @@ export default function ShowerConfiguratorWizard() {
           { id: 'single-door', label: 'Single Door', desc: 'A standalone swinging door.' },
           { id: 'inline', label: 'Inline Shower', desc: 'Door and fixed panels in a straight line.' },
           { id: 'square', label: 'Square/Corner', desc: 'Entry door with a 90° return panel.' },
+          { id: 'square1', label: 'Square v1 (Beta)', desc: 'Plan-First approach (Beta).' },
         ].map((cat) => (
           <Card
             key={cat.id}
             className={`cursor-pointer transition-all hover:shadow-lg ${data.category === cat.id ? 'ring-2 ring-primary border-primary' : ''}`}
-            onClick={() => updateData({ category: cat.id as any })}
+            onClick={() => {
+              updateData({ category: cat.id as any });
+              if (['square1', 'single-door', 'square'].includes(cat.id)) {
+                setStep(2);
+              }
+            }}
           >
             <CardContent className="p-6">
               <h3 className="text-xl font-bold mb-2">{cat.label}</h3>
@@ -1109,19 +1118,8 @@ export default function ShowerConfiguratorWizard() {
             height={400}
             realHeightMm={data.heightMm}
             realWidthMm={data.configuration.fixedPanelWidthMm}
-            onHeightClick={() => {
-              const el = document.getElementById('fp-height') as HTMLInputElement;
-              if (el) { el.focus(); el.select(); }
-            }}
-            onWidthClick={() => {
-              const el = document.getElementById('fp-width') as HTMLInputElement;
-              if (el) { el.focus(); el.select(); }
-            }}
-            floorRake={data.configuration.rakes.floor.amountMm > 0 ? { amount: data.configuration.rakes.floor.amountMm * 0.13, direction: data.configuration.rakes.floor.direction as any } : undefined}
             mountingType={data.configuration.mounting}
             mountingSide={data.configuration.mountingSide}
-            shapeProfile={data.shapeProfile}
-            slopedTop={data.slopedTop}
             isActive={false} // Orange highlight logic removed
           />
 
@@ -1228,6 +1226,23 @@ export default function ShowerConfiguratorWizard() {
 
   // Main step dispatcher with category-based branching
   const renderStep = () => {
+    // Single Door specialized brain
+    if (data.category === 'single-door') {
+      if (step === 1) return renderStep1();
+      return <DoorConfigurator />;
+    }
+
+    // Square Shower specialized brain
+    if (data.category === 'square') {
+      if (step === 1) return renderStep1();
+      return <SquareConfigurator onBackToCategory={() => setStep(1)} />;
+    }
+
+    if (data.category === 'square1') {
+      if (step === 1) return renderStep1();
+      return <Square1Configurator onBackToCategory={() => setStep(1)} />;
+    }
+
     // Fixed Panel has its own flow (5 steps total)
     if (data.category === 'fixed-panel') {
       switch (step) {
@@ -1262,6 +1277,8 @@ export default function ShowerConfiguratorWizard() {
 
   // Get the total number of steps based on category
   const getTotalSteps = () => {
+    if (data.category === 'single-door') return 2;
+    if (data.category === 'square') return 2; // AI flow handles its own sub-steps
     if (data.category === 'fixed-panel') return 4;
     return 7;
   };
@@ -1272,10 +1289,16 @@ export default function ShowerConfiguratorWizard() {
     alert('Design submitted! (This is a placeholder - implement API call)');
   };
 
+  const showOuterNavigation = !(
+    (data.category === 'single-door' && step > 1) ||
+    (data.category === 'square' && step > 1) ||
+    (data.category === 'square1' && step > 1)
+  );
+
   return (
     <div className="h-screen flex flex-col bg-slate-50 overflow-hidden">
       {/* Progress indicator */}
-      <div className="bg-white border-b border-slate-200 flex-shrink-0">
+      <div className={`bg-white border-b border-slate-200 flex-shrink-0 ${!showOuterNavigation ? 'hidden' : ''}`}>
         <div className="max-w-6xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -1312,28 +1335,30 @@ export default function ShowerConfiguratorWizard() {
       </div>
 
       {/* Navigation */}
-      <div className="bg-white border-t border-slate-200 p-4 flex-shrink-0">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={prevStep}
-            disabled={step === 1}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Previous
-          </Button>
-          {step < getTotalSteps() ? (
-            <Button onClick={nextStep} disabled={!canProceed()}>
-              Next
-              <ArrowRight className="w-4 h-4 ml-2" />
+      {showOuterNavigation && (
+        <div className="bg-white border-t border-slate-200 p-4 flex-shrink-0">
+          <div className="max-w-6xl mx-auto flex items-center justify-between">
+            <Button
+              variant="outline"
+              onClick={prevStep}
+              disabled={step === 1}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Previous
             </Button>
-          ) : (
-            <Button onClick={handleSubmit} disabled={!canProceed()}>
-              Submit Request
-            </Button>
-          )}
+            {step < getTotalSteps() ? (
+              <Button onClick={nextStep} disabled={!canProceed()}>
+                Next
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            ) : (
+              <Button onClick={handleSubmit} disabled={!canProceed()}>
+                Submit Request
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

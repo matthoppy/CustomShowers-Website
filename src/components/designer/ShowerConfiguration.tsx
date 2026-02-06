@@ -1,494 +1,505 @@
-import { useState } from 'react';
-import { PanelFixed, PanelShapeProfile, PanelSegment } from './PanelFixed';
+import React, { useState } from 'react';
+import type { JunctionModel, PanelModel } from '@/types/square';
+import { PanelFixed } from './PanelFixed';
 import { PanelDoor } from './PanelDoor';
-import { Hinge } from './Hinge';
+import { Hinge, HardwareFinish } from './Hinge';
 import { Handle } from './Handle';
-import { DimensionLines, SegmentDimensions } from './DimensionLines';
-// import { Channel } from './Channel'; // Removed as it is not used directly here
+import { Clamp } from './Clamp';
+import { Label } from '../ui/label';
 
 export type DoorVariant = 'left' | 'right' | 'double';
-export type ConfigurationCategory = 'inline' | 'square' | 'quadrant';
-// Adding ShowerTemplateType alias as it seems to be expected by the wrapper
-export type ShowerTemplateType = string;
+export type ConfigurationCategory = 'inline' | 'square' | 'quadrant' | 'fixed-panel';
 
+export type ShowerTemplateType =
+  | 'single-door'
+  | 'double-door'
+  | 'left-panel'
+  | 'right-panel'
+  | 'three-panel'
+  | 'corner-left'
+  | 'corner-right'
+  | '90-return'
+  | '90-return-left'
+  | '90-return-right'
+  | 'angled-ceiling';
 
-import type { MountingType } from '@/lib/templates';
-
-export interface ShowerPanelDefinition {
+export type ShowerPanelDefinition = {
   id: string;
-  type: 'door' | 'fixed' | 'return';
-  width: number;
-  height: number;
+  type: 'fixed' | 'door';
   x: number;
   y: number;
+  width: number;
+  height: number;
   orientation?: 'front' | 'left' | 'right';
-  topRake?: { drop: number; direction: 'left' | 'right' };
-  channels?: ('bottom' | 'left' | 'right' | 'top')[];
-  useClampsMode?: boolean;
-  hingePositions?: number[];
-  clampEdge?: 'left' | 'right' | 'center';
-}
+  top_edge?: { type: 'level' | 'sloped'; direction: 'left' | 'right' | null; drop_mm: number | null };
+  notches?: { bottom_left: boolean; bottom_right: boolean; width_mm: number | null; height_mm: number | null };
+  door_swing?: 'inward' | 'outward' | 'both' | null;
+};
 
-interface ShowerConfigurationProps {
-  category: ConfigurationCategory;
-  baseType: string;
-  doorVariant?: DoorVariant;
-  mountingType?: MountingType; // Replaces useClampsMode
-  mountingSide?: 'left' | 'right'; // New prop for side-specific mounting
+type ShowerConfigurationProps = {
+  category?: ConfigurationCategory;
+  baseType?: string;
+  type?: ShowerTemplateType;
   width?: number;
   height?: number;
-  realWidthMm?: number; // New: Actual width to display in dimension labels
-  realHeightMm?: number; // New: Actual height to display in dimension labels
-  onWidthClick?: () => void; // New: Callback when width label is clicked
-  onHeightClick?: () => void; // New: Callback when height label is clicked
-  floorRake?: { amount: number; direction: 'left' | 'right' };
-  wallRake?: { amount: number; direction: 'in' | 'out' };
-  notches?: Array<{ corner: string; widthMm: number; heightMm: number }>;
-  panels?: ShowerPanelDefinition[]; // New prop for dynamic panels
-  shapeProfile?: PanelShapeProfile;
-  slopedTop?: { leftMm: number; rightMm: number };
-  isFloorToCeiling?: boolean;
+  realWidthMm?: number;
+  realHeightMm?: number;
+  panels?: PanelModel[] | ShowerPanelDefinition[];
+  junctions?: JunctionModel[];
+  viewMode?: '2d' | '3d' | 'exploded';
+  doorVariant?: DoorVariant;
+  mountingType?: 'channel' | 'clamps';
+  mountingSide?: 'left' | 'right';
+  hardwareFinish?: HardwareFinish;
+  activePanelId?: string | null;
+  activeJunctionId?: string | null;
+  hideDimensions?: boolean;
+  scaleOverride?: number;
   isActive?: boolean;
-}
+  onPanelClick?: (panelId: string) => void;
+  onJunctionSelect?: (junctionId: string) => void;
+  onAddPanel?: (index: number) => void;
+  onUpdateJunctionAngle?: (junctionId: string, angle: number) => void;
+};
+
+const lineSegmentsIntersect = (
+  p1: { x: number; z: number },
+  p2: { x: number; z: number },
+  p3: { x: number; z: number },
+  p4: { x: number; z: number }
+): boolean => {
+  const det = (p2.x - p1.x) * (p4.z - p3.z) - (p4.x - p3.x) * (p2.z - p1.z);
+  if (Math.abs(det) < 0.001) return false;
+  const t = ((p3.x - p1.x) * (p4.z - p3.z) - (p4.x - p3.x) * (p3.z - p1.z)) / det;
+  const u = ((p3.x - p1.x) * (p2.z - p1.z) - (p2.x - p1.x) * (p3.z - p1.z)) / det;
+  return t > 0.01 && t < 0.99 && u > 0.01 && u < 0.99;
+};
 
 export function ShowerConfiguration({
-  category,
-  baseType,
-  doorVariant = 'right',
-  mountingType = 'channel', // Default to channel
-  mountingSide = 'left', // Default to left wall
-  width = 320,
-  height = 400,
-  realWidthMm,
-  realHeightMm,
-  onWidthClick,
-  onHeightClick,
-  floorRake,
-  wallRake,
-  notches = [],
+  category = 'square',
+  width = 600,
+  height = 500,
+  realWidthMm = 900,
+  realHeightMm = 2000,
   panels = [],
-  shapeProfile = 'standard',
-  slopedTop,
-  isFloorToCeiling = false,
+  junctions = [],
+  viewMode = '3d',
+  activePanelId,
+  activeJunctionId,
+  hideDimensions = false,
+  scaleOverride = 1,
   isActive = false,
+  mountingType = 'channel',
+  hardwareFinish = 'chrome',
+  onPanelClick,
+  onJunctionSelect,
+  onAddPanel,
+  onUpdateJunctionAngle,
 }: ShowerConfigurationProps) {
-  const [segments, setSegments] = useState<PanelSegment[]>([]);
+  const [openJunctionPopoverId, setOpenJunctionPopoverId] = useState<string | null>(null);
 
-  // Calculate scaling (Reference: 2000mm height -> 260px height)
+  const normalizedPanels: PanelModel[] = Array.isArray(panels) && panels.length > 0 && 'panel_id' in (panels[0] as any)
+    ? (panels as PanelModel[])
+    : (panels as any[]).map((p, idx) => ({
+      panel_id: p.id || `P${idx + 1}`,
+      panel_type: p.type === 'door' ? 'door_hinged' : 'fixed',
+      width_mm: p.width || 300,
+      height_mm: p.height || 2000,
+      position_index: idx,
+      plane: p.orientation === 'left' ? 'return_left' : p.orientation === 'right' ? 'return_right' : 'front',
+      hinge_side: p.door_properties?.hinge_side || 'left',
+      handle_side: p.door_properties?.hinge_side === 'left' ? 'right' : 'left',
+      wall_fix: { left: false, right: false },
+      mounting_style: 'channel',
+      notches: p.notches || { bottom_left: false, bottom_right: false, width_mm: null, height_mm: null },
+      top_edge: p.top_edge || { type: 'level', direction: null, drop_mm: null },
+      ...p
+    }));
 
-  const scale = 0.13;
-  const panelHeight = realHeightMm ? Math.max(100, Math.min(300, realHeightMm * scale)) : 260;
-  const panelWidth = realWidthMm ? Math.max(50, Math.min(220, realWidthMm * scale)) : 90;
+  const sortedPanels = [...normalizedPanels].sort((a, b) => a.position_index - b.position_index);
 
-  const startX = (width - panelWidth) / 2;
-  const startY = (height - panelHeight) / 2 - 5; // Centered vertically, offset for labels below
+  // Layout constants
+  const separationGap = 80; // Distance between panels in exploded view
+  const panelHeightScale = 0.13;
+  const frontWidth = 100; // Visual panel width base
+  const panelHeight = realHeightMm * panelHeightScale;
+  const startY = (height - panelHeight) / 2;
 
-  // ... (inside render method or main function)
-  if (panels && panels.length > 0) {
-    return (
-      <g>
-        {panels.map((p) => {
-          if (p.type === 'fixed') {
-            return (
-              <PanelFixed
-                key={p.id}
-                width={p.width}
-                height={p.height}
-                x={p.x}
-                y={p.y}
-                orientation={p.orientation}
-                channels={p.channels}
-                useClampsMode={mountingType === 'clamps'} // Force override or use panel specific? Using override for consistency
-                hingePositions={p.hingePositions}
-                clampEdge={p.clampEdge}
-                topRake={p.topRake}
-              />
-            );
-          } else if (p.type === 'door') {
-            // Door logic - similar but simplified for now (no rake on door usually, or same logic)
-            return (
-              <PanelDoor
-                key={p.id}
-                width={p.width}
-                height={p.height}
-                x={p.x}
-                y={p.y}
-                orientation={p.orientation === 'left' ? 'left' : 'front'} // Map generic orientation
-              />
-            );
+  if (viewMode === '3d') {
+    const doorIndex = sortedPanels.findIndex(p => p.panel_type === 'door_hinged');
+    let doorRotation = 0;
+    if (doorIndex >= 0) {
+      for (let i = 0; i < doorIndex; i++) {
+        const j = junctions?.find(jun =>
+          (jun.a_panel_id === sortedPanels[i].panel_id && jun.b_panel_id === sortedPanels[i + 1].panel_id) ||
+          (jun.b_panel_id === sortedPanels[i].panel_id && jun.a_panel_id === sortedPanels[i + 1].panel_id)
+        );
+        if (j) doorRotation += (180 - (j.angle_deg || 180));
+      }
+    }
+    const globalRotation = -doorRotation;
+
+    // Calculate total layout width for proper scaling
+    const totalWidthMm = sortedPanels.reduce((sum, p) => sum + (p.width_mm || 700), 0);
+    const maxHeightMm = Math.max(...sortedPanels.map(p => p.height_mm || realHeightMm));
+
+    // Scale factor to fit layout in view (use the smaller of width/height constraints)
+    const widthScale = (width * 0.6) / (totalWidthMm * 0.15);
+    const heightScale = (height * 0.7) / (maxHeightMm * 0.13);
+    const autoScale = Math.min(widthScale, heightScale, 1.5);
+    const finalScale = scaleOverride !== 1 ? scaleOverride : autoScale;
+
+    let cursor3D = { x: 0, z: 0 };
+    const panel3DData = sortedPanels.map((panel, index) => {
+      let cumulativeRotation = 0;
+      for (let i = 0; i < index; i++) {
+        const j = junctions?.find(jun =>
+          (jun.a_panel_id === sortedPanels[i].panel_id && jun.b_panel_id === sortedPanels[i + 1].panel_id) ||
+          (jun.b_panel_id === sortedPanels[i].panel_id && jun.a_panel_id === sortedPanels[i + 1].panel_id)
+        );
+        if (j) {
+          let rotationToAdd = 180 - (j.angle_deg || 180);
+          if ((j.angle_deg || 180) !== 180 && doorIndex >= 0) {
+            if (i < doorIndex) rotationToAdd = Math.abs(rotationToAdd);
+            else rotationToAdd = -Math.abs(rotationToAdd);
           }
-          return null;
-        })}
-        {/* Render Hinges/Handles separately or include in definition? for now separate or assume standard */}
-      </g>
+          cumulativeRotation += rotationToAdd;
+        }
+      }
+
+      // Use actual panel width with scaling factor
+      const panelWidthMm = panel.width_mm || 700;
+      const visualWidth = panelWidthMm * 0.05; // Scale mm to visual units
+      const halfVisualWidth = visualWidth / 2;
+
+      let xPos = 0;
+      let zPos = 0;
+
+      if (index === 0) {
+        xPos = 0; zPos = 0;
+      } else {
+        let prevRotation = 0;
+        let prevX = 0;
+        let prevZ = 0;
+        for (let i = 0; i < index; i++) {
+          const prevPanelWidth = (sortedPanels[i].width_mm || 700) * 0.05;
+          const prevHalfWidth = prevPanelWidth / 2;
+
+          if (i === 0) {
+            prevX = 0; prevZ = 0; prevRotation = 0;
+          } else {
+            const prevPrevRotation = prevRotation;
+            const jPrev = junctions?.find(jun =>
+              (jun.a_panel_id === sortedPanels[i - 1].panel_id && jun.b_panel_id === sortedPanels[i].panel_id) ||
+              (jun.b_panel_id === sortedPanels[i - 1].panel_id && jun.a_panel_id === sortedPanels[i].panel_id)
+            );
+            if (jPrev) {
+              let rotationToAdd = 180 - (jPrev.angle_deg || 180);
+              if ((jPrev.angle_deg || 180) !== 180 && doorIndex >= 0) {
+                if (i - 1 < doorIndex) rotationToAdd = Math.abs(rotationToAdd);
+                else rotationToAdd = -Math.abs(rotationToAdd);
+              }
+              prevRotation += rotationToAdd;
+            }
+            const prevPrevPanelWidth = (sortedPanels[i - 1].width_mm || 700) * 0.05;
+            const prevPrevHalfWidth = prevPrevPanelWidth / 2;
+            const prevRad = (prevPrevRotation * Math.PI) / 180;
+            const freeEdgeX = prevX + prevPrevHalfWidth * Math.cos(prevRad);
+            const freeEdgeZ = prevZ + prevPrevHalfWidth * Math.sin(prevRad);
+            const currRad = (prevRotation * Math.PI) / 180;
+            prevX = freeEdgeX - (-prevHalfWidth) * Math.cos(currRad);
+            prevZ = freeEdgeZ - (-prevHalfWidth) * Math.sin(currRad);
+          }
+        }
+        const prevPanelWidth = (sortedPanels[index - 1].width_mm || 700) * 0.05;
+        const prevHalfWidth = prevPanelWidth / 2;
+        const prevRad = (prevRotation * Math.PI) / 180;
+        const freeEdgeX = prevX + prevHalfWidth * Math.cos(prevRad);
+        const freeEdgeZ = prevZ + prevHalfWidth * Math.sin(prevRad);
+        const currRad = (cumulativeRotation * Math.PI) / 180;
+        xPos = freeEdgeX - (-halfVisualWidth) * Math.cos(currRad);
+        zPos = freeEdgeZ - (-halfVisualWidth) * Math.sin(currRad);
+      }
+
+      const currentRad = (cumulativeRotation * Math.PI) / 180;
+      const cos = Math.cos(currentRad);
+      const sin = Math.sin(currentRad);
+
+      const planeCorners = [{ x: -halfVisualWidth, z: 0 }, { x: halfVisualWidth, z: 0 }].map(c => ({
+        x: xPos + c.x * cos - c.z * sin,
+        z: zPos + c.x * sin + c.z * cos,
+      }));
+
+      return { panel, xPos, zPos, rotation: cumulativeRotation, corners: planeCorners, visualWidth, halfWidth: halfVisualWidth };
+    });
+
+    const collisions: Array<[number, number]> = [];
+    for (let i = 0; i < panel3DData.length; i++) {
+      for (let j = i + 2; j < panel3DData.length; j++) {
+        if (lineSegmentsIntersect(panel3DData[i].corners[0], panel3DData[i].corners[1], panel3DData[j].corners[0], panel3DData[j].corners[1])) {
+          collisions.push([i, j]);
+        }
+      }
+    }
+
+    return (
+      <div className="flex flex-col items-center justify-center w-full h-full relative overflow-hidden bg-white rounded-3xl">
+        {collisions.length > 0 && (
+          <div className="absolute top-4 left-4 right-4 z-10 p-3 bg-red-500 text-white rounded-full text-[10px] font-black tracking-widest text-center shadow-lg animate-pulse">
+            ⚠️ PHYSICAL COLLISION DETECTED
+          </div>
+        )}
+        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
+          <g transform={`translate(${width / 2}, ${height / 2}) scale(${finalScale})`}>
+            <g transform={`rotate(${globalRotation})`}>
+              {panel3DData.map(({ panel, xPos, zPos, rotation, halfWidth }) => {
+                const rad = (rotation * Math.PI) / 180;
+                const cos = Math.cos(rad);
+                const sin = Math.sin(rad);
+                const pHeightPx = (panel.height_mm || realHeightMm) * 0.13;
+                const halfH = pHeightPx / 2;
+                const isoX = xPos - zPos * 0.5;
+                const isoY = (xPos + zPos) * 0.25;
+
+                const corners = [
+                  { x: -halfWidth, y: -halfH }, { x: halfWidth, y: -halfH },
+                  { x: halfWidth, y: halfH }, { x: -halfWidth, y: halfH }
+                ].map(c => {
+                  const rX = c.x * cos; const rZ = c.x * sin;
+                  return { x: isoX + (rX - rZ * 0.5), y: isoY + ((rX + rZ) * 0.25 + c.y) };
+                });
+
+                const pathD = `M ${corners[0].x} ${corners[0].y} L ${corners[1].x} ${corners[1].y} L ${corners[2].x} ${corners[2].y} L ${corners[3].x} ${corners[3].y} Z`;
+                const isDoor = panel.panel_type === 'door_hinged';
+                const isActive = activePanelId === panel.panel_id;
+
+                return (
+                  <g key={panel.panel_id} onClick={() => onPanelClick?.(panel.panel_id)} className="cursor-pointer group">
+                    {/* Selection indicator - dotted outline */}
+                    {isActive && (
+                      <path
+                        d={pathD}
+                        fill="none"
+                        stroke="#1d4ed8"
+                        strokeWidth="3"
+                        strokeDasharray="6 6"
+                        className="animate-pulse"
+                        style={{ transform: 'scale(1.05)', transformOrigin: `${isoX}px ${isoY}px` }}
+                      />
+                    )}
+
+                    {/* Glass panel */}
+                    <path
+                      d={pathD}
+                      fill={isDoor ? "#60A5FA" : "#93C5FD"}
+                      fillOpacity={isActive ? "0.8" : "0.5"}
+                      stroke={isActive ? "#1d4ed8" : isDoor ? "#2563EB" : "#3B82F6"}
+                      strokeWidth={isActive ? "3" : "2"}
+                      className="transition-all duration-300 group-hover:fill-opacity-90"
+                    />
+
+                    {/* Hardware rendering - DOORS */}
+                    {isDoor && (
+                      <>
+                        {/* Door indicator */}
+                        <circle cx={isoX} cy={isoY - halfH + 15} r="6" fill="#EF4444" stroke="#fff" strokeWidth="2" className="animate-pulse" />
+                        <text x={isoX} y={isoY - halfH + 18} textAnchor="middle" className="text-[6px] font-black fill-white">D</text>
+
+                        {/* Hinges - 3 positions */}
+                        {[0.15, 0.5, 0.85].map((pos, idx) => {
+                          const hingeY = isoY - halfH + pHeightPx * pos;
+                          const hingeSide = panel.hinge_side === 'left' ? -1 : 1;
+                          const hingeX = isoX + (hingeSide * halfWidth);
+                          return (
+                            <g key={`hinge-${idx}`}>
+                              <rect x={hingeX - 4} y={hingeY - 8} width="8" height="16" fill="#475569" rx="2" stroke="#334155" strokeWidth="1" />
+                              <circle cx={hingeX} cy={hingeY} r="3" fill="#94a3b8" stroke="#64748b" strokeWidth="1" />
+                            </g>
+                          );
+                        })}
+
+                        {/* Handle - vertical bar */}
+                        {(() => {
+                          const handleSide = panel.handle_side === 'left' ? -1 : 1;
+                          const handleX = isoX + (handleSide * (halfWidth - 8));
+                          return (
+                            <g>
+                              <rect
+                                x={handleX - 3}
+                                y={isoY - 25}
+                                width="6"
+                                height="50"
+                                fill="#64748b"
+                                stroke="#475569"
+                                strokeWidth="1"
+                                rx="3"
+                              />
+                              <rect
+                                x={handleX - 2}
+                                y={isoY - 20}
+                                width="4"
+                                height="40"
+                                fill="#94a3b8"
+                                rx="2"
+                              />
+                            </g>
+                          );
+                        })()}
+                      </>
+                    )}
+
+                    {/* Fixed panel hardware - Clamps */}
+                    {!isDoor && (
+                      <>
+                        {/* Top clamps */}
+                        {[0.25, 0.75].map((pos, idx) => {
+                          const clampX = isoX - halfWidth + (halfWidth * 2) * pos;
+                          const clampY = isoY - halfH;
+                          return (
+                            <g key={`clamp-top-${idx}`}>
+                              <rect x={clampX - 6} y={clampY - 8} width="12" height="10" fill="#475569" rx="2" stroke="#334155" strokeWidth="1" />
+                              <rect x={clampX - 4} y={clampY - 6} width="8" height="6" fill="#64748b" rx="1" />
+                            </g>
+                          );
+                        })}
+                        {/* Bottom clamps */}
+                        {[0.25, 0.75].map((pos, idx) => {
+                          const clampX = isoX - halfWidth + (halfWidth * 2) * pos;
+                          const clampY = isoY + halfH;
+                          return (
+                            <g key={`clamp-bottom-${idx}`}>
+                              <rect x={clampX - 6} y={clampY - 2} width="12" height="10" fill="#475569" rx="2" stroke="#334155" strokeWidth="1" />
+                              <rect x={clampX - 4} y={clampY} width="8" height="6" fill="#64748b" rx="1" />
+                            </g>
+                          );
+                        })}
+                      </>
+                    )}
+
+                    {/* Panel label */}
+                    <text x={isoX} y={isoY + halfH + 20} textAnchor="middle" className="text-[10px] font-black fill-slate-600">
+                      {panel.width_mm}mm
+                    </text>
+                  </g>
+                );
+              })}
+            </g>
+          </g>
+        </svg>
+      </div>
     );
   }
 
-  // Fallback to existing renderContent
-  const renderContent = () => {
-    // --- INLINE CONFIGURATIONS ---
-    if (category === 'inline') {
-      switch (baseType) {
-        case 'fixed-panel':
-          return (
-            <PanelFixed
-              width={panelWidth}
-              height={panelHeight}
-              x={startX}
-              y={startY}
-              channels={mountingType === 'clamps' ? [] : [
-                ...(mountingSide === 'left' ? ['left' as const] : ['right' as const]),
-                'bottom' as const,
-                ...(isFloorToCeiling ? ['top' as const] : [])
-              ]}
-              useClampsMode={mountingType === 'clamps'}
-              hingePositions={[40, panelHeight - 40]} // Standard clamp positions
-              clampEdge={mountingSide}
-              wallRake={wallRake}
-              bottomRake={floorRake}
-              slopedTop={slopedTop}
-              shapeProfile={shapeProfile}
-              isFloorToCeiling={isFloorToCeiling}
-              isActive={isActive}
-              onSegmentsUpdate={setSegments}
-            />
-          );
+  // EXPLODED / 2D VIEW
+  const visualScale = 0.13; // Consistent with other components
+  const totalExplodedWidth = sortedPanels.reduce((sum, p) => sum + p.width_mm * visualScale, 0) + (sortedPanels.length - 1) * separationGap;
+  const explodedStartX = (width - totalExplodedWidth) / 2;
 
-        case 'single':
-          // Simple single door
-          const hingeX = doorVariant === 'left' ? startX : startX + panelWidth;
-          const hingeOrientation = doorVariant === 'left' ? 'left' : 'right'; // Hinges on wall
-
-          return (
-            <>
-              <PanelDoor
-                width={panelWidth}
-                height={panelHeight}
-                x={startX}
-                y={startY}
-                orientation={doorVariant === 'left' ? 'left' : 'front'} // Just for visual distinction if needed
-              />
-              <Hinge x={hingeX} y={startY + 40} orientation={hingeOrientation} type="wall" />
-              <Hinge x={hingeX} y={startY + panelHeight - 40} orientation={hingeOrientation} type="wall" />
-              <Handle
-                x={doorVariant === 'left' ? startX + panelWidth : startX}
-                y={startY + panelHeight / 2}
-                orientation={doorVariant === 'left' ? 'right' : 'left'}
-              />
-            </>
-          );
-
-        case 'panel-and-door':
-          // Fixed Panel + Door
-          return (
-            <>
-              <PanelFixed
-                width={panelWidth}
-                height={panelHeight}
-                x={startX - panelWidth}
-                y={startY}
-                channels={['bottom', 'left']}
-                useClampsMode={mountingType === 'clamps'}
-                hingePositions={[40, panelHeight - 40]}
-                clampEdge="left"
-                wallRake={wallRake}
-              />
-              <PanelDoor
-                width={panelWidth}
-                height={panelHeight}
-                x={startX}
-                y={startY}
-              />
-              {/* Hinges connect door to fixed panel */}
-              <Hinge x={startX} y={startY + 40} orientation="left" type="glass" />
-              <Hinge x={startX} y={startY + panelHeight - 40} orientation="left" type="glass" />
-              <Handle x={startX + panelWidth} y={startY + panelHeight / 2} orientation="right" />
-            </>
-          );
-
-        case 'door-and-panel':
-          // Door + Fixed Panel
-          return (
-            <>
-              <PanelDoor
-                width={panelWidth}
-                height={panelHeight}
-                x={startX - panelWidth}
-                y={startY}
-              />
-              <PanelFixed
-                width={panelWidth}
-                height={panelHeight}
-                x={startX}
-                y={startY}
-                channels={['bottom', 'right']}
-                useClampsMode={mountingType === 'clamps'}
-                hingePositions={[40, panelHeight - 40]}
-                clampEdge="right"
-                wallRake={wallRake}
-              />
-              {/* Hinges connect door to fixed panel */}
-              <Hinge x={startX} y={startY + 40} orientation="right" type="glass" />
-              <Hinge x={startX} y={startY + panelHeight - 40} orientation="right" type="glass" />
-              <Handle x={startX - panelWidth} y={startY + panelHeight / 2} orientation="left" />
-            </>
-          );
-
-        case 'center-door':
-          // Fixed + Door + Fixed
-          const sidePanelWidth = panelWidth * 0.75;
-          return (
-            <>
-              <PanelFixed
-                width={sidePanelWidth}
-                height={panelHeight}
-                x={startX - sidePanelWidth}
-                y={startY}
-                channels={['bottom', 'left']}
-                useClampsMode={mountingType === 'clamps'}
-                hingePositions={[40, panelHeight - 40]}
-                clampEdge="left"
-                wallRake={wallRake}
-              />
-              <PanelDoor
-                width={panelWidth}
-                height={panelHeight}
-                x={startX}
-                y={startY}
-              />
-              <PanelFixed
-                width={sidePanelWidth}
-                height={panelHeight}
-                x={startX + panelWidth}
-                y={startY}
-                channels={['bottom', 'right']}
-                useClampsMode={mountingType === 'clamps'}
-                hingePositions={[40, panelHeight - 40]}
-                clampEdge="right"
-                wallRake={wallRake}
-              />
-              {/* Hinges on left side of door (connecting to left fixed) */}
-              <Hinge x={startX} y={startY + 40} orientation="left" type="glass" />
-              <Hinge x={startX} y={startY + panelHeight - 40} orientation="left" type="glass" />
-              <Handle x={startX + panelWidth} y={startY + panelHeight / 2} orientation="right" />
-            </>
-          );
-
-        default:
-          return <text x="50%" y="50%" textAnchor="middle">Unknown Inline Type</text>;
-      }
-    }
-
-    // --- SQUARE CONFIGURATIONS ---
-    if (category === 'square') {
-      const returnPanelWidth = panelWidth * 0.8;
-
-      switch (baseType) {
-        case 'l-left':
-          // Return Left + Door
-          return (
-            <>
-              {/* Return Panel (Left) */}
-              <PanelFixed
-                width={returnPanelWidth}
-                height={panelHeight}
-                x={startX}
-                y={startY}
-                orientation="left"
-                channels={['bottom', 'left']}
-                useClampsMode={mountingType === 'clamps'}
-                hingePositions={[40, panelHeight - 40]}
-                clampEdge="left"
-              />
-              {/* Door */}
-              <PanelDoor
-                width={panelWidth}
-                height={panelHeight}
-                x={startX}
-                y={startY}
-              />
-              {/* Corner Hinges (90 degree) */}
-              <Hinge x={startX} y={startY + 40} orientation="left" type="90-degree" />
-              <Hinge x={startX} y={startY + panelHeight - 40} orientation="left" type="90-degree" />
-              <Handle x={startX + panelWidth} y={startY + panelHeight / 2} orientation="right" />
-            </>
-          );
-
-        case 'l-right':
-          // Door + Return Right
-          return (
-            <>
-              {/* Door */}
-              <PanelDoor
-                width={panelWidth}
-                height={panelHeight}
-                x={startX}
-                y={startY}
-              />
-              {/* Return Panel (Right) */}
-              <PanelFixed
-                width={returnPanelWidth}
-                height={panelHeight}
-                x={startX + panelWidth}
-                y={startY}
-                orientation="right"
-                channels={['bottom', 'right']}
-                useClampsMode={mountingType === 'clamps'}
-                hingePositions={[40, panelHeight - 40]}
-                clampEdge="right"
-              />
-              {/* Corner Hinges (90 degree) */}
-              <Hinge x={startX + panelWidth} y={startY + 40} orientation="right" type="90-degree" />
-              <Hinge x={startX + panelWidth} y={startY + panelHeight - 40} orientation="right" type="90-degree" />
-              <Handle x={startX} y={startY + panelHeight / 2} orientation="left" />
-            </>
-          );
-
-        case 'fixed-door-return-left':
-          // Return Left + Fixed + Door
-          // Logic: Return Left attaches to... ? Usually Return Left attaches to Fixed Panel
-          // Layout: Return(L) -> Fixed -> Door
-          return (
-            <>
-              {/* Return Panel (Left) */}
-              <PanelFixed
-                width={returnPanelWidth}
-                height={panelHeight}
-                x={startX - panelWidth}
-                y={startY}
-                orientation="left"
-                channels={['bottom', 'left']}
-                useClampsMode={mountingType === 'clamps'}
-                hingePositions={[40, panelHeight - 40]}
-                clampEdge="left"
-              />
-              {/* Fixed Panel */}
-              <PanelFixed
-                width={panelWidth}
-                height={panelHeight}
-                x={startX - panelWidth}
-                y={startY}
-                channels={['bottom']} // No side channels where it meets return/door
-                useClampsMode={mountingType === 'clamps'}
-                hingePositions={[40, panelHeight - 40]}
-                clampEdge="center"
-              />
-              {/* Door */}
-              <PanelDoor
-                width={panelWidth}
-                height={panelHeight}
-                x={startX}
-                y={startY}
-              />
-              {/* Corner Clamp/Hinge for Return-Fixed connection? Usually a bracket or silicone */}
-              {/* Use 90-degree hinge visual for corner connection */}
-              <Hinge x={startX - panelWidth} y={startY + 40} orientation="left" type="return-fixed" />
-              <Hinge x={startX - panelWidth} y={startY + panelHeight - 40} orientation="left" type="return-fixed" />
-
-              {/* Glass-Glass Hinges for Fixed-Door */}
-              <Hinge x={startX} y={startY + 40} orientation="left" type="glass" />
-              <Hinge x={startX} y={startY + panelHeight - 40} orientation="left" type="glass" />
-
-              <Handle x={startX + panelWidth} y={startY + panelHeight / 2} orientation="right" />
-            </>
-          );
-
-        // Add more square cases as needed based on the list
-        // Implementing a generic fallback for other square types to show *something*
-        default:
-          // Simple placeholder for complex types
-          return (
-            <>
-              <text x={width / 2} y={height / 2} textAnchor="middle" fontSize="10" fill="#888">
-                {baseType} (Visual Placeholder)
-              </text>
-              {/* Just render a box to show bounds */}
-              <rect x={startX} y={startY} width={panelWidth} height={panelHeight} fill="none" stroke="#ccc" />
-            </>
-          );
-      }
-    }
-
-    // --- QUADRANT CONFIGURATIONS ---
-    if (category === 'quadrant') {
-      // Placeholder for quadrant logic
-      return (
-        <text x={width / 2} y={height / 2} textAnchor="middle" fill="#888">
-          Quadrant: {baseType}
-        </text>
-      );
-    }
-
-    return null;
-  };
+  let currentX = explodedStartX;
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full min-h-[450px]">
-      <svg
-        width="100%"
-        height="100%"
-        viewBox={`0 0 ${width} ${height}`}
-        className="w-full h-full max-w-[450px]"
-        style={{ overflow: 'visible' }}
-      >
-        <g transform="scale(1.1) translate(-15, -35)">
-          {renderContent()}
+    <div className="flex flex-col items-center justify-center w-full h-full relative overflow-visible">
+      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
+        <g transform={`scale(${scaleOverride})`}>
+          {sortedPanels.map((p, idx) => {
+            const pWidth = p.width_mm * visualScale;
+            const localX = currentX;
+            currentX += pWidth + separationGap;
 
-          {/* Extra dimensions for complex profiles */}
-          {segments.length > 0 && shapeProfile !== 'standard' && (
-            <SegmentDimensions
-              segments={segments.filter(seg => {
-                // Heuristic: filter out segments that coincide with main boundaries
-                const isMainWidth = Math.abs(seg.y1 - seg.y2) < 1 && (seg.y1 < 10 || Math.abs(seg.y1 - panelHeight) < 10);
-                const isMainHeight = Math.abs(seg.x1 - seg.x2) < 1 && (seg.x1 < 10 || Math.abs(seg.x1 - panelWidth) < 10);
-                return !(isMainWidth || isMainHeight);
-              })}
-            />
-          )}
+            const isSelected = p.panel_id === activePanelId;
 
-          {/* Main Dimension Lines */}
-          {(realWidthMm || realHeightMm) && (
-            <DimensionLines
-              x={startX}
-              y={startY}
-              width={panelWidth}
-              height={panelHeight}
-              widthValue={realWidthMm || 0}
-              heightValue={realHeightMm || 0}
-              onWidthClick={onWidthClick}
-              onHeightClick={onHeightClick}
-              editable={false}
-            />
-          )}
+            return (
+              <g key={p.panel_id} onClick={() => onPanelClick?.(p.panel_id)} className="cursor-pointer">
+                {/* Selection Highlight */}
+                {isSelected && (
+                  <rect
+                    x={localX - 10} y={startY - 10}
+                    width={pWidth + 20} height={panelHeight + 20}
+                    fill="none" stroke="#3b82f6" strokeWidth="3" strokeDasharray="8 4" rx="8"
+                  />
+                )}
 
-          {/* Laser Plumb Line Visualization */}
-          {wallRake && (
-            <g>
-              <line
-                x1={mountingSide === 'left' ? startX : startX + panelWidth}
-                y1={startY - 20}
-                x2={mountingSide === 'left' ? startX : startX + panelWidth}
-                y2={startY + panelHeight + 20}
-                stroke="#ef4444"
-                strokeWidth="1"
-                strokeDasharray="4 4"
-              />
-              <text
-                x={mountingSide === 'left' ? startX - 5 : startX + panelWidth + 5}
-                y={startY - 25}
-                textAnchor={mountingSide === 'left' ? 'end' : 'start'}
-                fill="#ef4444"
-                fontSize="8"
-                fontWeight="bold"
-                className="uppercase tracking-tighter"
-              >
-                Laser Plumb
-              </text>
-            </g>
-          )}
+                {p.panel_type === 'door_hinged' ? (
+                  <PanelDoor
+                    width={pWidth}
+                    height={panelHeight}
+                    x={localX}
+                    y={startY}
+                    hinge_side={p.hinge_side || 'left'}
+                    handle_side={p.handle_side || 'right'}
+                    finish={hardwareFinish}
+                  />
+                ) : (
+                  <PanelFixed
+                    width={pWidth}
+                    height={panelHeight}
+                    x={localX}
+                    y={startY}
+                    useClampsMode={mountingType === 'clamps'}
+                    channels={mountingType === 'channel' ? [
+                      'bottom',
+                      ...(p.wall_fix?.left ? ['left'] : []),
+                      ...(p.wall_fix?.right ? ['right'] : [])
+                    ] as any : []}
+                    hingePositions={[20, panelHeight - 30]} // Clamp positions
+                    clampEdge="center"
+                    finish={hardwareFinish}
+                  />
+                )}
+
+                {/* Labels */}
+                <text
+                  x={localX + pWidth / 2} y={startY - 35}
+                  textAnchor="middle"
+                  className="text-[14px] font-black fill-slate-900 uppercase tracking-tight"
+                >
+                  {p.panel_id} ({p.width_mm}mm)
+                </text>
+
+                {/* Junction Indicators between panels */}
+                {idx < sortedPanels.length - 1 && (() => {
+                  const nextPanel = sortedPanels[idx + 1];
+                  const midX = localX + pWidth + separationGap / 2;
+                  const junction = junctions?.find(j =>
+                    (j.a_panel_id === p.panel_id && j.b_panel_id === nextPanel.panel_id) ||
+                    (j.b_panel_id === p.panel_id && j.a_panel_id === nextPanel.panel_id)
+                  );
+                  if (!junction) return null;
+                  const isOpen = activeJunctionId === junction.junction_id;
+
+                  return (
+                    <g transform={`translate(${midX}, ${startY + panelHeight / 2})`}>
+                      <rect
+                        x="-18" y="-18" width="36" height="36" transform="rotate(45)"
+                        fill={isOpen ? "#3b82f6" : "#1e293b"}
+                        rx="6"
+                        onClick={(e) => { e.stopPropagation(); onJunctionSelect?.(junction.junction_id); }}
+                      />
+                      <text y="4" textAnchor="middle" className="text-[12px] font-black fill-white pointer-events-none">{junction.angle_deg}°</text>
+                    </g>
+                  );
+                })()}
+
+                {/* Add Panel Button */}
+                <g
+                  transform={`translate(${localX + pWidth + separationGap / 2}, ${startY + panelHeight})`}
+                  className="cursor-pointer group"
+                  onClick={(e) => { e.stopPropagation(); onAddPanel?.(idx + 1); }}
+                >
+                  {idx < sortedPanels.length - 1 && (
+                    <>
+                      <circle r="16" fill="#1e293b" className="group-hover:fill-blue-600 transition-colors shadow-lg" />
+                      <circle r="14" fill="#22c55e" stroke="white" strokeWidth="2" />
+                      <line x1="-6" y1="0" x2="6" y2="0" stroke="white" strokeWidth="3" strokeLinecap="round" />
+                      <line x1="0" y1="-6" x2="0" y2="6" stroke="white" strokeWidth="3" strokeLinecap="round" />
+                    </>
+                  )}
+                </g>
+              </g>
+            );
+          })}
         </g>
       </svg>
     </div>
   );
 }
-

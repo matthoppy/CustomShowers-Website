@@ -1,5 +1,6 @@
-import { ShowerConfiguration, type DoorVariant, type ConfigurationCategory } from './components/designer/ShowerConfiguration';
 import { useState } from 'react';
+import { ShowerConfiguration, type DoorVariant } from './components/designer/ShowerConfiguration';
+import { Square1Configurator } from './components/designer/Square1Configurator';
 
 export default function App() {
   // Track door variant for each configuration
@@ -275,7 +276,7 @@ export default function App() {
                     category="inline"
                     baseType={config.baseType}
                     doorVariant={config.hasVariants ? doorVariants[config.baseType] : undefined}
-                    useClampsMode={useClampsMode}
+                    mountingType={useClampsMode ? 'clamps' : 'channel'}
                     width={280}
                     height={360}
                   />
@@ -299,14 +300,18 @@ export default function App() {
                   {config.hasVariants && renderVariantSelector(config.baseType)}
                 </div>
                 <div className="p-6 flex items-center justify-center bg-white">
-                  <ShowerConfiguration
-                    category="square"
-                    baseType={config.baseType}
-                    doorVariant={config.hasVariants ? doorVariants[config.baseType] : undefined}
-                    useClampsMode={useClampsMode}
-                    width={280}
-                    height={360}
-                  />
+                  {config.baseType === 'square-v1-beta' ? (
+                    <Square1Configurator onBackToCategory={() => { }} />
+                  ) : (
+                    <ShowerConfiguration
+                      category="square"
+                      baseType={config.baseType}
+                      doorVariant={config.hasVariants ? doorVariants[config.baseType] : undefined}
+                      mountingType={useClampsMode ? 'clamps' : 'channel'}
+                      width={280}
+                      height={360}
+                    />
+                  )}
                 </div>
               </div>
             ))}
@@ -331,7 +336,7 @@ export default function App() {
                     category="quadrant"
                     baseType={config.baseType}
                     doorVariant={config.hasVariants ? doorVariants[config.baseType] : undefined}
-                    useClampsMode={useClampsMode}
+                    mountingType={useClampsMode ? 'clamps' : 'channel'}
                     width={280}
                     height={360}
                   />

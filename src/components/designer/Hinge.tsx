@@ -1,387 +1,109 @@
+export type HardwareFinish = 'chrome' | 'matte-black' | 'brushed-brass' | 'satin-brass';
+
+export const getHardwareColors = (finish: HardwareFinish) => {
+  switch (finish) {
+    case 'matte-black':
+      return { fill: '#1A1A1A', stroke: '#000000', highlight: '#333333' };
+    case 'brushed-brass':
+    case 'satin-brass':
+      return { fill: '#C5A059', stroke: '#8B6F39', highlight: '#E5C587' };
+    case 'chrome':
+    default:
+      return { fill: '#A0A0A0', stroke: '#707070', highlight: '#D8D8D8' };
+  }
+};
+
 interface HingeProps {
   x?: number;
   y?: number;
-  orientation?: 'left' | 'right' | '90-degree';
-  type?: 'wall' | 'glass' | '90-degree' | '135-degree' | 'return-fixed' | 'return-dual';
+  orientation?: 'left' | 'right';
+  type?: 'wall' | 'glass'; // wall = 1 rectangle, glass = 2 rectangles
+  scale?: number;
+  junctionGap?: number; // Gap between panels in exploded view
+  finish?: HardwareFinish;
 }
 
-export function Hinge({ x = 0, y = 0, orientation = 'left', type = 'wall' }: HingeProps) {
-  const squareSize = 14;
-  const squareWidth = 8;
-  const gap = 2;
-  let offsetX = 0;
-
-  // Handle 90-degree hinges (for angled panel connections)
-  if (type === '90-degree') {
-    // Match the same angle as the panel's bottom channel
-    // Panel goes left by 80 and up by 40, ratio = 40/80 = 0.5
-    const angleRatio = 0.5;
-    const returnBoxWidth = 7.2; // Keep the angled box the same size
-    const verticalOffset = returnBoxWidth * angleRatio; // Proportional to width
-
-    if (orientation === 'right') {
-      // Right-oriented hinge: square on left (door), parallelogram on right (return panel)
-      return (
-        <g transform={`translate(${x}, ${y})`}>
-          {/* Parallelogram on return panel - extending to the right */}
-          <path
-            d={`
-              M 0 ${squareSize}
-              L ${returnBoxWidth} ${squareSize - verticalOffset}
-              L ${returnBoxWidth} ${0 - verticalOffset}
-              L 0 0
-              Z
-            `}
-            fill="#A0A0A0"
-            stroke="#707070"
-            strokeWidth="1"
-          />
-
-          {/* Square on door panel - vertical edge */}
-          <rect
-            x={-squareWidth}
-            y="0"
-            width={squareWidth}
-            height={squareSize}
-            fill="#A0A0A0"
-            stroke="#707070"
-            strokeWidth="1"
-          />
-
-          {/* Label - positioned to the right */}
-          <text x={returnBoxWidth + 5} y={squareSize / 2 + 3} fontSize="8" fill="#666" fontFamily="Arial, sans-serif">90</text>
-        </g>
-      );
-    }
-
-    // Left-oriented hinge (default)
-    return (
-      <g transform={`translate(${x}, ${y})`}>
-        {/* Parallelogram on return panel - angled like the bottom channel, drawn first (behind) */}
-        <path
-          d={`
-            M 0 ${squareSize}
-            L ${-returnBoxWidth} ${squareSize - verticalOffset}
-            L ${-returnBoxWidth} ${0 - verticalOffset}
-            L 0 0
-            Z
-          `}
-          fill="#A0A0A0"
-          stroke="#707070"
-          strokeWidth="1"
-        />
-
-        {/* Square on door panel - vertical edge, drawn second (in front) */}
-        <rect
-          x={0}
-          y="0"
-          width={squareWidth}
-          height={squareSize}
-          fill="#A0A0A0"
-          stroke="#707070"
-          strokeWidth="1"
-        />
-
-        {/* Label - positioned to the left */}
-        <text x={-returnBoxWidth - 15} y={squareSize / 2 + 3} fontSize="8" fill="#666" fontFamily="Arial, sans-serif">90</text>
-      </g>
-    );
-  }
-
-  // Handle 135-degree hinges (for quadrant return panels)
-  if (type === '135-degree') {
-    // For 135-degree angle - going back towards the wall
-    // This creates a hinge that connects the return panel at an obtuse angle
-    // Match the panel's angle: depth * 20 horizontal = -depth * 10 vertical
-    // ratio = 10/20 = 0.5
-    const returnBoxWidth = 7.2;
-    const verticalOffset = returnBoxWidth * 0.5; // Match the panel's isometric angle
-
-    if (orientation === 'left') {
-      // Left return panel - angled back to the left
-      return (
-        <g transform={`translate(${x}, ${y})`}>
-          {/* Parallelogram on return panel - angled back towards wall */}
-          <path
-            d={`
-              M 0 0
-              L ${-returnBoxWidth} ${-verticalOffset}
-              L ${-returnBoxWidth} ${squareSize - verticalOffset}
-              L 0 ${squareSize}
-              Z
-            `}
-            fill="#A0A0A0"
-            stroke="#707070"
-            strokeWidth="1"
-          />
-
-          {/* Label - positioned to the left */}
-          <text x={-returnBoxWidth - 15} y={squareSize / 2} fontSize="8" fill="#666" fontFamily="Arial, sans-serif">90</text>
-        </g>
-      );
-    } else {
-      // Right return panel - angled back to the right
-      return (
-        <g transform={`translate(${x}, ${y})`}>
-          {/* Parallelogram on return panel - angled back towards wall */}
-          <path
-            d={`
-              M 0 0
-              L ${returnBoxWidth} ${-verticalOffset}
-              L ${returnBoxWidth} ${squareSize - verticalOffset}
-              L 0 ${squareSize}
-              Z
-            `}
-            fill="#A0A0A0"
-            stroke="#707070"
-            strokeWidth="1"
-          />
-
-          {/* Label - positioned to the right */}
-          <text x={returnBoxWidth + 5} y={squareSize / 2} fontSize="8" fill="#666" fontFamily="Arial, sans-serif">90</text>
-        </g>
-      );
-    }
-  }
-
-  // Handle 90-degree glass-to-glass hinges (for angled panel to door connection)
-  if (orientation === '90-degree' && type === 'glass') {
-    return (
-      <g transform={`translate(${x}, ${y})`}>
-        {/* Square on door panel - vertical edge */}
-        <rect
-          x={0}
-          y="0"
-          width={squareWidth}
-          height={squareSize}
-          fill="#A0A0A0"
-          stroke="#707070"
-          strokeWidth="1"
-        />
-
-        {/* Second square on return panel - extends perpendicular at 90 degrees */}
-        <rect
-          x={0}
-          y={-squareSize - gap}
-          width={squareWidth}
-          height={squareSize}
-          fill="#A0A0A0"
-          stroke="#707070"
-          strokeWidth="1"
-        />
-      </g>
-    );
-  }
-
-  // Handle return-fixed hinges (for return panel + fixed panel configurations)
-  if (type === 'return-fixed') {
-    // This is for configurations like Return Left + Door + Return Right
-    // The parallelogram represents the angled return panel, rectangle is the vertical door
-    // Orientation indicates which direction the return panel angles
-    const returnBoxWidth = 7.2;
-    const angleRatio = 0.5;
-    const verticalOffset = returnBoxWidth * angleRatio;
-
-    if (orientation === 'left') {
-      // Return panel angles to the left (backward and left)
-      return (
-        <g transform={`translate(${x}, ${y})`}>
-          {/* Square on door panel - vertical edge, drawn first (behind) */}
-          <rect
-            x={0}
-            y="0"
-            width={squareWidth}
-            height={squareSize}
-            fill="#A0A0A0"
-            stroke="#707070"
-            strokeWidth="1"
-          />
-
-          {/* Parallelogram on return panel - angled backward to the left, drawn second (in front) */}
-          <path
-            d={`
-              M 0 ${squareSize}
-              L ${-returnBoxWidth} ${squareSize - verticalOffset}
-              L ${-returnBoxWidth} ${0 - verticalOffset}
-              L 0 0
-              Z
-            `}
-            fill="#A0A0A0"
-            stroke="#707070"
-            strokeWidth="1"
-          />
-
-          {/* Label - positioned to the left */}
-          <text x={-returnBoxWidth - 15} y={squareSize / 2 + 3} fontSize="8" fill="#666" fontFamily="Arial, sans-serif">90</text>
-        </g>
-      );
-    } else if (orientation === 'right') {
-      // Return panel angles to the right (backward and right)
-      return (
-        <g transform={`translate(${x}, ${y})`}>
-          {/* Parallelogram on return panel - angled backward to the right, drawn first (behind) */}
-          <path
-            d={`
-              M ${-squareWidth} ${squareSize}
-              L ${-squareWidth + returnBoxWidth} ${squareSize - verticalOffset}
-              L ${-squareWidth + returnBoxWidth} ${0 - verticalOffset}
-              L ${-squareWidth} 0
-              Z
-            `}
-            fill="#A0A0A0"
-            stroke="#707070"
-            strokeWidth="1"
-          />
-
-          {/* Square on door panel - vertical edge, drawn second (in front) */}
-          <rect
-            x={-squareWidth}
-            y="0"
-            width={squareWidth}
-            height={squareSize}
-            fill="#A0A0A0"
-            stroke="#707070"
-            strokeWidth="1"
-          />
-
-          {/* Label - positioned to the right */}
-          <text x={returnBoxWidth + 5} y={squareSize / 2 + 3} fontSize="8" fill="#666" fontFamily="Arial, sans-serif">90</text>
-        </g>
-      );
-    }
-  }
-
-  // Handle return-dual hinges (for Return Left + Door + Return Right only)
-  if (type === 'return-dual') {
-    const returnBoxWidth = 7.2;
-    const angleRatio = 0.5;
-    const verticalOffset = returnBoxWidth * angleRatio;
-
-    if (orientation === 'left') {
-      // Return panel angles to the left (backward and left)
-      return (
-        <g transform={`translate(${x}, ${y})`}>
-          {/* Square on door panel - vertical edge, drawn first (behind) - OFFSET TO RIGHT */}
-          <rect
-            x={8}
-            y="0"
-            width={squareWidth}
-            height={squareSize}
-            fill="#A0A0A0"
-            stroke="#707070"
-            strokeWidth="1"
-          />
-
-          {/* Parallelogram on return panel - angled backward to the left, drawn second (in front) */}
-          <path
-            d={`
-              M 0 ${squareSize}
-              L ${-returnBoxWidth} ${squareSize - verticalOffset}
-              L ${-returnBoxWidth} ${0 - verticalOffset}
-              L 0 0
-              Z
-            `}
-            fill="#A0A0A0"
-            stroke="#707070"
-            strokeWidth="1"
-          />
-
-          {/* Label - positioned to the left */}
-          <text x={-returnBoxWidth - 15} y={squareSize / 2 + 3} fontSize="8" fill="#666" fontFamily="Arial, sans-serif">90</text>
-        </g>
-      );
-    } else if (orientation === 'right') {
-      // Return panel angles to the right (backward and right)
-      return (
-        <g transform={`translate(${x}, ${y})`}>
-          {/* Parallelogram on return panel - angled backward to the right, drawn first (behind) */}
-          <path
-            d={`
-              M ${-squareWidth} ${squareSize}
-              L ${-squareWidth + returnBoxWidth} ${squareSize - verticalOffset}
-              L ${-squareWidth + returnBoxWidth} ${0 - verticalOffset}
-              L ${-squareWidth} 0
-              Z
-            `}
-            fill="#A0A0A0"
-            stroke="#707070"
-            strokeWidth="1"
-          />
-
-          {/* Square on door panel - vertical edge, drawn second (in front) - OFFSET TO LEFT */}
-          <rect
-            x={-squareWidth - 8}
-            y="0"
-            width={squareWidth}
-            height={squareSize}
-            fill="#A0A0A0"
-            stroke="#707070"
-            strokeWidth="1"
-          />
-
-          {/* Label - positioned to the right */}
-          <text x={returnBoxWidth + 5} y={squareSize / 2 + 3} fontSize="8" fill="#666" fontFamily="Arial, sans-serif">90</text>
-        </g>
-      );
-    }
-  }
+/**
+ * Hinge Component for Exploded View
+ * 
+ * - Wall-to-glass: 1 rectangle on the door glass only
+ * - Glass-to-glass: 2 rectangles, one on each glass panel at the junction
+ * 
+ * The rectangles are always positioned ON their respective glass panels:
+ * - For wall-to-glass: single rectangle inset into the door
+ * - For glass-to-glass: left rectangle on left panel, right rectangle on right panel
+ *   with a gap between them matching the exploded view gap
+ * 
+ * All junction angles (90°, 135°, 180°) look the same in exploded view.
+ */
+export function Hinge({
+  x = 0,
+  y = 0,
+  orientation = 'left',
+  type = 'wall',
+  scale = 1,
+  junctionGap = 60, // Default gap between panels in exploded view
+  finish = 'chrome'
+}: HingeProps) {
+  const squareHeight = 20 * scale;
+  const squareWidth = 12 * scale;
+  const colors = getHardwareColors(finish);
 
   if (type === 'wall') {
-    // For wall type, align the hinge edge with the glass edge
-    offsetX = orientation === 'left' ? 0 : -squareWidth;
-  } else {
-    // For glass type, center the gap between the two squares at the glass seam
-    // Total width is: squareWidth + gap + squareWidth
-    offsetX = -(squareWidth + gap / 2);
-  }
+    // Wall-to-glass: Single rectangle on the door glass
+    // Rectangle is inset into the glass from the edge
+    const insetX = orientation === 'left' ? x : x - squareWidth;
 
-  if (type === 'wall') {
-    // Single square for glass-to-wall
     return (
-      <g transform={`translate(${x + offsetX}, ${y})`}>
+      <g transform={`translate(${insetX}, ${y})`}>
         <rect
-          x="0"
-          y="0"
+          x={0}
+          y={0}
           width={squareWidth}
-          height={squareSize}
-          fill="#A0A0A0"
-          stroke="#707070"
+          height={squareHeight}
+          fill={colors.fill}
+          stroke={colors.stroke}
           strokeWidth="1"
         />
-
-        {/* Label - positioned to the right */}
-        <text x={squareWidth + 5} y={squareSize / 2 + 3} fontSize="8" fill="#666" fontFamily="Arial, sans-serif">wg</text>
       </g>
     );
   }
 
-  // Two squares for glass-to-glass
+  // Glass-to-glass: Two rectangles, each on its own glass panel
+  // The x position is at the junction between panels
+  // Left rectangle is inset into the left panel (to the left of junction)
+  // Right rectangle is inset into the right panel (to the right of junction + gap)
+
+  // Left panel: rectangle sits on the right edge of the left panel
+  const leftRectX = x - squareWidth;
+
+  // Right panel: rectangle sits on the left edge of the right panel
+  // (which is across the junction gap)
+  const rightRectX = x + junctionGap;
+
   return (
-    <g transform={`translate(${x + offsetX}, ${y})`}>
-      {/* Left square */}
+    <g>
+      {/* Rectangle on left glass panel (door side) */}
       <rect
-        x="0"
-        y="0"
+        x={leftRectX}
+        y={y}
         width={squareWidth}
-        height={squareSize}
-        fill="#A0A0A0"
-        stroke="#707070"
+        height={squareHeight}
+        fill={colors.fill}
+        stroke={colors.stroke}
         strokeWidth="1"
       />
 
-      {/* Right square */}
+      {/* Rectangle on right glass panel (fixed panel side) */}
       <rect
-        x={squareWidth + gap}
-        y="0"
+        x={rightRectX}
+        y={y}
         width={squareWidth}
-        height={squareSize}
-        fill="#A0A0A0"
-        stroke="#707070"
+        height={squareHeight}
+        fill={colors.fill}
+        stroke={colors.stroke}
         strokeWidth="1"
       />
-
-      {/* Label - positioned to the right */}
-      <text x={squareWidth * 2 + gap + 5} y={squareSize / 2 + 3} fontSize="8" fill="#666" fontFamily="Arial, sans-serif">gg</text>
     </g>
   );
 }
