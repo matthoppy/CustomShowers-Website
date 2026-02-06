@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { JunctionModel, PanelModel } from '@/types/square';
 import { PanelFixed } from './PanelFixed';
 import { PanelDoor } from './PanelDoor';
-import { Hinge } from './Hinge';
+import { Hinge, HardwareFinish } from './Hinge';
 import { Handle } from './Handle';
 
 interface ExplodedPanelViewProps {
@@ -18,6 +18,8 @@ interface ExplodedPanelViewProps {
     onUpdatePanelType: (id: string, type: 'fixed' | 'door_hinged') => void;
     minPanels?: number;
     activeEditor?: React.ReactNode;
+    hardwareFinish?: HardwareFinish;
+    readOnly?: boolean;
 }
 
 export function ExplodedPanelView({
@@ -32,7 +34,9 @@ export function ExplodedPanelView({
     onUpdateJunctionAngle,
     onUpdatePanelType,
     minPanels = 2,
-    activeEditor
+    activeEditor,
+    hardwareFinish = 'chrome',
+    readOnly = false
 }: ExplodedPanelViewProps) {
     const [openJunctionPopoverId, setOpenJunctionPopoverId] = useState<string | null>(null);
 
@@ -83,6 +87,9 @@ export function ExplodedPanelView({
                                         y={startY}
                                         top_edge={panel.top_edge}
                                         notches={panel.notches}
+                                        hinge_side={panel.hinge_side || 'left'}
+                                        handle_side={panel.handle_side || 'right'}
+                                        finish={hardwareFinish}
                                     />
                                 ) : (
                                     <PanelFixed
@@ -93,14 +100,15 @@ export function ExplodedPanelView({
                                         isActive={isSelected}
                                         top_edge={panel.top_edge}
                                         notches={panel.notches}
+                                        finish={hardwareFinish}
                                     />
                                 )}
 
-                                {/* Hardware rendering */}
+                                {/* Hardware rendering - hinges/handle use finish */}
                                 {panel.panel_type === 'door_hinged' ? (
                                     <>
                                         {/* Hinges */}
-                                        {[0.2, 0.5, 0.8].map((pos, hidx) => {
+                                        {[0.2, 0.8].map((pos, hidx) => {
                                             const hingeY = startY + panelHeight * pos;
                                             const hingeX = panel.hinge_side === 'left' ? localX : localX + panelWidth;
                                             return (
@@ -110,6 +118,7 @@ export function ExplodedPanelView({
                                                     y={hingeY}
                                                     orientation={panel.hinge_side || 'left'}
                                                     type="wall"
+                                                    finish={hardwareFinish}
                                                 />
                                             );
                                         })}
@@ -119,6 +128,7 @@ export function ExplodedPanelView({
                                             x={panel.handle_side === 'left' ? localX : localX + panelWidth}
                                             y={startY + panelHeight / 2}
                                             orientation={panel.handle_side || 'right'}
+                                            finish={hardwareFinish}
                                         />
                                     </>
                                 ) : (
@@ -151,8 +161,8 @@ export function ExplodedPanelView({
                                     {panel.panel_id}
                                 </text>
 
-                                {/* Delete Button (if above minPanels) */}
-                                {sortedPanels.length > minPanels && isSelected && (
+                                {/* Delete Button (if above minPanels, hidden in readOnly) */}
+                                {!readOnly && sortedPanels.length > minPanels && isSelected && (
                                     <g
                                         transform={`translate(${localX + panelWidth - 10}, ${startY + 10})`}
                                         onClick={(e) => { e.stopPropagation(); onDeletePanel(panel.panel_id); }}
@@ -218,15 +228,17 @@ export function ExplodedPanelView({
                                 );
                             })()}
 
-                            {/* Add Panel Button - moved to top center */}
-                            <g
-                                transform={`translate(${localX + panelWidth + separationGap / 2}, ${startY - 50})`}
-                                className="cursor-pointer group"
-                                onClick={() => onAddPanel(idx + 1)}
-                            >
-                                <circle r="18" fill="#22c55e" stroke="white" strokeWidth="2" className="group-hover:scale-110 transition-transform shadow-lg" />
-                                <path d="M-6 0 L6 0 M0 -6 L0 6" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-                            </g>
+                            {/* Add Panel Button - moved to top center (hidden in readOnly) */}
+                            {!readOnly && (
+                                <g
+                                    transform={`translate(${localX + panelWidth + separationGap / 2}, ${startY - 50})`}
+                                    className="cursor-pointer group"
+                                    onClick={() => onAddPanel(idx + 1)}
+                                >
+                                    <circle r="18" fill="#22c55e" stroke="white" strokeWidth="2" className="group-hover:scale-110 transition-transform shadow-lg" />
+                                    <path d="M-6 0 L6 0 M0 -6 L0 6" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                                </g>
+                            )}
                         </g>
                     );
                 })}
