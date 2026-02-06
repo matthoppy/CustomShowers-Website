@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { PlanView } from './PlanView';
 import { PerspectiveView } from './PerspectiveView';
+import { ExplodedPanelView } from './ExplodedPanelView';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
@@ -12,9 +13,10 @@ import {
     CheckCircle2,
     Trash2,
     RotateCcw,
+    Info,
 } from 'lucide-react';
 import { ShowerConfiguration } from './ShowerConfiguration';
-import { PanelModel, JunctionModel } from '@/types/square';
+import { PanelModel, JunctionModel, PanelNotches, PanelTopEdge } from '@/types/square';
 import { HardwareFinish } from './Hinge';
 
 type Step = 'LAYOUT' | 'DIMENSIONS' | 'HARDWARE' | 'ELEVATION';
@@ -27,6 +29,8 @@ export interface ChainPanel {
         hinge_side: 'left' | 'right';
         swing_direction: 'out' | 'both';
     };
+    notches: PanelNotches;
+    top_edge: PanelTopEdge;
 }
 
 export interface ChainJunction {
@@ -40,12 +44,17 @@ interface Square1ConfiguratorProps {
 export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorProps) {
     const [step, setStep] = useState<Step>('LAYOUT');
 
+    const defaultNotches: PanelNotches = { bottom_left: false, bottom_right: false, width_mm: null, height_mm: null };
+    const defaultTopEdge: PanelTopEdge = { type: 'level', direction: null, drop_mm: null };
+
     const [panels, setPanels] = useState<ChainPanel[]>([
         {
             id: 'p-door',
             type: 'door',
             width_mm: 700,
-            door_properties: { hinge_side: 'right', swing_direction: 'out' }
+            door_properties: { hinge_side: 'right', swing_direction: 'out' },
+            notches: { ...defaultNotches },
+            top_edge: { ...defaultTopEdge }
         }
     ]);
     const [junctions, setJunctions] = useState<ChainJunction[]>([]);
@@ -76,7 +85,7 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
     // Helpers
     const insertPanel = (index: number, position: 'before' | 'after') => {
         const newId = `p-${Date.now()}`;
-        const newPanel: ChainPanel = { id: newId, type: 'fixed', width_mm: 600 };
+        const newPanel: ChainPanel = { id: newId, type: 'fixed', width_mm: 600, notches: { ...defaultNotches }, top_edge: { ...defaultTopEdge } };
         const insertIndex = position === 'before' ? index : index + 1;
 
         setPanels(prev => {
@@ -132,7 +141,7 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
                 width_mm: p.width_mm,
                 height_mm: panelHeight,
                 position_index: idx,
-                plane: 'front', // simplified for now
+                plane: 'front' as const,
                 hinge_side: p.door_properties?.hinge_side || 'left',
                 handle_side: p.door_properties?.hinge_side === 'left' ? 'right' : 'left',
                 wall_fix: {
@@ -140,8 +149,8 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
                     right: idx === panels.length - 1 && rightWall
                 },
                 mounting_style: mountingType,
-                notches: { bottom_left: false, bottom_right: false, width_mm: null, height_mm: null },
-                top_edge: { type: 'level', direction: null, drop_mm: null }
+                notches: p.notches || { bottom_left: false, bottom_right: false, width_mm: null, height_mm: null },
+                top_edge: p.top_edge || { type: 'level' as const, direction: null, drop_mm: null }
             };
         });
 
@@ -239,40 +248,225 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
         </div>
     );
 
+    // Update a specific panel's properties
+    const updateChainPanel = (id: string, updates: Partial<ChainPanel>) => {
+        setPanels(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+    };
+
+    const updatePanelNotches = (id: string, updates: Partial<PanelNotches>) => {
+        setPanels(prev => prev.map(p => {
+            if (p.id !== id) return p;
+            return { ...p, notches: { ...p.notches, ...updates } };
+        }));
+    };
+
+    const updatePanelTopEdge = (id: string, updates: Partial<PanelTopEdge>) => {
+        setPanels(prev => prev.map(p => {
+            if (p.id !== id) return p;
+            return { ...p, top_edge: { ...p.top_edge, ...updates } };
+        }));
+    };
+
+    // Map ExplodedPanelView junction callbacks (junction_id like "j-0" -> index 0)
+    const handleExplodedJunctionAngle = (junctionId: string, angle: number) => {
+        const idx = parseInt(junctionId.replace('j-', ''));
+        if (!isNaN(idx)) {
+            updateJunctionAngle(idx, angle as 90 | 180);
+        }
+    };
+
     const renderDimensionsStep = () => (
-        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="text-center space-y-2">
-                <h2 className="text-2xl font-black uppercase tracking-tight">Dimensions</h2>
-                <p className="text-slate-500 text-sm">Set the standard height for your installation.</p>
+                <h2 className="text-2xl font-black uppercase tracking-tight">Dimensions & Details</h2>
+                <p className="text-slate-500 text-sm">Click a panel to edit its dimensions, notches and slopes.</p>
             </div>
 
-            <div className="p-6 bg-slate-900 rounded-[2.5rem] shadow-2xl space-y-6">
-                <div className="space-y-3">
-                    <div className="flex justify-between items-center px-1">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Total Height (mm)</Label>
-                        <span className="text-xs font-black text-blue-400">{panelHeight}mm</span>
-                    </div>
-                    <Input
-                        type="number"
-                        value={panelHeight}
-                        onChange={(e) => updatePanelHeight(parseInt(e.target.value) || 2000)}
-                        className="h-16 bg-slate-800 border-none text-white text-xl font-black rounded-2xl focus-visible:ring-blue-500"
-                    />
+            {/* Global Height */}
+            <div className="p-5 bg-slate-900 rounded-[2rem] shadow-2xl space-y-4">
+                <div className="flex justify-between items-center px-1">
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Total Height (mm)</Label>
+                    <span className="text-xs font-black text-blue-400">{panelHeight}mm</span>
                 </div>
+                <Input
+                    type="number"
+                    value={panelHeight}
+                    onChange={(e) => updatePanelHeight(parseInt(e.target.value) || 2000)}
+                    className="h-14 bg-slate-800 border-none text-white text-lg font-black rounded-2xl focus-visible:ring-blue-500"
+                />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                {[1900, 2000, 2100].map(h => (
-                    <Button
-                        key={h}
-                        variant={panelHeight === h ? 'secondary' : 'outline'}
-                        onClick={() => updatePanelHeight(h)}
-                        className={`h-12 text-[10px] font-black rounded-xl border-2 ${panelHeight === h ? 'bg-white border-blue-500 shadow-md' : 'border-slate-100 opacity-60'}`}
-                    >
-                        {h}mm
-                    </Button>
-                ))}
-            </div>
+            {/* Per-panel editor - shown when a panel is selected */}
+            {activePanelId && activePanel && (
+                <div className="p-5 bg-blue-50 border border-blue-100 rounded-[2rem] space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-xs shadow-sm">
+                            {activePanelId.replace('p-', '').charAt(0).toUpperCase()}
+                        </div>
+                        <Label className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-900">
+                            {activePanel.type === 'door' ? 'Door Panel' : 'Fixed Panel'} — {activePanelId}
+                        </Label>
+                    </div>
+
+                    {/* Panel Width */}
+                    <div className="space-y-2">
+                        <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Panel Width (mm)</Label>
+                        <Input
+                            ref={widthInputRef}
+                            type="number"
+                            value={tempWidth}
+                            onChange={(e) => {
+                                setTempWidth(e.target.value);
+                                const val = parseInt(e.target.value);
+                                if (!isNaN(val) && activePanelId) {
+                                    setPanels(prev => prev.map(p => p.id === activePanelId ? { ...p, width_mm: val } : p));
+                                }
+                            }}
+                            className="h-12 text-lg font-black rounded-xl border-2 border-blue-200 bg-white focus-visible:ring-blue-500"
+                        />
+                    </div>
+
+                    {/* Door-specific: Hinge Side */}
+                    {activePanel.type === 'door' && (
+                        <div className="space-y-2">
+                            <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Hinge Side</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                    variant={activePanel.door_properties?.hinge_side === 'left' ? 'default' : 'outline'}
+                                    onClick={() => setPanels(prev => prev.map(p => p.id === activePanelId ? { ...p, door_properties: { ...p.door_properties!, hinge_side: 'left' } } : p))}
+                                    className="h-10 text-[9px] font-black uppercase rounded-xl"
+                                >
+                                    Left
+                                </Button>
+                                <Button
+                                    variant={activePanel.door_properties?.hinge_side === 'right' ? 'default' : 'outline'}
+                                    onClick={() => setPanels(prev => prev.map(p => p.id === activePanelId ? { ...p, door_properties: { ...p.door_properties!, hinge_side: 'right' } } : p))}
+                                    className="h-10 text-[9px] font-black uppercase rounded-xl"
+                                >
+                                    Right
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Bottom Notches */}
+                    <div className="space-y-3 pt-3 border-t border-blue-200">
+                        <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Bottom Notches</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                            <Button
+                                variant={activePanel.notches.bottom_left ? 'default' : 'outline'}
+                                onClick={() => updatePanelNotches(activePanelId, { bottom_left: !activePanel.notches.bottom_left })}
+                                className={`h-10 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activePanel.notches.bottom_left ? 'bg-blue-600 border-blue-600 shadow-md text-white' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}
+                            >
+                                Bottom Left
+                            </Button>
+                            <Button
+                                variant={activePanel.notches.bottom_right ? 'default' : 'outline'}
+                                onClick={() => updatePanelNotches(activePanelId, { bottom_right: !activePanel.notches.bottom_right })}
+                                className={`h-10 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activePanel.notches.bottom_right ? 'bg-blue-600 border-blue-600 shadow-md text-white' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}
+                            >
+                                Bottom Right
+                            </Button>
+                        </div>
+
+                        {(activePanel.notches.bottom_left || activePanel.notches.bottom_right) && (
+                            <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-2">
+                                <div className="space-y-1.5">
+                                    <Label className="text-[9px] font-bold text-slate-400">Notch Width (mm)</Label>
+                                    <Input
+                                        type="number"
+                                        value={activePanel.notches.width_mm || ''}
+                                        onChange={(e) => updatePanelNotches(activePanelId, { width_mm: parseInt(e.target.value) || null })}
+                                        placeholder="e.g. 50"
+                                        className="h-9 text-xs rounded-lg"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[9px] font-bold text-slate-400">Notch Height (mm)</Label>
+                                    <Input
+                                        type="number"
+                                        value={activePanel.notches.height_mm || ''}
+                                        onChange={(e) => updatePanelNotches(activePanelId, { height_mm: parseInt(e.target.value) || null })}
+                                        placeholder="e.g. 50"
+                                        className="h-9 text-xs rounded-lg"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Sloped Ceiling / Top Edge */}
+                    <div className="space-y-3 pt-3 border-t border-blue-200">
+                        <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Top Edge (Sloped Ceiling)</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                            <Button
+                                variant={activePanel.top_edge.type === 'level' ? 'default' : 'outline'}
+                                onClick={() => updatePanelTopEdge(activePanelId, { type: 'level', direction: null, drop_mm: null })}
+                                className={`h-10 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activePanel.top_edge.type === 'level' ? 'bg-blue-600 border-blue-600 shadow-md text-white' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}
+                            >
+                                Level Top
+                            </Button>
+                            <Button
+                                variant={activePanel.top_edge.type === 'sloped' ? 'default' : 'outline'}
+                                onClick={() => updatePanelTopEdge(activePanelId, { type: 'sloped', direction: activePanel.top_edge.direction || 'left' })}
+                                className={`h-10 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activePanel.top_edge.type === 'sloped' ? 'bg-blue-600 border-blue-600 shadow-md text-white' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}
+                            >
+                                Sloped Top
+                            </Button>
+                        </div>
+
+                        {activePanel.top_edge.type === 'sloped' && (
+                            <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                                <div className="space-y-2">
+                                    <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Slope Direction</Label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <Button
+                                            variant={activePanel.top_edge.direction === 'left' ? 'secondary' : 'outline'}
+                                            onClick={() => updatePanelTopEdge(activePanelId, { direction: 'left' })}
+                                            className="h-9 text-[8px] font-black uppercase rounded-lg"
+                                        >
+                                            Left High
+                                        </Button>
+                                        <Button
+                                            variant={activePanel.top_edge.direction === 'right' ? 'secondary' : 'outline'}
+                                            onClick={() => updatePanelTopEdge(activePanelId, { direction: 'right' })}
+                                            className="h-9 text-[8px] font-black uppercase rounded-lg"
+                                        >
+                                            Right High
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[9px] font-bold text-slate-400">Total Drop (mm)</Label>
+                                    <Input
+                                        type="number"
+                                        value={activePanel.top_edge.drop_mm || ''}
+                                        onChange={(e) => updatePanelTopEdge(activePanelId, { drop_mm: parseInt(e.target.value) || null })}
+                                        placeholder="e.g. 150"
+                                        className="h-9 text-xs rounded-lg"
+                                    />
+                                </div>
+                                {activePanel.type === 'door' && (
+                                    <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-100 flex items-start gap-2">
+                                        <Info className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                        <p className="text-[9px] text-amber-800 font-bold uppercase tracking-wider">
+                                            Confirm handle/hinge clearance with sloped top
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {!activePanelId && (
+                <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-[1.5rem] text-center">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Click a panel in the diagram to edit its details
+                    </p>
+                </div>
+            )}
         </div>
     );
 
@@ -391,11 +585,29 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
                         <div className="absolute top-8 left-10 flex items-center gap-3 z-10">
                             <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
                             <Label className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">
-                                {step === 'LAYOUT' ? 'Top-Down Plan' : step === 'HARDWARE' ? 'Style Preview' : '3D Perspective'}
+                                {step === 'LAYOUT' ? 'Top-Down Plan' : step === 'DIMENSIONS' ? 'Exploded View' : step === 'HARDWARE' ? 'Style Preview' : '3D Perspective'}
                             </Label>
                         </div>
 
-                        {step === 'DIMENSIONS' || step === 'HARDWARE' ? (
+                        {step === 'DIMENSIONS' ? (
+                            <div className="w-full h-full flex items-center justify-center animate-in zoom-in-95 duration-500">
+                                <ExplodedPanelView
+                                    panels={derivedModel.panels}
+                                    junctions={derivedModel.junctions}
+                                    activePanelId={activePanelId}
+                                    activeJunctionId={null}
+                                    onPanelSelect={handlePanelFocus}
+                                    onJunctionSelect={() => {}}
+                                    onAddPanel={() => {}}
+                                    onDeletePanel={() => {}}
+                                    onUpdateJunctionAngle={handleExplodedJunctionAngle}
+                                    onUpdatePanelType={() => {}}
+                                    minPanels={999}
+                                    readOnly={true}
+                                    hardwareFinish={hardwareFinish}
+                                />
+                            </div>
+                        ) : step === 'HARDWARE' ? (
                             <div className="w-full h-full animate-in zoom-in-95 duration-500">
                                 <PerspectiveView
                                     panels={panels}
@@ -459,7 +671,7 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
                     {/* Bottom Nav */}
                     <div className="mt-6 flex justify-between items-center bg-white/50 backdrop-blur-sm p-4 rounded-2xl border">
                         <Button variant="outline" onClick={() => {
-                            setPanels([{ id: 'p-door', type: 'door', width_mm: 700, door_properties: { hinge_side: 'right', swing_direction: 'out' } }]);
+                            setPanels([{ id: 'p-door', type: 'door', width_mm: 700, door_properties: { hinge_side: 'right', swing_direction: 'out' }, notches: { ...defaultNotches }, top_edge: { ...defaultTopEdge } }]);
                             setJunctions([]);
                             setLeftWall(true);
                             setRightWall(true);

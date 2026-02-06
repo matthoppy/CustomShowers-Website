@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { JunctionModel, PanelModel } from '@/types/square';
 import { PanelFixed } from './PanelFixed';
 import { PanelDoor } from './PanelDoor';
-import { Hinge, HardwareFinish } from './Hinge';
+import { Hinge, HardwareFinish, getHardwareColors } from './Hinge';
 import { Handle } from './Handle';
 import { Clamp } from './Clamp';
 import { Label } from '../ui/label';
@@ -299,21 +299,23 @@ export function ShowerConfiguration({
                     />
 
                     {/* Hardware rendering - DOORS */}
-                    {isDoor && (
+                    {isDoor && (() => {
+                      const hwColors = getHardwareColors(hardwareFinish);
+                      return (
                       <>
                         {/* Door indicator */}
                         <circle cx={isoX} cy={isoY - halfH + 15} r="6" fill="#EF4444" stroke="#fff" strokeWidth="2" className="animate-pulse" />
                         <text x={isoX} y={isoY - halfH + 18} textAnchor="middle" className="text-[6px] font-black fill-white">D</text>
 
-                        {/* Hinges - 3 positions */}
-                        {[0.15, 0.5, 0.85].map((pos, idx) => {
+                        {/* Hinges - 2 positions */}
+                        {[0.15, 0.85].map((pos, idx) => {
                           const hingeY = isoY - halfH + pHeightPx * pos;
                           const hingeSide = panel.hinge_side === 'left' ? -1 : 1;
                           const hingeX = isoX + (hingeSide * halfWidth);
                           return (
                             <g key={`hinge-${idx}`}>
-                              <rect x={hingeX - 4} y={hingeY - 8} width="8" height="16" fill="#475569" rx="2" stroke="#334155" strokeWidth="1" />
-                              <circle cx={hingeX} cy={hingeY} r="3" fill="#94a3b8" stroke="#64748b" strokeWidth="1" />
+                              <rect x={hingeX - 4} y={hingeY - 8} width="8" height="16" fill={hwColors.fill} rx="2" stroke={hwColors.stroke} strokeWidth="1" />
+                              <circle cx={hingeX} cy={hingeY} r="3" fill={hwColors.highlight} stroke={hwColors.stroke} strokeWidth="1" />
                             </g>
                           );
                         })}
@@ -329,8 +331,8 @@ export function ShowerConfiguration({
                                 y={isoY - 25}
                                 width="6"
                                 height="50"
-                                fill="#64748b"
-                                stroke="#475569"
+                                fill={hwColors.fill}
+                                stroke={hwColors.stroke}
                                 strokeWidth="1"
                                 rx="3"
                               />
@@ -339,17 +341,21 @@ export function ShowerConfiguration({
                                 y={isoY - 20}
                                 width="4"
                                 height="40"
-                                fill="#94a3b8"
+                                fill={hwColors.highlight}
                                 rx="2"
+                                opacity="0.6"
                               />
                             </g>
                           );
                         })()}
                       </>
-                    )}
+                      );
+                    })()}
 
                     {/* Fixed panel hardware - Clamps */}
-                    {!isDoor && (
+                    {!isDoor && (() => {
+                      const hwColors = getHardwareColors(hardwareFinish);
+                      return (
                       <>
                         {/* Top clamps */}
                         {[0.25, 0.75].map((pos, idx) => {
@@ -357,8 +363,8 @@ export function ShowerConfiguration({
                           const clampY = isoY - halfH;
                           return (
                             <g key={`clamp-top-${idx}`}>
-                              <rect x={clampX - 6} y={clampY - 8} width="12" height="10" fill="#475569" rx="2" stroke="#334155" strokeWidth="1" />
-                              <rect x={clampX - 4} y={clampY - 6} width="8" height="6" fill="#64748b" rx="1" />
+                              <rect x={clampX - 6} y={clampY - 8} width="12" height="10" fill={hwColors.fill} rx="2" stroke={hwColors.stroke} strokeWidth="1" />
+                              <rect x={clampX - 4} y={clampY - 6} width="8" height="6" fill={hwColors.highlight} rx="1" />
                             </g>
                           );
                         })}
@@ -368,13 +374,14 @@ export function ShowerConfiguration({
                           const clampY = isoY + halfH;
                           return (
                             <g key={`clamp-bottom-${idx}`}>
-                              <rect x={clampX - 6} y={clampY - 2} width="12" height="10" fill="#475569" rx="2" stroke="#334155" strokeWidth="1" />
-                              <rect x={clampX - 4} y={clampY} width="8" height="6" fill="#64748b" rx="1" />
+                              <rect x={clampX - 6} y={clampY - 2} width="12" height="10" fill={hwColors.fill} rx="2" stroke={hwColors.stroke} strokeWidth="1" />
+                              <rect x={clampX - 4} y={clampY} width="8" height="6" fill={hwColors.highlight} rx="1" />
                             </g>
                           );
                         })}
                       </>
-                    )}
+                      );
+                    })()}
 
                     {/* Panel label */}
                     <text x={isoX} y={isoY + halfH + 20} textAnchor="middle" className="text-[10px] font-black fill-slate-600">

@@ -115,7 +115,7 @@ export function PanelDoor({
               />
               <Handle
                 x={handle_side === 'left' ? 0 : width}
-                y={height / 2 - 20}
+                y={height / 2}
                 orientation={handle_side}
                 scale={1}
                 finish={finish}
