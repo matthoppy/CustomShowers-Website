@@ -27,6 +27,12 @@ export interface ChainPanel {
         hinge_side: 'left' | 'right';
         swing_direction: 'out' | 'both';
     };
+    notches?: {
+        bottom_left: boolean;
+        bottom_right: boolean;
+        width_mm: number;
+        height_mm: number;
+    };
 }
 
 export interface ChainJunction {
@@ -140,7 +146,7 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
                     right: idx === panels.length - 1 && rightWall
                 },
                 mounting_style: mountingType,
-                notches: { bottom_left: false, bottom_right: false, width_mm: null, height_mm: null },
+                notches: p.notches || { bottom_left: false, bottom_right: false, width_mm: null, height_mm: null },
                 top_edge: { type: 'level', direction: null, drop_mm: null }
             };
         });
@@ -205,6 +211,84 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
                             </div>
                         </div>
                     )}
+
+                    {/* Notch Configuration */}
+                    <div className="space-y-3 pt-4 border-t-2 border-blue-100">
+                        <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest pl-1">Notches</Label>
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="notch-bl"
+                                    checked={activePanel?.notches?.bottom_left || false}
+                                    onChange={(e) => {
+                                        if (activePanelId) {
+                                            setPanels(prev => prev.map(p => p.id === activePanelId ? {
+                                                ...p,
+                                                notches: { ...p.notches || { bottom_left: false, bottom_right: false, width_mm: 50, height_mm: 50 }, bottom_left: e.target.checked }
+                                            } : p));
+                                        }
+                                    }}
+                                    className="w-4 h-4 rounded"
+                                />
+                                <Label htmlFor="notch-bl" className="text-[8px] font-semibold text-slate-600">Bottom Left Notch</Label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="notch-br"
+                                    checked={activePanel?.notches?.bottom_right || false}
+                                    onChange={(e) => {
+                                        if (activePanelId) {
+                                            setPanels(prev => prev.map(p => p.id === activePanelId ? {
+                                                ...p,
+                                                notches: { ...p.notches || { bottom_left: false, bottom_right: false, width_mm: 50, height_mm: 50 }, bottom_right: e.target.checked }
+                                            } : p));
+                                        }
+                                    }}
+                                    className="w-4 h-4 rounded"
+                                />
+                                <Label htmlFor="notch-br" className="text-[8px] font-semibold text-slate-600">Bottom Right Notch</Label>
+                            </div>
+                        </div>
+
+                        {(activePanel?.notches?.bottom_left || activePanel?.notches?.bottom_right) && (
+                            <div className="grid grid-cols-2 gap-2 pt-2">
+                                <div className="space-y-1">
+                                    <Label className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Width (mm)</Label>
+                                    <Input
+                                        type="number"
+                                        value={activePanel?.notches?.width_mm || 50}
+                                        onChange={(e) => {
+                                            if (activePanelId) {
+                                                setPanels(prev => prev.map(p => p.id === activePanelId ? {
+                                                    ...p,
+                                                    notches: { ...p.notches || { bottom_left: false, bottom_right: false, width_mm: 50, height_mm: 50 }, width_mm: parseInt(e.target.value) || 50 }
+                                                } : p));
+                                            }
+                                        }}
+                                        className="h-8 text-xs font-semibold rounded-lg border-1"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Height (mm)</Label>
+                                    <Input
+                                        type="number"
+                                        value={activePanel?.notches?.height_mm || 50}
+                                        onChange={(e) => {
+                                            if (activePanelId) {
+                                                setPanels(prev => prev.map(p => p.id === activePanelId ? {
+                                                    ...p,
+                                                    notches: { ...p.notches || { bottom_left: false, bottom_right: false, width_mm: 50, height_mm: 50 }, height_mm: parseInt(e.target.value) || 50 }
+                                                } : p));
+                                            }
+                                        }}
+                                        className="h-8 text-xs font-semibold rounded-lg border-1"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex flex-col gap-2">

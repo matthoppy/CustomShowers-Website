@@ -36,13 +36,13 @@ export function PlanView({
     const doorIndex = panels.findIndex(p => p.type === 'door');
     if (doorIndex === -1) return null;
 
-    // 1. Calculate relative points at unit scale
+    // 1. Calculate relative points at unit scale (with notch support)
     const rawSegments = useMemo(() => {
         const segs: any[] = [];
         const door = panels[doorIndex];
 
         // Door segment (anchor)
-        segs[doorIndex] = { x1: 0, y1: 0, x2: door.width_mm, y2: 0, id: door.id, type: 'door' };
+        segs[doorIndex] = { x1: 0, y1: 0, x2: door.width_mm, y2: 0, id: door.id, type: 'door', notches: door.notches };
 
         // Trace Left side (from Door edge outwards)
         let curX = 0, curY = 0;
@@ -56,7 +56,7 @@ export function PlanView({
             const p = panels[i];
             const nextX = curX + dx * p.width_mm;
             const nextY = curY + dy * p.width_mm;
-            segs[i] = { x1: curX, y1: curY, x2: nextX, y2: nextY, id: p.id, type: p.type };
+            segs[i] = { x1: curX, y1: curY, x2: nextX, y2: nextY, id: p.id, type: p.type, notches: p.notches };
             curX = nextX; curY = nextY;
         }
 
@@ -72,7 +72,7 @@ export function PlanView({
             const p = panels[i];
             const nextX = curX + dx * p.width_mm;
             const nextY = curY + dy * p.width_mm;
-            segs[i] = { x1: curX, y1: curY, x2: nextX, y2: nextY, id: p.id, type: p.type };
+            segs[i] = { x1: curX, y1: curY, x2: nextX, y2: nextY, id: p.id, type: p.type, notches: p.notches };
             curX = nextX; curY = nextY;
         }
         return segs;
@@ -107,6 +107,51 @@ export function PlanView({
         x2: s.x2 * finalScale,
         y2: s.y2 * finalScale
     }));
+
+    // Helper function to generate notch geometry for a segment
+    const getNotchPath = (seg: any, panel: any, angle: number, thickness: number) => {
+        if (!panel.notches || (!panel.notches.bottom_left && !panel.notches.bottom_right)) {
+            return null;
+        }
+
+        const { bottom_left, bottom_right, width_mm, height_mm } = panel.notches;
+        const notchW = width_mm * finalScale;
+        const notchH = height_mm * finalScale;
+        const nx = -Math.sin(angle);
+        const ny = Math.cos(angle);
+
+        const centerX = (seg.x1 + seg.x2) / 2;
+        const centerY = (seg.y1 + seg.y2) / 2;
+        const panelLength = Math.hypot(seg.x2 - seg.x1, seg.y2 - seg.y1);
+
+        const paths = [];
+
+        if (bottom_left) {
+            // Left side notch
+            const notchX1 = seg.x1 + nx * (thickness / 2 + notchH);
+            const notchY1 = seg.y1 + ny * (thickness / 2 + notchH);
+            const notchX2 = seg.x1 + notchW * Math.cos(angle);
+            const notchY2 = seg.y1 + notchW * Math.sin(angle);
+            const notchX3 = notchX2 + nx * (thickness / 2 + notchH);
+            const notchY3 = notchY2 + ny * (thickness / 2 + notchH);
+
+            paths.push(`M ${seg.x1} ${seg.y1} L ${notchX1} ${notchY1} L ${notchX3} ${notchY3} L ${notchX2} ${notchY2} Z`);
+        }
+
+        if (bottom_right) {
+            // Right side notch
+            const notchX1 = seg.x2 + nx * (thickness / 2 + notchH);
+            const notchY1 = seg.y2 + ny * (thickness / 2 + notchH);
+            const notchX2 = seg.x2 - notchW * Math.cos(angle);
+            const notchY2 = seg.y2 - notchW * Math.sin(angle);
+            const notchX3 = notchX2 + nx * (thickness / 2 + notchH);
+            const notchY3 = notchY2 + ny * (thickness / 2 + notchH);
+
+            paths.push(`M ${seg.x2} ${seg.y2} L ${notchX1} ${notchY1} L ${notchX3} ${notchY3} L ${notchX2} ${notchY2} Z`);
+        }
+
+        return paths.length > 0 ? paths : null;
+    };
 
     const leftEdge = (doorIndex === 0)
         ? { x: segments[0].x1, y: segments[0].y1, angle: Math.atan2(segments[0].y2 - segments[0].y1, segments[0].x2 - segments[0].x1) }
@@ -208,6 +253,94 @@ export function PlanView({
                     );
                 })}
 
+                {/* 1.5. Notch Visualization Layer */}
+                {segments.map((seg, i) => {
+                    const panel = panels[i];
+                    if (!panel.notches || (!panel.notches.bottom_left && !panel.notches.bottom_right)) {
+                        return null;
+                    }
+
+                    const angle = Math.atan2(seg.y2 - seg.y1, seg.x2 - seg.x1);
+                    const thickness = 10 * finalScale;
+                    const nx = -Math.sin(angle);
+                    const ny = Math.cos(angle);
+                    const { bottom_left, bottom_right, width_mm, height_mm } = panel.notches;
+                    const notchW = width_mm * finalScale;
+                    const notchH = height_mm * finalScale;
+
+                    return (
+                        <g key={`notches-${seg.id}`} className="pointer-events-none">
+                            {/* Left notch */}
+                            {bottom_left && (
+                                <g>
+                                    {/* Notch outline */}
+                                    <line
+                                        x1={seg.x1}
+                                        y1={seg.y1}
+                                        x2={seg.x1 + nx * (thickness / 2 + notchH)}
+                                        y2={seg.y1 + ny * (thickness / 2 + notchH)}
+                                        stroke="#f97316"
+                                        strokeWidth="2"
+                                        opacity="0.6"
+                                    />
+                                    <line
+                                        x1={seg.x1 + nx * (thickness / 2 + notchH)}
+                                        y1={seg.y1 + ny * (thickness / 2 + notchH)}
+                                        x2={seg.x1 + notchW * Math.cos(angle) + nx * (thickness / 2 + notchH)}
+                                        y2={seg.y1 + notchW * Math.sin(angle) + ny * (thickness / 2 + notchH)}
+                                        stroke="#f97316"
+                                        strokeWidth="2"
+                                        opacity="0.6"
+                                    />
+                                    <line
+                                        x1={seg.x1 + notchW * Math.cos(angle) + nx * (thickness / 2 + notchH)}
+                                        y1={seg.y1 + notchW * Math.sin(angle) + ny * (thickness / 2 + notchH)}
+                                        x2={seg.x1 + notchW * Math.cos(angle)}
+                                        y2={seg.y1 + notchW * Math.sin(angle)}
+                                        stroke="#f97316"
+                                        strokeWidth="2"
+                                        opacity="0.6"
+                                    />
+                                </g>
+                            )}
+
+                            {/* Right notch */}
+                            {bottom_right && (
+                                <g>
+                                    {/* Notch outline */}
+                                    <line
+                                        x1={seg.x2}
+                                        y1={seg.y2}
+                                        x2={seg.x2 + nx * (thickness / 2 + notchH)}
+                                        y2={seg.y2 + ny * (thickness / 2 + notchH)}
+                                        stroke="#f97316"
+                                        strokeWidth="2"
+                                        opacity="0.6"
+                                    />
+                                    <line
+                                        x1={seg.x2 + nx * (thickness / 2 + notchH)}
+                                        y1={seg.y2 + ny * (thickness / 2 + notchH)}
+                                        x2={seg.x2 - notchW * Math.cos(angle) + nx * (thickness / 2 + notchH)}
+                                        y2={seg.y2 - notchW * Math.sin(angle) + ny * (thickness / 2 + notchH)}
+                                        stroke="#f97316"
+                                        strokeWidth="2"
+                                        opacity="0.6"
+                                    />
+                                    <line
+                                        x1={seg.x2 - notchW * Math.cos(angle) + nx * (thickness / 2 + notchH)}
+                                        y1={seg.y2 - notchW * Math.sin(angle) + ny * (thickness / 2 + notchH)}
+                                        x2={seg.x2 - notchW * Math.cos(angle)}
+                                        y2={seg.y2 - notchW * Math.sin(angle)}
+                                        stroke="#f97316"
+                                        strokeWidth="2"
+                                        opacity="0.6"
+                                    />
+                                </g>
+                            )}
+                        </g>
+                    );
+                })}
+
                 {/* 2. Dimensions Layer (Outside) */}
                 {segments.map((seg, i) => {
                     const panel = panels[i];
@@ -237,6 +370,70 @@ export function PlanView({
                                     {panel.width_mm}
                                 </text>
                             </g>
+                        </g>
+                    );
+                })}
+
+                {/* 2.5. Notch Dimensions Layer */}
+                {segments.map((seg, i) => {
+                    const panel = panels[i];
+                    if (!panel.notches || (!panel.notches.bottom_left && !panel.notches.bottom_right)) {
+                        return null;
+                    }
+
+                    const angle = Math.atan2(seg.y2 - seg.y1, seg.x2 - seg.x1);
+                    const angleDeg = angle * 180 / Math.PI;
+                    const shouldFlipText = angleDeg < -90 || angleDeg > 90;
+                    const { bottom_left, bottom_right, width_mm, height_mm } = panel.notches;
+                    const notchW = width_mm * finalScale;
+                    const notchH = height_mm * finalScale;
+                    const thickness = 10 * finalScale;
+                    const nx = -Math.sin(angle);
+                    const ny = Math.cos(angle);
+
+                    const dimY = 110;
+
+                    return (
+                        <g key={`notch-dim-${seg.id}`}>
+                            {/* Left notch dimensions */}
+                            {bottom_left && (
+                                <g transform={`translate(${seg.x1 + notchW / 2 * Math.cos(angle)}, ${seg.y1 + notchW / 2 * Math.sin(angle)}) rotate(${angleDeg})`}>
+                                    {/* Width dimension */}
+                                    <line x1={-notchW / 2} y1={dimY} x2={notchW / 2} y2={dimY} stroke="#f97316" strokeWidth="1" />
+                                    <line x1={-notchW / 2} y1={dimY - 3} x2={-notchW / 2} y2={dimY + 3} stroke="#f97316" strokeWidth="1" />
+                                    <line x1={notchW / 2} y1={dimY - 3} x2={notchW / 2} y2={dimY + 3} stroke="#f97316" strokeWidth="1" />
+                                    <g transform={shouldFlipText ? `rotate(180)` : ""}>
+                                        <rect x="-16" y={shouldFlipText ? -dimY - 18 : dimY + 3} width="32" height="16" fill="white" />
+                                        <text
+                                            textAnchor="middle"
+                                            dy={shouldFlipText ? -dimY - 6 : dimY + 14}
+                                            className="text-[9px] font-bold fill-orange-500"
+                                        >
+                                            {width_mm}
+                                        </text>
+                                    </g>
+                                </g>
+                            )}
+
+                            {/* Right notch dimensions */}
+                            {bottom_right && (
+                                <g transform={`translate(${seg.x2 - notchW / 2 * Math.cos(angle)}, ${seg.y2 - notchW / 2 * Math.sin(angle)}) rotate(${angleDeg})`}>
+                                    {/* Width dimension */}
+                                    <line x1={-notchW / 2} y1={dimY} x2={notchW / 2} y2={dimY} stroke="#f97316" strokeWidth="1" />
+                                    <line x1={-notchW / 2} y1={dimY - 3} x2={-notchW / 2} y2={dimY + 3} stroke="#f97316" strokeWidth="1" />
+                                    <line x1={notchW / 2} y1={dimY - 3} x2={notchW / 2} y2={dimY + 3} stroke="#f97316" strokeWidth="1" />
+                                    <g transform={shouldFlipText ? `rotate(180)` : ""}>
+                                        <rect x="-16" y={shouldFlipText ? -dimY - 18 : dimY + 3} width="32" height="16" fill="white" />
+                                        <text
+                                            textAnchor="middle"
+                                            dy={shouldFlipText ? -dimY - 6 : dimY + 14}
+                                            className="text-[9px] font-bold fill-orange-500"
+                                        >
+                                            {width_mm}
+                                        </text>
+                                    </g>
+                                </g>
+                            )}
                         </g>
                     );
                 })}
