@@ -294,18 +294,6 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
                     onChange={(e) => updatePanelHeight(parseInt(e.target.value) || 2000)}
                     className="h-14 bg-slate-800 border-none text-white text-lg font-black rounded-2xl focus-visible:ring-blue-500"
                 />
-                <div className="grid grid-cols-3 gap-2">
-                    {[1900, 2000, 2100].map(h => (
-                        <Button
-                            key={h}
-                            variant={panelHeight === h ? 'secondary' : 'outline'}
-                            onClick={() => updatePanelHeight(h)}
-                            className={`h-10 text-[10px] font-black rounded-xl border-2 ${panelHeight === h ? 'bg-white border-blue-500 shadow-md' : 'border-slate-700 text-slate-400 hover:text-white opacity-60'}`}
-                        >
-                            {h}mm
-                        </Button>
-                    ))}
-                </div>
             </div>
 
             {/* Per-panel editor - shown when a panel is selected */}

@@ -79,6 +79,8 @@ export function ExplodedPanelView({
                                     />
                                 )}
 
+                                {/* PanelDoor already renders its own hinges + handle via finish prop */}
+                                {/* PanelFixed renders its own channels/clamps */}
                                 {panel.panel_type === 'door_hinged' ? (
                                     <PanelDoor
                                         width={panelWidth}
@@ -100,58 +102,12 @@ export function ExplodedPanelView({
                                         isActive={isSelected}
                                         top_edge={panel.top_edge}
                                         notches={panel.notches}
+                                        channels={['bottom', ...(panel.wall_fix?.left ? ['left' as const] : []), ...(panel.wall_fix?.right ? ['right' as const] : [])]}
                                         finish={hardwareFinish}
                                     />
                                 )}
 
-                                {/* Hardware rendering - hinges/handle use finish */}
-                                {panel.panel_type === 'door_hinged' ? (
-                                    <>
-                                        {/* Hinges */}
-                                        {[0.2, 0.8].map((pos, hidx) => {
-                                            const hingeY = startY + panelHeight * pos;
-                                            const hingeX = panel.hinge_side === 'left' ? localX : localX + panelWidth;
-                                            return (
-                                                <Hinge
-                                                    key={`hinge-${hidx}`}
-                                                    x={hingeX}
-                                                    y={hingeY}
-                                                    orientation={panel.hinge_side || 'left'}
-                                                    type="wall"
-                                                    finish={hardwareFinish}
-                                                />
-                                            );
-                                        })}
-
-                                        {/* Handle */}
-                                        <Handle
-                                            x={panel.handle_side === 'left' ? localX : localX + panelWidth}
-                                            y={startY + panelHeight / 2}
-                                            orientation={panel.handle_side || 'right'}
-                                            finish={hardwareFinish}
-                                        />
-                                    </>
-                                ) : (
-                                    <>
-                                        {/* Clamps for fixed panels */}
-                                        {[0.25, 0.75].map((pos, cidx) => {
-                                            const clampY = startY + panelHeight * pos;
-                                            return (
-                                                <circle
-                                                    key={`clamp-${cidx}`}
-                                                    cx={localX + 5}
-                                                    cy={clampY}
-                                                    r="3"
-                                                    fill="#64748b"
-                                                    stroke="#475569"
-                                                    strokeWidth="1"
-                                                />
-                                            );
-                                        })}
-                                    </>
-                                )}
-
-                                {/* Label */}
+                                {/* Panel Name Label */}
                                 <text
                                     x={localX + panelWidth / 2}
                                     y={startY - 30}
@@ -159,6 +115,16 @@ export function ExplodedPanelView({
                                     className="text-[14px] font-black fill-slate-900 uppercase tracking-widest"
                                 >
                                     {panel.panel_id}
+                                </text>
+
+                                {/* Panel Type + Width sub-label */}
+                                <text
+                                    x={localX + panelWidth / 2}
+                                    y={startY - 14}
+                                    textAnchor="middle"
+                                    className="text-[9px] font-bold fill-slate-400 uppercase tracking-wider"
+                                >
+                                    {panel.panel_type === 'door_hinged' ? 'Door' : 'Fixed'} — {panel.width_mm}mm
                                 </text>
 
                                 {/* Delete Button (if above minPanels, hidden in readOnly) */}
@@ -174,7 +140,7 @@ export function ExplodedPanelView({
                                 )}
                             </g>
 
-                            {/* Junction Control */}
+                            {/* Junction Control - pop-down with 90/180 */}
                             {idx < sortedPanels.length - 1 && (() => {
                                 const nextPanel = sortedPanels[idx + 1];
                                 const midX = localX + panelWidth + separationGap / 2;
@@ -184,52 +150,87 @@ export function ExplodedPanelView({
                                 );
 
                                 if (!junction) return null;
-                                const isJunctionSelected = activeJunctionId === junction.junction_id;
+                                const isOpen = openJunctionPopoverId === junction.junction_id;
 
                                 return (
                                     <g transform={`translate(${midX}, ${startY + panelHeight / 2})`}>
+                                        {/* Diamond button */}
                                         <g
                                             className="cursor-pointer group"
-                                            onClick={() => onJunctionSelect(junction.junction_id)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOpenJunctionPopoverId(isOpen ? null : junction.junction_id);
+                                            }}
                                         >
                                             <rect
-                                                x="-20" y="-20" width="40" height="40" transform="rotate(45)"
-                                                fill={isJunctionSelected ? "#3b82f6" : "#f8fafc"}
-                                                stroke={isJunctionSelected ? "#2563eb" : "#e2e8f0"}
+                                                x="-18" y="-18" width="36" height="36" transform="rotate(45)"
+                                                fill={isOpen ? "#3b82f6" : "#f8fafc"}
+                                                stroke={isOpen ? "#2563eb" : "#e2e8f0"}
                                                 strokeWidth="2"
                                                 rx="6"
                                                 className="group-hover:fill-blue-50 transition-colors"
                                             />
                                             <text
                                                 y="4" textAnchor="middle"
-                                                className={`text-[12px] font-black ${isJunctionSelected ? 'fill-white' : 'fill-slate-600'}`}
+                                                className={`text-[12px] font-black ${isOpen ? 'fill-white' : 'fill-slate-600'}`}
                                             >
                                                 {junction.angle_deg}°
                                             </text>
                                         </g>
 
-                                        {/* Simple Angle Toggle Popover (placeholder) */}
-                                        {isJunctionSelected && (
-                                            <g transform="translate(0, 40)">
-                                                <rect x="-40" y="0" width="80" height="90" fill="white" stroke="#e2e8f0" strokeWidth="1" rx="8" shadow="sm" />
-                                                {[90, 135, 180].map((angle, i) => (
-                                                    <g
-                                                        key={angle}
-                                                        transform={`translate(0, ${25 + i * 25})`}
-                                                        className="cursor-pointer hover:bg-slate-50"
-                                                        onClick={() => onUpdateJunctionAngle(junction.junction_id, angle)}
-                                                    >
-                                                        <text textAnchor="middle" className="text-[10px] font-bold fill-slate-700">{angle}°</text>
-                                                    </g>
-                                                ))}
+                                        {/* Pop-down angle selector */}
+                                        {isOpen && (
+                                            <g transform="translate(0, 35)">
+                                                {/* Background bubble */}
+                                                <rect x="-45" y="0" width="90" height="70" fill="white" stroke="#e2e8f0" strokeWidth="1.5" rx="10" className="drop-shadow-lg" />
+                                                {/* Arrow */}
+                                                <polygon points="-8,-5 8,-5 0,3" fill="white" stroke="#e2e8f0" strokeWidth="1" />
+
+                                                {/* 90 degree option */}
+                                                <g
+                                                    className="cursor-pointer"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onUpdateJunctionAngle(junction.junction_id, 90);
+                                                        setOpenJunctionPopoverId(null);
+                                                    }}
+                                                >
+                                                    <rect
+                                                        x="-38" y="8" width="76" height="22" rx="6"
+                                                        fill={junction.angle_deg === 90 ? '#3b82f6' : '#f1f5f9'}
+                                                        className="hover:fill-blue-100 transition-colors"
+                                                    />
+                                                    <text x="0" y="23" textAnchor="middle" className={`text-[11px] font-black ${junction.angle_deg === 90 ? 'fill-white' : 'fill-slate-700'}`}>
+                                                        90°
+                                                    </text>
+                                                </g>
+
+                                                {/* 180 degree option */}
+                                                <g
+                                                    className="cursor-pointer"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onUpdateJunctionAngle(junction.junction_id, 180);
+                                                        setOpenJunctionPopoverId(null);
+                                                    }}
+                                                >
+                                                    <rect
+                                                        x="-38" y="36" width="76" height="22" rx="6"
+                                                        fill={junction.angle_deg === 180 ? '#3b82f6' : '#f1f5f9'}
+                                                        className="hover:fill-blue-100 transition-colors"
+                                                    />
+                                                    <text x="0" y="51" textAnchor="middle" className={`text-[11px] font-black ${junction.angle_deg === 180 ? 'fill-white' : 'fill-slate-700'}`}>
+                                                        180°
+                                                    </text>
+                                                </g>
                                             </g>
                                         )}
                                     </g>
                                 );
                             })()}
 
-                            {/* Add Panel Button - moved to top center (hidden in readOnly) */}
-                            {!readOnly && (
+                            {/* Add Panel Button (hidden in readOnly) */}
+                            {!readOnly && idx < sortedPanels.length - 1 && (
                                 <g
                                     transform={`translate(${localX + panelWidth + separationGap / 2}, ${startY - 50})`}
                                     className="cursor-pointer group"
