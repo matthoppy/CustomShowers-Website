@@ -4,6 +4,7 @@ import { PanelFixed } from './PanelFixed';
 import { PanelDoor } from './PanelDoor';
 import { Hinge } from './Hinge';
 import { Handle } from './Handle';
+import { Channel } from './Channel';
 
 interface ExplodedPanelViewProps {
     panels: PanelModel[];
@@ -96,51 +97,6 @@ export function ExplodedPanelView({
                                     />
                                 )}
 
-                                {/* Hardware rendering */}
-                                {panel.panel_type === 'door_hinged' ? (
-                                    <>
-                                        {/* Hinges */}
-                                        {[0.2, 0.5, 0.8].map((pos, hidx) => {
-                                            const hingeY = startY + panelHeight * pos;
-                                            const hingeX = panel.hinge_side === 'left' ? localX : localX + panelWidth;
-                                            return (
-                                                <Hinge
-                                                    key={`hinge-${hidx}`}
-                                                    x={hingeX}
-                                                    y={hingeY}
-                                                    orientation={panel.hinge_side || 'left'}
-                                                    type="wall"
-                                                />
-                                            );
-                                        })}
-
-                                        {/* Handle */}
-                                        <Handle
-                                            x={panel.handle_side === 'left' ? localX : localX + panelWidth}
-                                            y={startY + panelHeight / 2}
-                                            orientation={panel.handle_side || 'right'}
-                                        />
-                                    </>
-                                ) : (
-                                    <>
-                                        {/* Clamps for fixed panels */}
-                                        {[0.25, 0.75].map((pos, cidx) => {
-                                            const clampY = startY + panelHeight * pos;
-                                            return (
-                                                <circle
-                                                    key={`clamp-${cidx}`}
-                                                    cx={localX + 5}
-                                                    cy={clampY}
-                                                    r="3"
-                                                    fill="#64748b"
-                                                    stroke="#475569"
-                                                    strokeWidth="1"
-                                                />
-                                            );
-                                        })}
-                                    </>
-                                )}
-
                                 {/* Label */}
                                 <text
                                     x={localX + panelWidth / 2}
@@ -148,8 +104,16 @@ export function ExplodedPanelView({
                                     textAnchor="middle"
                                     className="text-[14px] font-black fill-slate-900 uppercase tracking-widest"
                                 >
-                                    {panel.panel_id}
+                                    {panel.panel_type === 'door_hinged' ? 'Door' : `Fixed ${idx + 1}`}
                                 </text>
+
+                                {/* Channel at bottom of panel */}
+                                <Channel
+                                    width={panelWidth}
+                                    x={localX}
+                                    y={startY + panelHeight}
+                                    type="bottom"
+                                />
 
                                 {/* Delete Button (if above minPanels) */}
                                 {sortedPanels.length > minPanels && isSelected && (
