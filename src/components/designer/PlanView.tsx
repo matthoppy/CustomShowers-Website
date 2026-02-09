@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ChainPanel, ChainJunction } from './Square1Configurator';
+import { ExplodedPanelView } from './ExplodedPanelView';
+import type { PanelModel, JunctionModel } from '@/types/square';
 
 interface PlanViewProps {
     panels: ChainPanel[];
@@ -165,139 +167,36 @@ export function PlanView({
         angle: Math.atan2(segments[lastIdx].y2 - segments[lastIdx].y1, segments[lastIdx].x2 - segments[lastIdx].x1)
     };
 
-    // Exploded view rendering
-    const renderExplodedView = () => {
+    // Convert ChainPanel/ChainJunction to PanelModel/JunctionModel for ExplodedPanelView
+    const explodedViewData = useMemo(() => {
         const panelHeight = 2000; // Default height
-        const padding = 40;
-        const maxPanelWidth = Math.max(...panels.map(p => p.width_mm), 1000);
-        const gap = 60; // Gap between panels in exploded view
+        const mappedPanels: PanelModel[] = panels.map((p, idx) => ({
+            panel_id: p.id,
+            panel_type: p.type === 'door' ? 'door_hinged' : 'fixed',
+            plane: 'front',
+            position_index: idx,
+            hinge_side: p.door_properties?.hinge_side || null,
+            handle_side: p.door_properties?.hinge_side === 'left' ? 'right' : 'left',
+            wall_fix: { left: false, right: false },
+            notches: p.notches || { bottom_left: false, bottom_right: false, width_mm: null, height_mm: null },
+            top_edge: { type: 'level', direction: null, drop_mm: null },
+            mounting_style: 'channel',
+            width_mm: p.width_mm,
+            height_mm: panelHeight
+        }));
 
-        const contentWidth = maxPanelWidth || 1000;
-        const contentHeight = (panelHeight + gap) * panels.length || 1000;
-        const scaleX = (width - padding * 2) / contentWidth;
-        const scaleY = (height - padding * 2) / contentHeight;
-        const scale = Math.min(scaleX, scaleY, 0.3);
+        const mappedJunctions: JunctionModel[] = junctions.map((j, idx) => ({
+            junction_id: `j-${idx}`,
+            a_panel_id: panels[idx].id,
+            a_edge: 'right',
+            b_panel_id: panels[idx + 1].id,
+            b_edge: 'left',
+            angle_deg: j.angle_deg,
+            junction_type: 'glass_to_glass'
+        }));
 
-        const offsetX = (width / 2) - (contentWidth / 2) * scale;
-        const offsetY = (height / 2) - (contentHeight / 2) * scale;
-
-        return (
-            <g transform={`translate(${offsetX}, ${offsetY})`}>
-                {/* Panels - Exploded vertically with gaps */}
-                {panels.map((panel, idx) => {
-                    const x1 = 0;
-                    const y1 = idx * (panelHeight + gap) * scale;
-                    const w = panel.width_mm * scale;
-                    const h = panelHeight * scale;
-                    const isActive = panel.id === activePanelId;
-
-                    return (
-                        <g key={`exploded-panel-${panel.id}`} onClick={() => onPanelClick?.(panel.id)} className="cursor-pointer">
-                            {/* Panel rectangle */}
-                            <rect
-                                x={x1}
-                                y={y1}
-                                width={w}
-                                height={h}
-                                fill={isActive ? '#1d4ed8' : '#3b82f6'}
-                                fillOpacity={isActive ? 1 : 0.6}
-                                stroke="#1d4ed8"
-                                strokeWidth="2"
-                                className="transition-all duration-300"
-                            />
-
-                            {/* Notches as cut-outs */}
-                            {panel.notches && (panel.notches.bottom_left || panel.notches.bottom_right) && (
-                                <g className="pointer-events-none">
-                                    {/* Bottom-left notch */}
-                                    {panel.notches.bottom_left && (
-                                        <rect
-                                            x={x1}
-                                            y={y1 + h - (panel.notches.height_mm || 0) * scale}
-                                            width={(panel.notches.width_mm || 0) * scale}
-                                            height={(panel.notches.height_mm || 0) * scale}
-                                            fill="white"
-                                            opacity="0.9"
-                                            stroke="#f97316"
-                                            strokeWidth="2"
-                                            strokeDasharray="3,3"
-                                        />
-                                    )}
-
-                                    {/* Bottom-right notch */}
-                                    {panel.notches.bottom_right && (
-                                        <rect
-                                            x={x1 + w - ((panel.notches.width_mm || 0) * scale)}
-                                            y={y1 + h - ((panel.notches.height_mm || 0) * scale)}
-                                            width={(panel.notches.width_mm || 0) * scale}
-                                            height={(panel.notches.height_mm || 0) * scale}
-                                            fill="white"
-                                            opacity="0.9"
-                                            stroke="#f97316"
-                                            strokeWidth="2"
-                                            strokeDasharray="3,3"
-                                        />
-                                    )}
-                                </g>
-                            )}
-
-                            {/* Panel label */}
-                            <text
-                                x={x1 + w / 2}
-                                y={y1 + h / 2}
-                                textAnchor="middle"
-                                dy=".3em"
-                                className="text-[12px] font-black fill-white pointer-events-none"
-                            >
-                                {panel.type === 'door' ? 'Door' : `Panel ${idx + 1}`}
-                            </text>
-
-                            {/* Width dimension below panel */}
-                            <text
-                                x={x1 + w / 2}
-                                y={y1 + h + 20}
-                                textAnchor="middle"
-                                className="text-[10px] font-bold fill-slate-600"
-                            >
-                                {panel.width_mm}mm
-                            </text>
-
-                            {/* Notch dimensions if present */}
-                            {panel.notches && (panel.notches.bottom_left || panel.notches.bottom_right) && (
-                                <g className="text-[8px] font-semibold fill-orange-600">
-                                    {panel.notches.bottom_left && (
-                                        <text
-                                            x={x1 + (panel.notches.width_mm || 0) * scale / 2}
-                                            y={y1 + h - ((panel.notches.height_mm || 0) * scale) / 2}
-                                            textAnchor="middle"
-                                            dy=".3em"
-                                        >
-                                            {panel.notches.width_mm}×{panel.notches.height_mm}
-                                        </text>
-                                    )}
-                                    {panel.notches.bottom_right && (
-                                        <text
-                                            x={x1 + w - ((panel.notches.width_mm || 0) * scale) / 2}
-                                            y={y1 + h - ((panel.notches.height_mm || 0) * scale) / 2}
-                                            textAnchor="middle"
-                                            dy=".3em"
-                                        >
-                                            {panel.notches.width_mm}×{panel.notches.height_mm}
-                                        </text>
-                                    )}
-                                </g>
-                            )}
-                        </g>
-                    );
-                })}
-
-                {/* Height dimension on left */}
-                <text x="-30" y={contentHeight * scale / 2} textAnchor="middle" dy=".3em" className="text-[10px] font-bold fill-slate-600">
-                    {panelHeight}mm
-                </text>
-            </g>
-        );
-    };
+        return { panels: mappedPanels, junctions: mappedJunctions };
+    }, [panels, junctions]);
 
     return (
         <div className="flex flex-col w-full h-full">
@@ -325,15 +224,14 @@ export function PlanView({
                 </button>
             </div>
 
-            {/* SVG Container */}
-            <svg
-                width={width}
-                height={height}
-                viewBox={`0 0 ${width} ${height}`}
-                className="overflow-visible select-none outline-none flex-1"
-                onMouseLeave={() => setHoveredPanelId(null)}
-            >
-                {viewMode === 'top-down' ? (
+            {viewMode === 'top-down' ? (
+                <svg
+                    width={width}
+                    height={height}
+                    viewBox={`0 0 ${width} ${height}`}
+                    className="overflow-visible select-none outline-none flex-1"
+                    onMouseLeave={() => setHoveredPanelId(null)}
+                >
                     <g transform={`translate(${offsetX}, ${offsetY})`}>
                         {/* 1. Panel Visual Layer (Bottom) */}
                 {segments.map((seg, i) => {
@@ -696,10 +594,21 @@ export function PlanView({
                     );
                 })()}
                     </g>
-                ) : (
-                    renderExplodedView()
-                )}
-            </svg>
+                </svg>
+            ) : (
+                <ExplodedPanelView
+                    panels={explodedViewData.panels}
+                    junctions={explodedViewData.junctions}
+                    activePanelId={activePanelId || null}
+                    activeJunctionId={null}
+                    onPanelSelect={(id) => onPanelClick?.(id)}
+                    onJunctionSelect={() => {}}
+                    onAddPanel={() => {}}
+                    onDeletePanel={() => {}}
+                    onUpdateJunctionAngle={() => {}}
+                    onUpdatePanelType={() => {}}
+                />
+            )}
         </div>
     );
 }
