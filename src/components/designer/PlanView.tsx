@@ -165,52 +165,35 @@ export function PlanView({
         angle: Math.atan2(segments[lastIdx].y2 - segments[lastIdx].y1, segments[lastIdx].x2 - segments[lastIdx].x1)
     };
 
-    // Front elevation view rendering
-    const renderFrontElevation = () => {
-        const panelHeight = 2000; // Default height, this would come from props if needed
-        const padding = 60;
-        const totalWidth = panels.reduce((sum, p) => sum + p.width_mm, 0);
+    // Exploded view rendering
+    const renderExplodedView = () => {
+        const panelHeight = 2000; // Default height
+        const padding = 40;
+        const maxPanelWidth = Math.max(...panels.map(p => p.width_mm), 1000);
+        const gap = 60; // Gap between panels in exploded view
 
-        const contentWidth = totalWidth || 1000;
-        const contentHeight = panelHeight || 1000;
+        const contentWidth = maxPanelWidth || 1000;
+        const contentHeight = (panelHeight + gap) * panels.length || 1000;
         const scaleX = (width - padding * 2) / contentWidth;
         const scaleY = (height - padding * 2) / contentHeight;
-        const scale = Math.min(scaleX, scaleY, 0.4);
+        const scale = Math.min(scaleX, scaleY, 0.3);
 
         const offsetX = (width / 2) - (contentWidth / 2) * scale;
         const offsetY = (height / 2) - (contentHeight / 2) * scale;
 
-        let currentX = 0;
-        const panelRects: { x: number; width: number; panel: ChainPanel; notches?: any }[] = [];
-
-        panels.forEach(p => {
-            panelRects.push({
-                x: currentX,
-                width: p.width_mm,
-                panel: p,
-                notches: p.notches
-            });
-            currentX += p.width_mm;
-        });
-
         return (
             <g transform={`translate(${offsetX}, ${offsetY})`}>
-                {/* Floor line */}
-                <line x1="0" y1={contentHeight * scale} x2={contentWidth * scale} y2={contentHeight * scale}
-                    stroke="#cbd5e1" strokeWidth="2" />
-
-                {/* Panels */}
-                {panelRects.map((rect, idx) => {
-                    const panel = rect.panel;
-                    const x1 = rect.x * scale;
-                    const y1 = 0;
-                    const w = rect.width * scale;
-                    const h = contentHeight * scale;
+                {/* Panels - Exploded vertically with gaps */}
+                {panels.map((panel, idx) => {
+                    const x1 = 0;
+                    const y1 = idx * (panelHeight + gap) * scale;
+                    const w = panel.width_mm * scale;
+                    const h = panelHeight * scale;
                     const isActive = panel.id === activePanelId;
 
                     return (
-                        <g key={`front-panel-${panel.id}`} onClick={() => onPanelClick?.(panel.id)} className="cursor-pointer">
-                            {/* Panel base rectangle */}
+                        <g key={`exploded-panel-${panel.id}`} onClick={() => onPanelClick?.(panel.id)} className="cursor-pointer">
+                            {/* Panel rectangle */}
                             <rect
                                 x={x1}
                                 y={y1}
@@ -230,13 +213,13 @@ export function PlanView({
                                     {panel.notches.bottom_left && (
                                         <rect
                                             x={x1}
-                                            y={h - (panel.notches.height_mm || 0) * scale}
+                                            y={y1 + h - (panel.notches.height_mm || 0) * scale}
                                             width={(panel.notches.width_mm || 0) * scale}
                                             height={(panel.notches.height_mm || 0) * scale}
                                             fill="white"
                                             opacity="0.9"
                                             stroke="#f97316"
-                                            strokeWidth="1.5"
+                                            strokeWidth="2"
                                             strokeDasharray="3,3"
                                         />
                                     )}
@@ -245,13 +228,13 @@ export function PlanView({
                                     {panel.notches.bottom_right && (
                                         <rect
                                             x={x1 + w - ((panel.notches.width_mm || 0) * scale)}
-                                            y={h - ((panel.notches.height_mm || 0) * scale)}
+                                            y={y1 + h - ((panel.notches.height_mm || 0) * scale)}
                                             width={(panel.notches.width_mm || 0) * scale}
                                             height={(panel.notches.height_mm || 0) * scale}
                                             fill="white"
                                             opacity="0.9"
                                             stroke="#f97316"
-                                            strokeWidth="1.5"
+                                            strokeWidth="2"
                                             strokeDasharray="3,3"
                                         />
                                     )}
@@ -269,21 +252,47 @@ export function PlanView({
                                 {panel.type === 'door' ? 'Door' : `Panel ${idx + 1}`}
                             </text>
 
-                            {/* Width dimension */}
+                            {/* Width dimension below panel */}
                             <text
                                 x={x1 + w / 2}
-                                y={contentHeight * scale + 25}
+                                y={y1 + h + 20}
                                 textAnchor="middle"
                                 className="text-[10px] font-bold fill-slate-600"
                             >
                                 {panel.width_mm}mm
                             </text>
+
+                            {/* Notch dimensions if present */}
+                            {panel.notches && (panel.notches.bottom_left || panel.notches.bottom_right) && (
+                                <g className="text-[8px] font-semibold fill-orange-600">
+                                    {panel.notches.bottom_left && (
+                                        <text
+                                            x={x1 + (panel.notches.width_mm || 0) * scale / 2}
+                                            y={y1 + h - ((panel.notches.height_mm || 0) * scale) / 2}
+                                            textAnchor="middle"
+                                            dy=".3em"
+                                        >
+                                            {panel.notches.width_mm}×{panel.notches.height_mm}
+                                        </text>
+                                    )}
+                                    {panel.notches.bottom_right && (
+                                        <text
+                                            x={x1 + w - ((panel.notches.width_mm || 0) * scale) / 2}
+                                            y={y1 + h - ((panel.notches.height_mm || 0) * scale) / 2}
+                                            textAnchor="middle"
+                                            dy=".3em"
+                                        >
+                                            {panel.notches.width_mm}×{panel.notches.height_mm}
+                                        </text>
+                                    )}
+                                </g>
+                            )}
                         </g>
                     );
                 })}
 
-                {/* Height dimension */}
-                <text x="-40" y={contentHeight * scale / 2} textAnchor="middle" dy=".3em" className="text-[10px] font-bold fill-slate-600">
+                {/* Height dimension on left */}
+                <text x="-30" y={contentHeight * scale / 2} textAnchor="middle" dy=".3em" className="text-[10px] font-bold fill-slate-600">
                     {panelHeight}mm
                 </text>
             </g>
@@ -312,7 +321,7 @@ export function PlanView({
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                 >
-                    Front Elevation
+                    Exploded View
                 </button>
             </div>
 
@@ -326,7 +335,7 @@ export function PlanView({
             >
                 {viewMode === 'top-down' ? (
                     <g transform={`translate(${offsetX}, ${offsetY})`}>
-                {/* 1. Panel Visual Layer (Bottom) */}
+                        {/* 1. Panel Visual Layer (Bottom) */}
                 {segments.map((seg, i) => {
                     const isActive = activePanelId === seg.id;
                     const isHovered = hoveredPanelId === seg.id;
@@ -688,7 +697,7 @@ export function PlanView({
                 })()}
                     </g>
                 ) : (
-                    renderFrontElevation()
+                    renderExplodedView()
                 )}
             </svg>
         </div>
