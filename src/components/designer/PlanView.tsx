@@ -33,6 +33,7 @@ export function PlanView({
     activePanelId
 }: PlanViewProps) {
     const [hoveredPanelId, setHoveredPanelId] = useState<string | null>(null);
+    const [viewMode, setViewMode] = useState<'top-down' | 'front'>('top-down');
     const doorIndex = panels.findIndex(p => p.type === 'door');
     if (doorIndex === -1) return null;
 
@@ -164,15 +165,167 @@ export function PlanView({
         angle: Math.atan2(segments[lastIdx].y2 - segments[lastIdx].y1, segments[lastIdx].x2 - segments[lastIdx].x1)
     };
 
-    return (
-        <svg
-            width={width}
-            height={height}
-            viewBox={`0 0 ${width} ${height}`}
-            className="overflow-visible select-none outline-none"
-            onMouseLeave={() => setHoveredPanelId(null)}
-        >
+    // Front elevation view rendering
+    const renderFrontElevation = () => {
+        const panelHeight = 2000; // Default height, this would come from props if needed
+        const padding = 60;
+        const totalWidth = panels.reduce((sum, p) => sum + p.width_mm, 0);
+
+        const contentWidth = totalWidth || 1000;
+        const contentHeight = panelHeight || 1000;
+        const scaleX = (width - padding * 2) / contentWidth;
+        const scaleY = (height - padding * 2) / contentHeight;
+        const scale = Math.min(scaleX, scaleY, 0.4);
+
+        const offsetX = (width / 2) - (contentWidth / 2) * scale;
+        const offsetY = (height / 2) - (contentHeight / 2) * scale;
+
+        let currentX = 0;
+        const panelRects: { x: number; width: number; panel: ChainPanel; notches?: any }[] = [];
+
+        panels.forEach(p => {
+            panelRects.push({
+                x: currentX,
+                width: p.width_mm,
+                panel: p,
+                notches: p.notches
+            });
+            currentX += p.width_mm;
+        });
+
+        return (
             <g transform={`translate(${offsetX}, ${offsetY})`}>
+                {/* Floor line */}
+                <line x1="0" y1={contentHeight * scale} x2={contentWidth * scale} y2={contentHeight * scale}
+                    stroke="#cbd5e1" strokeWidth="2" />
+
+                {/* Panels */}
+                {panelRects.map((rect, idx) => {
+                    const panel = rect.panel;
+                    const x1 = rect.x * scale;
+                    const y1 = 0;
+                    const w = rect.width * scale;
+                    const h = contentHeight * scale;
+                    const isActive = panel.id === activePanelId;
+
+                    return (
+                        <g key={`front-panel-${panel.id}`} onClick={() => onPanelClick?.(panel.id)} className="cursor-pointer">
+                            {/* Panel base rectangle */}
+                            <rect
+                                x={x1}
+                                y={y1}
+                                width={w}
+                                height={h}
+                                fill={isActive ? '#1d4ed8' : '#3b82f6'}
+                                fillOpacity={isActive ? 1 : 0.6}
+                                stroke="#1d4ed8"
+                                strokeWidth="2"
+                                className="transition-all duration-300"
+                            />
+
+                            {/* Notches as cut-outs */}
+                            {panel.notches && (panel.notches.bottom_left || panel.notches.bottom_right) && (
+                                <g className="pointer-events-none">
+                                    {/* Bottom-left notch */}
+                                    {panel.notches.bottom_left && (
+                                        <rect
+                                            x={x1}
+                                            y={h - (panel.notches.height_mm || 0) * scale}
+                                            width={(panel.notches.width_mm || 0) * scale}
+                                            height={(panel.notches.height_mm || 0) * scale}
+                                            fill="white"
+                                            opacity="0.9"
+                                            stroke="#f97316"
+                                            strokeWidth="1.5"
+                                            strokeDasharray="3,3"
+                                        />
+                                    )}
+
+                                    {/* Bottom-right notch */}
+                                    {panel.notches.bottom_right && (
+                                        <rect
+                                            x={x1 + w - ((panel.notches.width_mm || 0) * scale)}
+                                            y={h - ((panel.notches.height_mm || 0) * scale)}
+                                            width={(panel.notches.width_mm || 0) * scale}
+                                            height={(panel.notches.height_mm || 0) * scale}
+                                            fill="white"
+                                            opacity="0.9"
+                                            stroke="#f97316"
+                                            strokeWidth="1.5"
+                                            strokeDasharray="3,3"
+                                        />
+                                    )}
+                                </g>
+                            )}
+
+                            {/* Panel label */}
+                            <text
+                                x={x1 + w / 2}
+                                y={y1 + h / 2}
+                                textAnchor="middle"
+                                dy=".3em"
+                                className="text-[12px] font-black fill-white pointer-events-none"
+                            >
+                                {panel.type === 'door' ? 'Door' : `Panel ${idx + 1}`}
+                            </text>
+
+                            {/* Width dimension */}
+                            <text
+                                x={x1 + w / 2}
+                                y={contentHeight * scale + 25}
+                                textAnchor="middle"
+                                className="text-[10px] font-bold fill-slate-600"
+                            >
+                                {panel.width_mm}mm
+                            </text>
+                        </g>
+                    );
+                })}
+
+                {/* Height dimension */}
+                <text x="-40" y={contentHeight * scale / 2} textAnchor="middle" dy=".3em" className="text-[10px] font-bold fill-slate-600">
+                    {panelHeight}mm
+                </text>
+            </g>
+        );
+    };
+
+    return (
+        <div className="flex flex-col w-full h-full">
+            {/* Tabs */}
+            <div className="flex gap-2 px-6 py-4 bg-white/50 backdrop-blur-sm border-b border-slate-200">
+                <button
+                    onClick={() => setViewMode('top-down')}
+                    className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+                        viewMode === 'top-down'
+                            ? 'bg-blue-600 text-white shadow-lg'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                >
+                    Top-Down View
+                </button>
+                <button
+                    onClick={() => setViewMode('front')}
+                    className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+                        viewMode === 'front'
+                            ? 'bg-blue-600 text-white shadow-lg'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                >
+                    Front Elevation
+                </button>
+            </div>
+
+            {/* SVG Container */}
+            <svg
+                width={width}
+                height={height}
+                viewBox={`0 0 ${width} ${height}`}
+                className="overflow-visible select-none outline-none flex-1"
+                onMouseLeave={() => setHoveredPanelId(null)}
+            >
+                {viewMode === 'top-down' ? (
+                    <g transform={`translate(${offsetX}, ${offsetY})`}>
                 {/* 1. Panel Visual Layer (Bottom) */}
                 {segments.map((seg, i) => {
                     const isActive = activePanelId === seg.id;
@@ -533,7 +686,11 @@ export function PlanView({
                         </g>
                     );
                 })()}
-            </g>
-        </svg>
+                    </g>
+                ) : (
+                    renderFrontElevation()
+                )}
+            </svg>
+        </div>
     );
 }

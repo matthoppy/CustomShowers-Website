@@ -129,6 +129,18 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
         setPanelHeight(val);
     };
 
+    // Calculate total channel length (panel widths + notch heights)
+    const calculateTotalChannelLength = () => {
+        const totalWidth = panels.reduce((sum, p) => sum + p.width_mm, 0);
+        const totalNotchHeight = panels.reduce((sum, p) => {
+            if (p.notches && (p.notches.bottom_left || p.notches.bottom_right)) {
+                return sum + (p.notches.height_mm || 0);
+            }
+            return sum;
+        }, 0);
+        return totalWidth + totalNotchHeight;
+    };
+
     // Derived model for the ShowerConfiguration component
     const derivedModel = useMemo(() => {
         const mappedPanels: PanelModel[] = panels.map((p, idx) => {
@@ -437,6 +449,31 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
                     <li className="flex items-center gap-2"><CheckCircle2 className="w-3 h-3 text-blue-300" /> {junctions.filter(j => j.angle_deg === 90).length} Corners (90°)</li>
                     <li className="flex items-center gap-2"><CheckCircle2 className="w-3 h-3 text-blue-300" /> Total width: {panels.reduce((sum, p) => sum + p.width_mm, 0)}mm</li>
                 </ul>
+            </div>
+
+            <div className="p-6 bg-orange-500 rounded-[2rem] text-white shadow-xl">
+                <h4 className="font-black uppercase tracking-widest text-[11px] mb-3">Channel Calculation</h4>
+                <div className="space-y-2 text-[10px] font-bold text-orange-50">
+                    <div className="flex justify-between items-center pb-2 border-b border-orange-400">
+                        <span>Base channel length (panels):</span>
+                        <span className="font-black text-sm">{panels.reduce((sum, p) => sum + p.width_mm, 0)}mm</span>
+                    </div>
+                    {panels.some(p => p.notches && (p.notches.bottom_left || p.notches.bottom_right)) && (
+                        <div className="flex justify-between items-center pb-2 border-b border-orange-400">
+                            <span>Notch extensions (height):</span>
+                            <span className="font-black text-sm">+{panels.reduce((sum, p) => {
+                                if (p.notches && (p.notches.bottom_left || p.notches.bottom_right)) {
+                                    return sum + (p.notches.height_mm || 0);
+                                }
+                                return sum;
+                            }, 0)}mm</span>
+                        </div>
+                    )}
+                    <div className="flex justify-between items-center pt-2">
+                        <span className="font-black text-sm">TOTAL CHANNEL REQUIRED:</span>
+                        <span className="font-black text-lg">{calculateTotalChannelLength()}mm</span>
+                    </div>
+                </div>
             </div>
         </div>
     );
