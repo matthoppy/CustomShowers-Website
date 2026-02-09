@@ -61,6 +61,13 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
     const [panelHeight, setPanelHeight] = useState(2000);
     const [hardwareFinish, setHardwareFinish] = useState<HardwareFinish>('chrome');
     const [mountingType, setMountingType] = useState<'channel' | 'clamps'>('channel');
+    const [isFloorToCeiling, setIsFloorToCeiling] = useState(false);
+    const [rakes, setRakes] = useState({
+        floor: { amount_mm: 0, direction: 'none' as 'none' | 'left' | 'right' },
+        leftWall: { amount_mm: 0, direction: 'none' as 'none' | 'in' | 'out' },
+        rightWall: { amount_mm: 0, direction: 'none' as 'none' | 'in' | 'out' },
+        floorToCeiling: { amount_mm: 0 } // For floor-to-ceiling mode
+    });
     const [tempWidth, setTempWidth] = useState<string>('');
     const widthInputRef = useRef<HTMLInputElement>(null);
 
@@ -368,6 +375,130 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
                         {h}mm
                     </Button>
                 ))}
+            </div>
+
+            {/* Floor to Ceiling Mode */}
+            <div className="space-y-3">
+                <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest pl-1">Height Mode</Label>
+                <div className="grid grid-cols-2 gap-2">
+                    <Button
+                        variant={!isFloorToCeiling ? 'default' : 'outline'}
+                        onClick={() => setIsFloorToCeiling(false)}
+                        className="h-10 text-[9px] font-black uppercase rounded-xl"
+                    >
+                        Standard
+                    </Button>
+                    <Button
+                        variant={isFloorToCeiling ? 'default' : 'outline'}
+                        onClick={() => setIsFloorToCeiling(true)}
+                        className="h-10 text-[9px] font-black uppercase rounded-xl"
+                    >
+                        Floor to Ceiling
+                    </Button>
+                </div>
+            </div>
+
+            {/* Rake Measurements */}
+            <div className="space-y-4 pt-4 border-t-2 border-slate-200">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Surface Rakes</Label>
+
+                {/* Floor Rake */}
+                <div className="space-y-2 p-3 bg-slate-50 rounded-lg">
+                    <div className="flex justify-between items-center">
+                        <Label className="text-[8px] font-semibold text-slate-600">Floor Rake (mm)</Label>
+                        <span className="text-[10px] font-black text-blue-600">{rakes.floor.amount_mm}mm</span>
+                    </div>
+                    <Input
+                        type="number"
+                        value={rakes.floor.amount_mm}
+                        onChange={(e) => setRakes(prev => ({ ...prev, floor: { ...prev.floor, amount_mm: parseInt(e.target.value) || 0 } }))}
+                        className="h-8 text-xs font-semibold rounded-lg border-1"
+                    />
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                        {(['none', 'left', 'right'] as const).map((dir) => (
+                            <Button
+                                key={dir}
+                                variant={rakes.floor.direction === dir ? 'default' : 'outline'}
+                                onClick={() => setRakes(prev => ({ ...prev, floor: { ...prev.floor, direction: dir } }))}
+                                className="h-8 text-[8px] font-bold uppercase rounded-lg"
+                            >
+                                {dir}
+                            </Button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Left Wall Rake */}
+                {leftWall && (
+                    <div className="space-y-2 p-3 bg-slate-50 rounded-lg">
+                        <div className="flex justify-between items-center">
+                            <Label className="text-[8px] font-semibold text-slate-600">Left Wall Rake (mm)</Label>
+                            <span className="text-[10px] font-black text-blue-600">{rakes.leftWall.amount_mm}mm</span>
+                        </div>
+                        <Input
+                            type="number"
+                            value={rakes.leftWall.amount_mm}
+                            onChange={(e) => setRakes(prev => ({ ...prev, leftWall: { ...prev.leftWall, amount_mm: parseInt(e.target.value) || 0 } }))}
+                            className="h-8 text-xs font-semibold rounded-lg border-1"
+                        />
+                        <div className="grid grid-cols-3 gap-2 mt-2">
+                            {(['none', 'in', 'out'] as const).map((dir) => (
+                                <Button
+                                    key={dir}
+                                    variant={rakes.leftWall.direction === dir ? 'default' : 'outline'}
+                                    onClick={() => setRakes(prev => ({ ...prev, leftWall: { ...prev.leftWall, direction: dir } }))}
+                                    className="h-8 text-[8px] font-bold uppercase rounded-lg"
+                                >
+                                    {dir}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Right Wall Rake */}
+                {rightWall && (
+                    <div className="space-y-2 p-3 bg-slate-50 rounded-lg">
+                        <div className="flex justify-between items-center">
+                            <Label className="text-[8px] font-semibold text-slate-600">Right Wall Rake (mm)</Label>
+                            <span className="text-[10px] font-black text-blue-600">{rakes.rightWall.amount_mm}mm</span>
+                        </div>
+                        <Input
+                            type="number"
+                            value={rakes.rightWall.amount_mm}
+                            onChange={(e) => setRakes(prev => ({ ...prev, rightWall: { ...prev.rightWall, amount_mm: parseInt(e.target.value) || 0 } }))}
+                            className="h-8 text-xs font-semibold rounded-lg border-1"
+                        />
+                        <div className="grid grid-cols-3 gap-2 mt-2">
+                            {(['none', 'in', 'out'] as const).map((dir) => (
+                                <Button
+                                    key={dir}
+                                    variant={rakes.rightWall.direction === dir ? 'default' : 'outline'}
+                                    onClick={() => setRakes(prev => ({ ...prev, rightWall: { ...prev.rightWall, direction: dir } }))}
+                                    className="h-8 text-[8px] font-bold uppercase rounded-lg"
+                                >
+                                    {dir}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Floor to Ceiling Rake */}
+                {isFloorToCeiling && (
+                    <div className="space-y-2 p-3 bg-amber-50 rounded-lg border-2 border-amber-200">
+                        <div className="flex justify-between items-center">
+                            <Label className="text-[8px] font-semibold text-amber-700">Floor to Ceiling Rake (mm)</Label>
+                            <span className="text-[10px] font-black text-amber-600">{rakes.floorToCeiling.amount_mm}mm</span>
+                        </div>
+                        <Input
+                            type="number"
+                            value={rakes.floorToCeiling.amount_mm}
+                            onChange={(e) => setRakes(prev => ({ ...prev, floorToCeiling: { amount_mm: parseInt(e.target.value) || 0 } }))}
+                            className="h-8 text-xs font-semibold rounded-lg border-1"
+                        />
+                    </div>
+                )}
             </div>
         </div>
     );
