@@ -402,6 +402,59 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
             <div className="space-y-4 pt-4 border-t-2 border-slate-200">
                 <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Surface Rakes</Label>
 
+                {/* Rake Visualization Diagrams */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
+                    {/* Floor Rake Diagram */}
+                    <div className="space-y-2">
+                        <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Floor Rake</p>
+                        <svg viewBox="0 0 120 80" className="w-full h-auto border border-slate-200 rounded">
+                            {/* Base line */}
+                            <line x1="10" y1="60" x2="110" y2="60" stroke="#cbd5e1" strokeWidth="1" />
+                            {/* Left side (higher) */}
+                            <line x1="10" y1="60" x2="10" y2="30" stroke="#64748b" strokeWidth="2" />
+                            {/* Right side (lower) */}
+                            <line x1="110" y1="60" x2="110" y2="40" stroke="#64748b" strokeWidth="2" />
+                            {/* Slope line */}
+                            <line x1="10" y1="30" x2="110" y2="40" stroke="#3b82f6" strokeWidth="2" strokeDasharray="3,3" />
+                            {/* Direction arrow for left */}
+                            {rakes.floor.direction === 'left' && <path d="M 20 50 L 15 40 L 25 40" fill="#ef4444" />}
+                            {/* Direction arrow for right */}
+                            {rakes.floor.direction === 'right' && <path d="M 100 50 L 105 40 L 95 40" fill="#ef4444" />}
+                            {/* Labels */}
+                            <text x="5" y="75" className="text-[10px] font-bold fill-slate-600">Left</text>
+                            <text x="100" y="75" className="text-[10px] font-bold fill-slate-600">Right</text>
+                        </svg>
+                    </div>
+
+                    {/* Wall Rake Diagram */}
+                    {(leftWall || rightWall) && (
+                        <div className="space-y-2">
+                            <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Wall Rake</p>
+                            <svg viewBox="0 0 120 80" className="w-full h-auto border border-slate-200 rounded">
+                                {/* Vertical reference */}
+                                <line x1="20" y1="10" x2="20" y2="70" stroke="#cbd5e1" strokeWidth="1" />
+                                {/* Wall straight (in) */}
+                                {(leftWall && rakes.leftWall.direction === 'none') || (rightWall && rakes.rightWall.direction === 'none') ? (
+                                    <line x1="20" y1="10" x2="20" y2="70" stroke="#64748b" strokeWidth="2" />
+                                ) : null}
+                                {/* Wall in */}
+                                {(leftWall && rakes.leftWall.direction === 'in') || (rightWall && rakes.rightWall.direction === 'in') ? (
+                                    <line x1="20" y1="10" x2="30" y2="70" stroke="#64748b" strokeWidth="2" />
+                                ) : null}
+                                {/* Wall out */}
+                                {(leftWall && rakes.leftWall.direction === 'out') || (rightWall && rakes.rightWall.direction === 'out') ? (
+                                    <line x1="20" y1="10" x2="10" y2="70" stroke="#64748b" strokeWidth="2" />
+                                ) : null}
+                                {/* Reference vertical */}
+                                <line x1="50" y1="10" x2="50" y2="70" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="2,2" />
+                                {/* Labels */}
+                                <text x="8" y="75" className="text-[10px] font-bold fill-slate-600">Wall</text>
+                                <text x="45" y="75" className="text-[10px] font-bold fill-slate-600">Plumb</text>
+                            </svg>
+                        </div>
+                    )}
+                </div>
+
                 {/* Floor Rake */}
                 <div className="space-y-2 p-3 bg-slate-50 rounded-lg">
                     <div className="flex justify-between items-center">
