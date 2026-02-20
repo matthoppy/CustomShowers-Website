@@ -27,6 +27,12 @@ export interface ChainPanel {
         hinge_side: 'left' | 'right';
         swing_direction: 'out' | 'both';
     };
+    notches?: {
+        bottom_left: boolean;
+        bottom_right: boolean;
+        width_mm: number;
+        height_mm: number;
+    };
 }
 
 export interface ChainJunction {
@@ -55,6 +61,13 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
     const [panelHeight, setPanelHeight] = useState(2000);
     const [hardwareFinish, setHardwareFinish] = useState<HardwareFinish>('chrome');
     const [mountingType, setMountingType] = useState<'channel' | 'clamps'>('channel');
+    const [isFloorToCeiling, setIsFloorToCeiling] = useState(false);
+    const [rakes, setRakes] = useState({
+        floor: { amount_mm: 0, direction: 'none' as 'none' | 'left' | 'right' },
+        leftWall: { amount_mm: 0, direction: 'none' as 'none' | 'in' | 'out' },
+        rightWall: { amount_mm: 0, direction: 'none' as 'none' | 'in' | 'out' },
+        floorToCeiling: { amount_mm: 0 } // For floor-to-ceiling mode
+    });
     const [tempWidth, setTempWidth] = useState<string>('');
     const widthInputRef = useRef<HTMLInputElement>(null);
 
@@ -123,6 +136,18 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
         setPanelHeight(val);
     };
 
+    // Calculate total channel length (panel widths + notch heights)
+    const calculateTotalChannelLength = () => {
+        const totalWidth = panels.reduce((sum, p) => sum + p.width_mm, 0);
+        const totalNotchHeight = panels.reduce((sum, p) => {
+            if (p.notches && (p.notches.bottom_left || p.notches.bottom_right)) {
+                return sum + (p.notches.height_mm || 0);
+            }
+            return sum;
+        }, 0);
+        return totalWidth + totalNotchHeight;
+    };
+
     // Derived model for the ShowerConfiguration component
     const derivedModel = useMemo(() => {
         const mappedPanels: PanelModel[] = panels.map((p, idx) => {
@@ -140,7 +165,7 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
                     right: idx === panels.length - 1 && rightWall
                 },
                 mounting_style: mountingType,
-                notches: { bottom_left: false, bottom_right: false, width_mm: null, height_mm: null },
+                notches: p.notches || { bottom_left: false, bottom_right: false, width_mm: null, height_mm: null },
                 top_edge: { type: 'level', direction: null, drop_mm: null }
             };
         });
@@ -205,6 +230,84 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
                             </div>
                         </div>
                     )}
+
+                    {/* Notch Configuration */}
+                    <div className="space-y-3 pt-4 border-t-2 border-blue-100">
+                        <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest pl-1">Notches</Label>
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="notch-bl"
+                                    checked={activePanel?.notches?.bottom_left || false}
+                                    onChange={(e) => {
+                                        if (activePanelId) {
+                                            setPanels(prev => prev.map(p => p.id === activePanelId ? {
+                                                ...p,
+                                                notches: { ...p.notches || { bottom_left: false, bottom_right: false, width_mm: 50, height_mm: 50 }, bottom_left: e.target.checked }
+                                            } : p));
+                                        }
+                                    }}
+                                    className="w-4 h-4 rounded"
+                                />
+                                <Label htmlFor="notch-bl" className="text-[8px] font-semibold text-slate-600">Bottom Left Notch</Label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="notch-br"
+                                    checked={activePanel?.notches?.bottom_right || false}
+                                    onChange={(e) => {
+                                        if (activePanelId) {
+                                            setPanels(prev => prev.map(p => p.id === activePanelId ? {
+                                                ...p,
+                                                notches: { ...p.notches || { bottom_left: false, bottom_right: false, width_mm: 50, height_mm: 50 }, bottom_right: e.target.checked }
+                                            } : p));
+                                        }
+                                    }}
+                                    className="w-4 h-4 rounded"
+                                />
+                                <Label htmlFor="notch-br" className="text-[8px] font-semibold text-slate-600">Bottom Right Notch</Label>
+                            </div>
+                        </div>
+
+                        {(activePanel?.notches?.bottom_left || activePanel?.notches?.bottom_right) && (
+                            <div className="grid grid-cols-2 gap-2 pt-2">
+                                <div className="space-y-1">
+                                    <Label className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Width (mm)</Label>
+                                    <Input
+                                        type="number"
+                                        value={activePanel?.notches?.width_mm || 50}
+                                        onChange={(e) => {
+                                            if (activePanelId) {
+                                                setPanels(prev => prev.map(p => p.id === activePanelId ? {
+                                                    ...p,
+                                                    notches: { ...p.notches || { bottom_left: false, bottom_right: false, width_mm: 50, height_mm: 50 }, width_mm: parseInt(e.target.value) || 50 }
+                                                } : p));
+                                            }
+                                        }}
+                                        className="h-8 text-xs font-semibold rounded-lg border-1"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Height (mm)</Label>
+                                    <Input
+                                        type="number"
+                                        value={activePanel?.notches?.height_mm || 50}
+                                        onChange={(e) => {
+                                            if (activePanelId) {
+                                                setPanels(prev => prev.map(p => p.id === activePanelId ? {
+                                                    ...p,
+                                                    notches: { ...p.notches || { bottom_left: false, bottom_right: false, width_mm: 50, height_mm: 50 }, height_mm: parseInt(e.target.value) || 50 }
+                                                } : p));
+                                            }
+                                        }}
+                                        className="h-8 text-xs font-semibold rounded-lg border-1"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -272,6 +375,183 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
                         {h}mm
                     </Button>
                 ))}
+            </div>
+
+            {/* Floor to Ceiling Mode */}
+            <div className="space-y-3">
+                <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest pl-1">Height Mode</Label>
+                <div className="grid grid-cols-2 gap-2">
+                    <Button
+                        variant={!isFloorToCeiling ? 'default' : 'outline'}
+                        onClick={() => setIsFloorToCeiling(false)}
+                        className="h-10 text-[9px] font-black uppercase rounded-xl"
+                    >
+                        Standard
+                    </Button>
+                    <Button
+                        variant={isFloorToCeiling ? 'default' : 'outline'}
+                        onClick={() => setIsFloorToCeiling(true)}
+                        className="h-10 text-[9px] font-black uppercase rounded-xl"
+                    >
+                        Floor to Ceiling
+                    </Button>
+                </div>
+            </div>
+
+            {/* Rake Measurements */}
+            <div className="space-y-4 pt-4 border-t-2 border-slate-200">
+                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Surface Rakes</Label>
+
+                {/* Rake Visualization Diagrams */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
+                    {/* Floor Rake Diagram */}
+                    <div className="space-y-2">
+                        <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Floor Rake</p>
+                        <svg viewBox="0 0 120 80" className="w-full h-auto border border-slate-200 rounded">
+                            {/* Base line */}
+                            <line x1="10" y1="60" x2="110" y2="60" stroke="#cbd5e1" strokeWidth="1" />
+                            {/* Left side (higher) */}
+                            <line x1="10" y1="60" x2="10" y2="30" stroke="#64748b" strokeWidth="2" />
+                            {/* Right side (lower) */}
+                            <line x1="110" y1="60" x2="110" y2="40" stroke="#64748b" strokeWidth="2" />
+                            {/* Slope line */}
+                            <line x1="10" y1="30" x2="110" y2="40" stroke="#3b82f6" strokeWidth="2" strokeDasharray="3,3" />
+                            {/* Direction arrow for left */}
+                            {rakes.floor.direction === 'left' && <path d="M 20 50 L 15 40 L 25 40" fill="#ef4444" />}
+                            {/* Direction arrow for right */}
+                            {rakes.floor.direction === 'right' && <path d="M 100 50 L 105 40 L 95 40" fill="#ef4444" />}
+                            {/* Labels */}
+                            <text x="5" y="75" className="text-[10px] font-bold fill-slate-600">Left</text>
+                            <text x="100" y="75" className="text-[10px] font-bold fill-slate-600">Right</text>
+                        </svg>
+                    </div>
+
+                    {/* Wall Rake Diagram */}
+                    {(leftWall || rightWall) && (
+                        <div className="space-y-2">
+                            <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Wall Rake</p>
+                            <svg viewBox="0 0 120 80" className="w-full h-auto border border-slate-200 rounded">
+                                {/* Vertical reference */}
+                                <line x1="20" y1="10" x2="20" y2="70" stroke="#cbd5e1" strokeWidth="1" />
+                                {/* Wall straight (in) */}
+                                {(leftWall && rakes.leftWall.direction === 'none') || (rightWall && rakes.rightWall.direction === 'none') ? (
+                                    <line x1="20" y1="10" x2="20" y2="70" stroke="#64748b" strokeWidth="2" />
+                                ) : null}
+                                {/* Wall in */}
+                                {(leftWall && rakes.leftWall.direction === 'in') || (rightWall && rakes.rightWall.direction === 'in') ? (
+                                    <line x1="20" y1="10" x2="30" y2="70" stroke="#64748b" strokeWidth="2" />
+                                ) : null}
+                                {/* Wall out */}
+                                {(leftWall && rakes.leftWall.direction === 'out') || (rightWall && rakes.rightWall.direction === 'out') ? (
+                                    <line x1="20" y1="10" x2="10" y2="70" stroke="#64748b" strokeWidth="2" />
+                                ) : null}
+                                {/* Reference vertical */}
+                                <line x1="50" y1="10" x2="50" y2="70" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="2,2" />
+                                {/* Labels */}
+                                <text x="8" y="75" className="text-[10px] font-bold fill-slate-600">Wall</text>
+                                <text x="45" y="75" className="text-[10px] font-bold fill-slate-600">Plumb</text>
+                            </svg>
+                        </div>
+                    )}
+                </div>
+
+                {/* Floor Rake */}
+                <div className="space-y-2 p-3 bg-slate-50 rounded-lg">
+                    <div className="flex justify-between items-center">
+                        <Label className="text-[8px] font-semibold text-slate-600">Floor Rake (mm)</Label>
+                        <span className="text-[10px] font-black text-blue-600">{rakes.floor.amount_mm}mm</span>
+                    </div>
+                    <Input
+                        type="number"
+                        value={rakes.floor.amount_mm}
+                        onChange={(e) => setRakes(prev => ({ ...prev, floor: { ...prev.floor, amount_mm: parseInt(e.target.value) || 0 } }))}
+                        className="h-8 text-xs font-semibold rounded-lg border-1"
+                    />
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                        {(['none', 'left', 'right'] as const).map((dir) => (
+                            <Button
+                                key={dir}
+                                variant={rakes.floor.direction === dir ? 'default' : 'outline'}
+                                onClick={() => setRakes(prev => ({ ...prev, floor: { ...prev.floor, direction: dir } }))}
+                                className="h-8 text-[8px] font-bold uppercase rounded-lg"
+                            >
+                                {dir}
+                            </Button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Left Wall Rake */}
+                {leftWall && (
+                    <div className="space-y-2 p-3 bg-slate-50 rounded-lg">
+                        <div className="flex justify-between items-center">
+                            <Label className="text-[8px] font-semibold text-slate-600">Left Wall Rake (mm)</Label>
+                            <span className="text-[10px] font-black text-blue-600">{rakes.leftWall.amount_mm}mm</span>
+                        </div>
+                        <Input
+                            type="number"
+                            value={rakes.leftWall.amount_mm}
+                            onChange={(e) => setRakes(prev => ({ ...prev, leftWall: { ...prev.leftWall, amount_mm: parseInt(e.target.value) || 0 } }))}
+                            className="h-8 text-xs font-semibold rounded-lg border-1"
+                        />
+                        <div className="grid grid-cols-3 gap-2 mt-2">
+                            {(['none', 'in', 'out'] as const).map((dir) => (
+                                <Button
+                                    key={dir}
+                                    variant={rakes.leftWall.direction === dir ? 'default' : 'outline'}
+                                    onClick={() => setRakes(prev => ({ ...prev, leftWall: { ...prev.leftWall, direction: dir } }))}
+                                    className="h-8 text-[8px] font-bold uppercase rounded-lg"
+                                >
+                                    {dir}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Right Wall Rake */}
+                {rightWall && (
+                    <div className="space-y-2 p-3 bg-slate-50 rounded-lg">
+                        <div className="flex justify-between items-center">
+                            <Label className="text-[8px] font-semibold text-slate-600">Right Wall Rake (mm)</Label>
+                            <span className="text-[10px] font-black text-blue-600">{rakes.rightWall.amount_mm}mm</span>
+                        </div>
+                        <Input
+                            type="number"
+                            value={rakes.rightWall.amount_mm}
+                            onChange={(e) => setRakes(prev => ({ ...prev, rightWall: { ...prev.rightWall, amount_mm: parseInt(e.target.value) || 0 } }))}
+                            className="h-8 text-xs font-semibold rounded-lg border-1"
+                        />
+                        <div className="grid grid-cols-3 gap-2 mt-2">
+                            {(['none', 'in', 'out'] as const).map((dir) => (
+                                <Button
+                                    key={dir}
+                                    variant={rakes.rightWall.direction === dir ? 'default' : 'outline'}
+                                    onClick={() => setRakes(prev => ({ ...prev, rightWall: { ...prev.rightWall, direction: dir } }))}
+                                    className="h-8 text-[8px] font-bold uppercase rounded-lg"
+                                >
+                                    {dir}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Floor to Ceiling Rake */}
+                {isFloorToCeiling && (
+                    <div className="space-y-2 p-3 bg-amber-50 rounded-lg border-2 border-amber-200">
+                        <div className="flex justify-between items-center">
+                            <Label className="text-[8px] font-semibold text-amber-700">Floor to Ceiling Rake (mm)</Label>
+                            <span className="text-[10px] font-black text-amber-600">{rakes.floorToCeiling.amount_mm}mm</span>
+                        </div>
+                        <Input
+                            type="number"
+                            value={rakes.floorToCeiling.amount_mm}
+                            onChange={(e) => setRakes(prev => ({ ...prev, floorToCeiling: { amount_mm: parseInt(e.target.value) || 0 } }))}
+                            className="h-8 text-xs font-semibold rounded-lg border-1"
+                        />
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -353,6 +633,31 @@ export function Square1Configurator({ onBackToCategory }: Square1ConfiguratorPro
                     <li className="flex items-center gap-2"><CheckCircle2 className="w-3 h-3 text-blue-300" /> {junctions.filter(j => j.angle_deg === 90).length} Corners (90°)</li>
                     <li className="flex items-center gap-2"><CheckCircle2 className="w-3 h-3 text-blue-300" /> Total width: {panels.reduce((sum, p) => sum + p.width_mm, 0)}mm</li>
                 </ul>
+            </div>
+
+            <div className="p-6 bg-orange-500 rounded-[2rem] text-white shadow-xl">
+                <h4 className="font-black uppercase tracking-widest text-[11px] mb-3">Channel Calculation</h4>
+                <div className="space-y-2 text-[10px] font-bold text-orange-50">
+                    <div className="flex justify-between items-center pb-2 border-b border-orange-400">
+                        <span>Base channel length (panels):</span>
+                        <span className="font-black text-sm">{panels.reduce((sum, p) => sum + p.width_mm, 0)}mm</span>
+                    </div>
+                    {panels.some(p => p.notches && (p.notches.bottom_left || p.notches.bottom_right)) && (
+                        <div className="flex justify-between items-center pb-2 border-b border-orange-400">
+                            <span>Notch extensions (height):</span>
+                            <span className="font-black text-sm">+{panels.reduce((sum, p) => {
+                                if (p.notches && (p.notches.bottom_left || p.notches.bottom_right)) {
+                                    return sum + (p.notches.height_mm || 0);
+                                }
+                                return sum;
+                            }, 0)}mm</span>
+                        </div>
+                    )}
+                    <div className="flex justify-between items-center pt-2">
+                        <span className="font-black text-sm">TOTAL CHANNEL REQUIRED:</span>
+                        <span className="font-black text-lg">{calculateTotalChannelLength()}mm</span>
+                    </div>
+                </div>
             </div>
         </div>
     );

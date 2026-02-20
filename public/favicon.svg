@@ -1,0 +1,19 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" fill="white"/>
+
+  <!-- Outer rectangle border -->
+  <rect x="100" y="100" width="312" height="312" fill="none" stroke="#001A3D" stroke-width="24" rx="8"/>
+
+  <!-- Shower head -->
+  <circle cx="256" cy="180" r="60" fill="#001A3D"/>
+
+  <!-- Water streams - left -->
+  <path d="M 220 260 Q 200 300 180 380" fill="none" stroke="#0085D9" stroke-width="24" stroke-linecap="round"/>
+
+  <!-- Water streams - center -->
+  <path d="M 256 260 Q 256 310 256 400" fill="none" stroke="#0085D9" stroke-width="28" stroke-linecap="round"/>
+
+  <!-- Water streams - right -->
+  <path d="M 292 260 Q 312 300 332 380" fill="none" stroke="#0085D9" stroke-width="24" stroke-linecap="round"/>
+</svg>
