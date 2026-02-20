@@ -1,18 +1,18 @@
-<svg viewBox="0 0 1060 520" xmlns="http://www.w3.org/2000/svg">
-  <!-- Rectangle border -->
-  <rect x="290" y="310" width="160" height="200" fill="none" stroke="#001A3D" stroke-width="12" rx="4"/>
+<svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icon container -->
+  <rect x="10" y="10" width="60" height="60" fill="none" stroke="#001A3D" stroke-width="2.5" rx="2"/>
 
-  <!-- Shower head -->
-  <circle cx="370" cy="360" r="30" fill="#001A3D"/>
+  <!-- Shower head (simplified) -->
+  <circle cx="40" cy="25" r="8" fill="#001A3D"/>
 
-  <!-- Water streams -->
-  <path d="M 350 390 Q 345 420 340 450" fill="none" stroke="#0085D9" stroke-width="12" stroke-linecap="round"/>
-  <path d="M 370 390 Q 375 420 380 450" fill="none" stroke="#0085D9" stroke-width="12" stroke-linecap="round"/>
-  <path d="M 390 390 Q 395 420 400 450" fill="none" stroke="#0085D9" stroke-width="12" stroke-linecap="round"/>
+  <!-- Water streams (simplified) -->
+  <line x1="32" y1="35" x2="30" y2="48" stroke="#0085D9" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="40" y1="35" x2="40" y2="50" stroke="#0085D9" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="48" y1="35" x2="50" y2="48" stroke="#0085D9" stroke-width="1.5" stroke-linecap="round"/>
 
   <!-- Text: CUSTOM -->
-  <text x="500" y="420" font-size="120" font-weight="bold" fill="#001A3D" font-family="Arial, sans-serif" letter-spacing="2">CUSTOM</text>
+  <text x="85" y="35" font-size="18" font-weight="bold" fill="#001A3D" font-family="Arial, sans-serif" letter-spacing="0.5">CUSTOM</text>
 
   <!-- Text: SHOWERS -->
-  <text x="500" y="480" font-size="100" font-weight="normal" fill="#5A6B7D" font-family="Arial, sans-serif" letter-spacing="4">SHOWERS</text>
+  <text x="85" y="55" font-size="14" font-weight="normal" fill="#666666" font-family="Arial, sans-serif" letter-spacing="0.5">SHOWERS</text>
 </svg>
