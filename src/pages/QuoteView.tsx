@@ -210,7 +210,7 @@ export default function QuoteView() {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Your Quote from BFS</h1>
+            <h1 className="text-3xl font-bold mb-2">Your Quote from Custom Showers</h1>
             <p className="text-xl text-muted-foreground">Quote Number: {quote.quote_number}</p>
           </div>
 
@@ -442,7 +442,7 @@ export default function QuoteView() {
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button variant="outline" asChild>
-                  <a href="mailto:sales@bespokeframelessshowers.co.uk">
+                  <a href="mailto:sales@customshowers.uk">
                     <Mail className="w-4 h-4 mr-2" />
                     Email Us
                   </a>

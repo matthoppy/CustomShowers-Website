@@ -338,11 +338,11 @@ Placeholder features ready for implementation:
 
 For issues and questions:
 - GitHub Issues: [Create an issue](https://github.com/matthoppy/BFS-Website/issues)
-- Email: sales@bespokeframelessshowers.co.uk
+- Email: sales@customshowers.uk
 
 ## License
 
-Copyright © 2024 Bespoke Frameless Showers. All rights reserved.
+Copyright © 2024 Custom Showers. All rights reserved.
 
 ## Credits
 

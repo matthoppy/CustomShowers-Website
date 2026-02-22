@@ -274,7 +274,7 @@ CREATE TABLE hardware_items (
 
   -- Supplier information
   supplier TEXT NOT NULL,
-  -- Values: CRL, Glass Parts UK
+  -- Values: Custom Showers
 
   -- Item details
   category TEXT NOT NULL,
@@ -296,7 +296,7 @@ CREATE TABLE hardware_items (
 
   created_at TIMESTAMPTZ DEFAULT NOW(),
 
-  CONSTRAINT valid_supplier CHECK (supplier IN ('CRL', 'Glass Parts UK')),
+  CONSTRAINT valid_supplier CHECK (supplier IN ('Custom Showers')),
   CONSTRAINT valid_category CHECK (category IN (
     'hinge', 'handle', 'clamp', 'channel', 'seal', 'silicone', 'other'
   )),
@@ -529,7 +529,7 @@ CREATE POLICY admin_users_select ON admin_users
 
 -- Insert a default admin user (update email as needed)
 INSERT INTO admin_users (email, password_hash, full_name, role, is_active)
-VALUES ('admin@bespokeframelessshowers.co.uk', 'changeme', 'System Admin', 'admin', TRUE)
+VALUES ('admin@customshowers.uk', 'changeme', 'System Admin', 'admin', TRUE)
 ON CONFLICT (email) DO NOTHING;
 
 -- ============================================

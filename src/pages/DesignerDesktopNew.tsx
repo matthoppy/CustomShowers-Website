@@ -507,7 +507,7 @@ export default function DesignerDesktopNew() {
                         <option value="standard">Standard</option>
                         <option value="low-profile">Low Profile</option>
                         <option value="flush">Flush</option>
-                        <option value="half-round">CRL Half-Round (£14.12)</option>
+                        <option value="half-round">Half-Round (£14.12)</option>
                       </select>
                     </CardContent>
                   </Card>

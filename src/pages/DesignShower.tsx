@@ -245,10 +245,10 @@ const DesignShower = () => {
                   <div>
                     <h4 className="font-semibold text-foreground mb-1">Email</h4>
                     <a
-                      href="mailto:sales@bespokeframelessshowers.co.uk"
+                      href="mailto:sales@customshowers.uk"
                       className="text-muted-foreground hover:text-primary transition-colors duration-300"
                     >
-                      sales@bespokeframelessshowers.co.uk
+                      sales@customshowers.uk
                     </a>
                   </div>
                 </div>

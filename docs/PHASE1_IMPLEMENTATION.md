@@ -63,8 +63,7 @@ Phase 1 establishes the foundational database schema, TypeScript types, and busi
 - Complexity multipliers
 
 **Hardware Catalog:**
-- CRL hardware products (hinges, handles, channels, seals, silicone)
-- Glass Parts UK products
+- Custom Showers hardware products (hinges, handles, channels, seals, silicone)
 - Full specifications and compatibility matrix
 - Current pricing and availability
 
@@ -100,7 +99,7 @@ Phase 1 establishes the foundational database schema, TypeScript types, and busi
 
 #### Hardware Management
 - Linked to specific orders
-- Supplier tracking (CRL or Glass Parts UK)
+- Supplier tracking (Custom Showers)
 - Part numbers and specifications
 - Quantity and cost tracking
 

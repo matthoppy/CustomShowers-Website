@@ -287,7 +287,7 @@ When you're ready to use your own domain:
 
 3. **Click "Set up a custom domain"**
 
-4. **Enter your domain** (e.g., `bespokeframelessshowers.co.uk`)
+4. **Enter your domain** (e.g., `customshowers.uk`)
 
 5. **Follow DNS instructions**:
    - If domain is on Cloudflare: Automatic setup
