@@ -1,4 +1,4 @@
--- BFS Website Database Schema
+-- Custom Showers Website Database Schema
 -- Version: 1.0.0
 -- Description: Complete schema for shower design and e-commerce system
 
@@ -239,12 +239,12 @@ DECLARE
   new_number TEXT;
   counter INTEGER;
 BEGIN
-  -- Format: BFS-YYYYMMDD-XXXX
+  -- Format: CS-YYYYMMDD-XXXX
   SELECT COUNT(*) + 1 INTO counter
   FROM orders
   WHERE created_at::DATE = CURRENT_DATE;
 
-  new_number := 'BFS-' || TO_CHAR(CURRENT_DATE, 'YYYYMMDD') || '-' || LPAD(counter::TEXT, 4, '0');
+  new_number := 'CS-' || TO_CHAR(CURRENT_DATE, 'YYYYMMDD') || '-' || LPAD(counter::TEXT, 4, '0');
   RETURN new_number;
 END;
 $$ LANGUAGE plpgsql;

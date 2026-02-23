@@ -1,4 +1,4 @@
-# 🎯 SUPER SIMPLE DEPLOYMENT GUIDE - BFS Website
+# 🎯 SUPER SIMPLE DEPLOYMENT GUIDE - Custom Showers Website
 ## Follow these exact steps - no technical knowledge required!
 
 ---
@@ -92,20 +92,20 @@ You should see a version number like `1.123.4`
 
 ```bash
 cd ~
-mkdir bfs-project
-cd bfs-project
+mkdir custom-showers-project
+cd custom-showers-project
 ```
 
 **Download the code from GitHub:**
 
 ```bash
-git clone https://github.com/matthoppy/BFS-Website.git
-cd BFS-Website
+git clone https://github.com/matthoppy/CustomShowers-Website.git
+cd CustomShowers-Website
 git checkout claude/add-project-preview-kHbt6
 ```
 
 **What you'll see:**
-- "Cloning into 'BFS-Website'..."
+- "Cloning into 'CustomShowers-Website'..."
 - Some progress bars
 - "Checking out files..."
 - Done!
@@ -276,7 +276,7 @@ You can leave Terminal open. We'll come back to it.
 
 3. **Description:** (Optional, but you can type)
    ```
-   BFS Website Payment Webhook
+   Custom Showers Website Payment Webhook
    ```
 
 4. **Events to send:**
@@ -377,9 +377,9 @@ Press Enter. Wait for: ✅ "Secret set successfully"
 
 ## Step 4.4: Select Your Repository
 
-1. In the search box, type: `BFS`
+1. In the search box, type: `CustomShowers`
 
-2. You should see: **`matthoppy/BFS-Website`**
+2. You should see: **`matthoppy/CustomShowers-Website`**
 
 3. Click on it
 
@@ -511,7 +511,7 @@ https://bfs-website-abc.pages.dev
 **Within 1-2 minutes, check your email**
 
 **You should receive:**
-- Email from "Bespoke Frameless Showers"
+- Email from "Custom Showers"
 - Subject: "Your Quote Q-YYYYMMDD-XXXX"
 - Has a blue "View Your Quote" button
 
@@ -552,7 +552,7 @@ https://bfs-website-abc.pages.dev
 **Check your email again**
 
 **You should receive a second email:**
-- Subject: "Order Confirmed BFS-YYYYMMDD-XXXX - Thank You!"
+- Subject: "Order Confirmed CS-YYYYMMDD-XXXX - Thank You!"
 - Has your order number
 - Says "Thank you for your payment!"
 
@@ -608,7 +608,7 @@ https://bfs-website-abc.pages.dev
 
 # 🎉 SUCCESS! YOU'RE LIVE!
 
-Your BFS Website is fully deployed and working!
+Your Custom Showers Website is fully deployed and working!
 
 **Your site:** `https://your-site-name.pages.dev`
 

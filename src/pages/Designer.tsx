@@ -74,7 +74,7 @@ function DesignerContent() {
               Design Your Shower
             </h1>
             <p className="text-xl text-primary-foreground/80">
-              Create your perfect bespoke frameless shower enclosure
+              Create your perfect custom frameless shower enclosure
             </p>
           </div>
         </div>

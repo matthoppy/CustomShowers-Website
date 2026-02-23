@@ -1,4 +1,4 @@
--- Storage Buckets Setup for BFS Website
+-- Storage Buckets Setup for Custom Showers Website
 -- Version: 1.0.0
 
 -- ============================================

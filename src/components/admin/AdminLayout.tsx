@@ -52,7 +52,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8">
               <Link to="/admin/dashboard" className="text-xl font-bold">
-                BFS Admin
+                Custom Showers Admin
               </Link>
               <nav className="hidden md:flex items-center gap-4">
                 {navigation.map((item) => {

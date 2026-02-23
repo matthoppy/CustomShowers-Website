@@ -1,4 +1,4 @@
-# Bespoke Frameless Showers (BFS) Website
+# Custom Showers Website
 
 A complete e-commerce platform for custom frameless glass shower enclosures with 3D design preview, automatic quote generation, payment processing, and order management.
 
@@ -26,7 +26,7 @@ A complete e-commerce platform for custom frameless glass shower enclosures with
 - Geneva → Vienna → Bellagio hinge selection based on door weight
 - Smart seal selection based on door opening and hinge type
 - VAT calculation (20% UK rate)
-- Auto-generated order numbers (BFS-YYYYMMDD-XXXX)
+- Auto-generated order numbers (CS-YYYYMMDD-XXXX)
 - Auto-generated quote numbers (Q-YYYYMMDD-XXXX)
 - Responsive design for mobile and desktop
 - Real-time inventory and pricing calculations
@@ -108,8 +108,8 @@ VITE_SUPABASE_PUBLISHABLE_KEY=your_anon_key_here
 ### 1. Clone and Install Dependencies
 
 ```bash
-git clone https://github.com/matthoppy/BFS-Website.git
-cd BFS-Website
+git clone https://github.com/matthoppy/CustomShowers-Website.git
+cd CustomShowers-Website
 npm install
 ```
 
@@ -337,7 +337,7 @@ Placeholder features ready for implementation:
 ## Support
 
 For issues and questions:
-- GitHub Issues: [Create an issue](https://github.com/matthoppy/BFS-Website/issues)
+- GitHub Issues: [Create an issue](https://github.com/matthoppy/CustomShowers-Website/issues)
 - Email: sales@customshowers.uk
 
 ## License

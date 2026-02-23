@@ -1,5 +1,5 @@
 /**
- * BFS Website Constants - SIMPLIFIED SYSTEM
+ * Custom Showers Website Constants - SIMPLIFIED SYSTEM
  * Pricing, hardware catalog, and business configuration
  * Focused on 10mm glass with specific hardware options
  */

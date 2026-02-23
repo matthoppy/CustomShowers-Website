@@ -106,7 +106,7 @@ export default function AdminLogin() {
 
           <div className="mt-6 pt-6 border-t text-center">
             <p className="text-sm text-muted-foreground">
-              BFS Admin Portal • Secure Access Only
+              Custom Showers Admin Portal • Secure Access Only
             </p>
           </div>
         </CardContent>

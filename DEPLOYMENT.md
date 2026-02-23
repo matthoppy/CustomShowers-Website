@@ -1,6 +1,6 @@
-# BFS Website - Deployment Guide
+# Custom Showers Website - Deployment Guide
 
-Complete step-by-step guide to deploy the BFS Website to production.
+Complete step-by-step guide to deploy the Custom Showers Website to production.
 
 ## ✅ What You Have
 
@@ -84,7 +84,7 @@ This will:
 
 3. **Connect to GitHub:**
    - Select your GitHub account
-   - Choose repository: `matthoppy/BFS-Website`
+   - Choose repository: `matthoppy/CustomShowers-Website`
    - Branch: `claude/add-project-preview-kHbt6`
 
 4. **Build settings** (auto-detected from netlify.toml):

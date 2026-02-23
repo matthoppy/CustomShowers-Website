@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# BFS Website - Complete Deployment Commands
+# Custom Showers Website - Complete Deployment Commands
 # Run these commands in order on your local machine
 
-echo "🚀 BFS Website Deployment Commands"
+echo "🚀 Custom Showers Website Deployment Commands"
 echo "===================================="
 echo ""
 echo "Copy and paste these commands one by one:"
@@ -60,7 +60,7 @@ echo ""
 
 echo "11. Deploy to Netlify:"
 echo "    - Go to: https://app.netlify.com"
-echo "    - Import from GitHub: matthoppy/BFS-Website"
+echo "    - Import from GitHub: matthoppy/CustomShowers-Website"
 echo "    - Add environment variables:"
 echo "      VITE_SUPABASE_URL=https://plprhxtkpwklrgqaoxyj.supabase.co"
 echo "      VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBscHJoeHRrcHdrbHJncWFveHlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0NDI5NDgsImV4cCI6MjA4MjAxODk0OH0.b0mZfY7zBzyhD6bqU4HdHXqSNUsejO1Ij5FaJ5fJCbo"

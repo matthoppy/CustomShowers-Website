@@ -92,7 +92,7 @@ const handler = async (req: Request): Promise<Response> => {
           price_data: {
             currency: "gbp",
             product_data: {
-              name: `Bespoke Shower Enclosure - Quote ${quote.quote_number}`,
+              name: `Custom Shower Enclosure - Quote ${quote.quote_number}`,
               description: "Custom frameless glass shower enclosure with premium hardware and fittings",
               images: [],
             },

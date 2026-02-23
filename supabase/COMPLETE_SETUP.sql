@@ -1,4 +1,4 @@
--- BFS Website Database Schema
+-- Custom Showers Website Database Schema
 -- Version: 1.0.0
 -- Description: Complete schema for shower design and e-commerce system
 
@@ -239,12 +239,12 @@ DECLARE
   new_number TEXT;
   counter INTEGER;
 BEGIN
-  -- Format: BFS-YYYYMMDD-XXXX
+  -- Format: CS-YYYYMMDD-XXXX
   SELECT COUNT(*) + 1 INTO counter
   FROM orders
   WHERE created_at::DATE = CURRENT_DATE;
 
-  new_number := 'BFS-' || TO_CHAR(CURRENT_DATE, 'YYYYMMDD') || '-' || LPAD(counter::TEXT, 4, '0');
+  new_number := 'CS-' || TO_CHAR(CURRENT_DATE, 'YYYYMMDD') || '-' || LPAD(counter::TEXT, 4, '0');
   RETURN new_number;
 END;
 $$ LANGUAGE plpgsql;
@@ -547,7 +547,7 @@ COMMENT ON TABLE admin_users IS 'Administrative users with backend access';
 COMMENT ON COLUMN designs.measurements IS 'All measurements stored in millimeters (mm)';
 COMMENT ON COLUMN quotes.vat IS 'UK VAT at 20%';
 COMMENT ON COLUMN orders.payment_intent_id IS 'Stripe Payment Intent ID for tracking';
--- Storage Buckets Setup for BFS Website
+-- Storage Buckets Setup for Custom Showers Website
 -- Version: 1.0.0
 
 -- ============================================
@@ -804,12 +804,12 @@ COMMENT ON FUNCTION get_signed_url IS 'Generate temporary signed URLs for privat
 -- Create admin user for testing
 -- Password is stored as plain text for demo - in production use bcrypt or similar
 
--- Insert admin user (email: admin@bfs.co.uk, password: admin123)
+-- Insert admin user (email: admin@customshowers.uk, password: admin123)
 INSERT INTO admin_users (email, password_hash, full_name, role, is_active)
 VALUES (
-  'admin@bfs.co.uk',
+  'admin@customshowers.uk',
   'admin123', -- CHANGE THIS IN PRODUCTION!
-  'BFS Admin',
+  'Custom Showers Admin',
   'admin',
   true
 )
