@@ -19,7 +19,7 @@ const Hero = () => {
             Custom Showers
           </h1>
           <p className="text-xl md:text-2xl text-primary-foreground/90 mb-8 max-w-3xl mx-auto font-light">
-            Transform your bathroom with luxury shower enclosures and custom mirrors
+            Premium frameless shower enclosures. Supply only UK wide. Professional survey and installation in London.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button variant="hero" asChild>
