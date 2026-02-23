@@ -55,7 +55,7 @@ When a `checkout.session.completed` event is received:
 2. **Extracts** quote ID from session metadata
 3. **Updates** quote status to 'accepted' and sets accepted_at timestamp
 4. **Creates** an order record with:
-   - Auto-generated order number (BFS-YYYYMMDD-XXXX)
+   - Auto-generated order number (CS-YYYYMMDD-XXXX)
    - Status: 'pending'
    - Payment status: 'paid'
    - Stripe payment ID for reference
@@ -73,7 +73,7 @@ Creates new record with:
 {
   design_id: UUID,
   quote_id: UUID,
-  order_number: "BFS-YYYYMMDD-XXXX" (auto-generated),
+  order_number: "CS-YYYYMMDD-XXXX" (auto-generated),
   status: "pending",
   total_amount: DECIMAL,
   payment_status: "paid",

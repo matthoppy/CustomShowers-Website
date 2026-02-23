@@ -99,7 +99,7 @@ const DesignShower = () => {
               Design Your Shower
             </h1>
             <p className="text-xl text-primary-foreground/80 mb-8">
-              Work with our experts to create your perfect bespoke frameless shower enclosure
+              Work with our experts to create your perfect custom frameless shower enclosure
             </p>
           </div>
         </div>
@@ -117,7 +117,7 @@ const DesignShower = () => {
               <div>
                 <div className="space-y-6 text-muted-foreground">
                   <p className="text-lg">
-                    At Bespoke Frameless Showers, we work closely with you to design the perfect shower enclosure for your space. Our experienced team will guide you through every step of the process.
+                    At Custom Showers, we work closely with you to design the perfect shower enclosure for your space. Our experienced team will guide you through every step of the process.
                   </p>
                   <ul className="space-y-4">
                     {[
@@ -245,10 +245,10 @@ const DesignShower = () => {
                   <div>
                     <h4 className="font-semibold text-foreground mb-1">Email</h4>
                     <a
-                      href="mailto:sales@bespokeframelessshowers.co.uk"
+                      href="mailto:sales@customshowers.uk"
                       className="text-muted-foreground hover:text-primary transition-colors duration-300"
                     >
-                      sales@bespokeframelessshowers.co.uk
+                      sales@customshowers.uk
                     </a>
                   </div>
                 </div>

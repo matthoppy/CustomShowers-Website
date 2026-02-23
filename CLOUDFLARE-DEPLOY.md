@@ -1,4 +1,4 @@
-# 🚀 Cloudflare Pages Deployment Guide - BFS Website
+# 🚀 Cloudflare Pages Deployment Guide - Custom Showers Website
 
 Deploy to Cloudflare Pages with unlimited bandwidth for FREE!
 
@@ -93,11 +93,11 @@ This will:
 3. **Connect GitHub:**
    - Click **"Connect GitHub"**
    - Authorize Cloudflare
-   - Select repository: **`matthoppy/BFS-Website`**
+   - Select repository: **`matthoppy/CustomShowers-Website`**
    - Click **"Begin setup"**
 
 4. **Configure build:**
-   - **Project name**: `bfs-website` (or your preferred name)
+   - **Project name**: `custom-showers-website` (or your preferred name)
    - **Production branch**: `claude/add-project-preview-kHbt6`
    - **Framework preset**: Select **"Vite"** (auto-detected)
    - **Build command**: `npm run build` (auto-filled)
@@ -156,7 +156,7 @@ wrangler pages deploy dist --project-name=bfs-website
 3. **Enter your email** and submit
 
 4. **Check email** (arrives in ~1 minute)
-   - Should receive quote email from Bespoke Frameless Showers
+   - Should receive quote email from Custom Showers
    - Click the link in email
 
 5. **Accept quote and pay:**
@@ -287,7 +287,7 @@ When you're ready to use your own domain:
 
 3. **Click "Set up a custom domain"**
 
-4. **Enter your domain** (e.g., `bespokeframelessshowers.co.uk`)
+4. **Enter your domain** (e.g., `customshowers.uk`)
 
 5. **Follow DNS instructions**:
    - If domain is on Cloudflare: Automatic setup
@@ -326,9 +326,9 @@ When you're ready to use your own domain:
 
 ## 🎉 You're Live!
 
-Your BFS Website is now deployed on Cloudflare's global network!
+Your Custom Showers Website is now deployed on Cloudflare's global network!
 
-**Your site:** `https://bfs-website.pages.dev` (or your custom URL)
+**Your site:** `https://custom-showers-website.pages.dev` (or your custom URL)
 
 ### What Happens Next:
 

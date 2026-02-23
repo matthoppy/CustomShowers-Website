@@ -100,4 +100,4 @@ curl -X POST http://localhost:54321/functions/v1/send-quote-email \
 
 - The function uses Resend's sandbox domain `onboarding@resend.dev` by default
 - For production, verify your domain in Resend and update the `from` address
-- Emails are formatted with BFS branding and UK formatting (GBP currency, UK date format)
+- Emails are formatted with Custom Showers branding and UK formatting (GBP currency, UK date format)

@@ -4,7 +4,7 @@
 
 import type { GlassThickness, HardwareFinish } from './design';
 
-export type HardwareSupplier = 'CRL' | 'Glass Parts UK';
+export type HardwareSupplier = 'Custom Showers';
 
 export type HardwareCategory =
   | 'hinge'

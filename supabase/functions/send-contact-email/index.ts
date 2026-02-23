@@ -55,8 +55,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email to business
     const emailResponse = await resend.emails.send({
-      from: "BSM Contact Form <onboarding@resend.dev>",
-      to: ["info@bespokeshowersandmirrors.co.uk"],
+      from: "Custom Showers Contact Form <onboarding@resend.dev>",
+      to: ["sales@customshowers.uk"],
       subject: `New Contact Form Submission from ${name}`,
       html: `
         <h2>New Contact Form Submission</h2>
@@ -72,9 +72,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send confirmation email to customer
     await resend.emails.send({
-      from: "Bespoke Showers & Mirrors <onboarding@resend.dev>",
+      from: "Custom Showers <onboarding@resend.dev>",
       to: [email],
-      subject: "Thank you for contacting Bespoke Showers & Mirrors",
+      subject: "Thank you for contacting Custom Showers",
       html: `
         <h1>Thank you for your enquiry, ${name}!</h1>
         <p>We have received your message and will get back to you as soon as possible.</p>
@@ -82,7 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
         <blockquote style="border-left: 4px solid #0066cc; padding-left: 16px; margin: 16px 0; color: #666;">
           ${message.replace(/\n/g, '<br>')}
         </blockquote>
-        <p>Best regards,<br>Bespoke Showers & Mirrors Team</p>
+        <p>Best regards,<br>Custom Showers Team</p>
       `,
     });
 

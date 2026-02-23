@@ -1,12 +1,12 @@
 -- Create admin user for testing
 -- Password is stored as plain text for demo - in production use bcrypt or similar
 
--- Insert admin user (email: admin@bfs.co.uk, password: admin123)
+-- Insert admin user (email: admin@customshowers.uk, password: admin123)
 INSERT INTO admin_users (email, password_hash, full_name, role, is_active)
 VALUES (
-  'admin@bfs.co.uk',
+  'admin@customshowers.uk',
   'admin123', -- CHANGE THIS IN PRODUCTION!
-  'BFS Admin',
+  'Custom Showers Admin',
   'admin',
   true
 )

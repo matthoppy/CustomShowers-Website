@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# BFS Website - Supabase Deployment Script
+# Custom Showers Website - Supabase Deployment Script
 # This script deploys Edge Functions and sets environment secrets
 
-echo "🚀 Deploying BFS Website to Supabase..."
+echo "🚀 Deploying Custom Showers Website to Supabase..."
 echo ""
 
 # Check if Supabase CLI is installed

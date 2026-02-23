@@ -12,7 +12,7 @@ const Services = () => {
             Our Services
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Bespoke frameless shower solutions for your home
+            Custom frameless shower solutions for your home
           </p>
         </div>
 
@@ -27,7 +27,7 @@ const Services = () => {
                 Professional Survey
               </h3>
               <p className="text-muted-foreground leading-relaxed">
-                We offer a comprehensive on-site survey to assess your space and provide tailored recommendations for your bespoke frameless shower enclosure.
+                We offer a comprehensive on-site survey to assess your space and provide tailored recommendations for your custom frameless shower enclosure.
               </p>
             </div>
           </Link>

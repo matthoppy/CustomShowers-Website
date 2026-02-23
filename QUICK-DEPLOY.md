@@ -1,4 +1,4 @@
-# 🚀 Quick Deploy Guide - BFS Website
+# 🚀 Quick Deploy Guide - Custom Showers Website
 
 Everything you need to deploy in 5 minutes!
 
@@ -70,7 +70,7 @@ This sets all secrets and deploys 4 Edge Functions.
 
 2. Click **"Add new site"** → **"Import an existing project"**
 
-3. Connect to **GitHub** → Select **`matthoppy/BFS-Website`**
+3. Connect to **GitHub** → Select **`matthoppy/CustomShowers-Website`**
 
 4. Branch: `claude/add-project-preview-kHbt6`
 

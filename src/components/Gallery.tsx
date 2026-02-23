@@ -7,7 +7,7 @@ const Gallery = () => {
   const projects = [
     {
       image: gallery1,
-      alt: "Bespoke shower enclosure with gold fixtures",
+      alt: "Custom shower enclosure with gold fixtures",
     },
     {
       image: gallery2,

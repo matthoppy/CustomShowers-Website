@@ -17,10 +17,10 @@ const About = () => {
           {/* Text Content */}
           <div>
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 uppercase">
-              About Bespoke Frameless Showers
+              About Custom Showers
             </h2>
             <p className="text-base text-gray-300 mb-3 leading-relaxed">
-              At Bespoke Frameless Showers, we specialise in the design and supply of premium frameless shower enclosures across London.
+              At Custom Showers, we specialise in the design and supply of premium frameless shower enclosures across London.
             </p>
             <p className="text-base text-gray-300 mb-3 leading-relaxed">
               We work closely with homeowners, interior designers, and contractors to create stunning bespoke glass solutions tailored to your exact specifications. From frameless shower screens to walk-in wet rooms, every product is crafted to the highest standards using premium quality materials.

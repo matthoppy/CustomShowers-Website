@@ -30,7 +30,7 @@ const getEmailTemplate = (params: OrderConfirmationRequest): string => {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Order Confirmation - Bespoke Frameless Showers</title>
+  <title>Order Confirmation - Custom Showers</title>
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background-color: #10b981; color: white; padding: 30px; text-align: center;">
@@ -91,20 +91,20 @@ const getEmailTemplate = (params: OrderConfirmationRequest): string => {
     <h3 style="color: #1e40af;">Need Help?</h3>
     <p>If you have any questions about your order, please don't hesitate to contact us:</p>
     <p>
-      📧 Email: <a href="mailto:sales@bespokeframelessshowers.co.uk" style="color: #1e40af;">sales@bespokeframelessshowers.co.uk</a><br>
-      📞 Phone: +44 1234 567890
+      📧 Email: <a href="mailto:sales@customshowers.uk" style="color: #1e40af;">sales@customshowers.uk</a><br>
+      📞 Phone: +44 (0)20 1234 5678
     </p>
 
-    <p style="margin-top: 30px;">Thank you for choosing Bespoke Frameless Showers!</p>
+    <p style="margin-top: 30px;">Thank you for choosing Custom Showers!</p>
 
-    <p style="font-weight: bold;">The BFS Team</p>
+    <p style="font-weight: bold;">The Custom Showers Team</p>
   </div>
 
   <div style="background-color: #e5e7eb; padding: 20px; text-align: center; font-size: 12px; color: #666;">
-    <p style="margin: 0;">Bespoke Frameless Showers Ltd</p>
+    <p style="margin: 0;">Custom Showers</p>
     <p style="margin: 5px 0;">Your trusted partner for premium shower enclosures</p>
     <p style="margin: 5px 0;">
-      <a href="https://bespokeframelessshowers.co.uk" style="color: #1e40af; text-decoration: none;">www.bespokeframelessshowers.co.uk</a>
+      <a href="https://customshowers.uk" style="color: #1e40af; text-decoration: none;">www.customshowers.uk</a>
     </p>
   </div>
 </body>
@@ -124,7 +124,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send order confirmation email to customer
     const emailResponse = await resend.emails.send({
-      from: "Bespoke Frameless Showers <onboarding@resend.dev>",
+      from: "Custom Showers <onboarding@resend.dev>",
       to: [params.to],
       subject: `Order Confirmed ${params.orderNumber} - Thank You!`,
       html: getEmailTemplate(params),

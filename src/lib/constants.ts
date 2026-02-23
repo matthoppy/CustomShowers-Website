@@ -1,5 +1,5 @@
 /**
- * BFS Website Constants - SIMPLIFIED SYSTEM
+ * Custom Showers Website Constants - SIMPLIFIED SYSTEM
  * Pricing, hardware catalog, and business configuration
  * Focused on 10mm glass with specific hardware options
  */
@@ -386,7 +386,7 @@ export const HANDLE_OPTIONS: HandleOption[] = [
   },
   {
     type: 'bowtie',
-    name: 'CRL Bow-Tie Knobs',
+    name: 'Bow-Tie Knobs',
     description: 'Back-to-Back Bow-Tie Style Knobs',
     part_number_base: 'SDK109',
     unit_cost: 18.36,
@@ -395,7 +395,7 @@ export const HANDLE_OPTIONS: HandleOption[] = [
   },
   {
     type: 'paddle',
-    name: 'CRL Paddle Knobs',
+    name: 'Paddle Knobs',
     description: 'Back-to-Back Paddle Style Knobs',
     part_number_base: 'SDK180',
     unit_cost: 64.85,
@@ -404,7 +404,7 @@ export const HANDLE_OPTIONS: HandleOption[] = [
   },
   {
     type: 'crescent',
-    name: 'CRL Crescent Grip Knob',
+    name: 'Crescent Grip Knob',
     description: 'Back-to-Back Crescent Grip Style Knob',
     part_number_base: 'SDK', // Assuming SDK prefix like others
     unit_cost: 14.41,
@@ -413,7 +413,7 @@ export const HANDLE_OPTIONS: HandleOption[] = [
   },
   {
     type: 'ez-grip',
-    name: 'CRL E-Z Grip Knobs',
+    name: 'E-Z Grip Knobs',
     description: 'Back-to-Back E-Z Grip Style Knobs',
     part_number_base: 'SDK140',
     unit_cost: 18.36,
@@ -443,7 +443,7 @@ export const SEAL_OPTIONS: SealOption[] = [
   {
     type: 'drip',
     name: 'Bottom Wipe with Drip Rail',
-    description: 'CRL Clear Co-Extruded Bottom Wipe with Drip Rail (P990WS)',
+    description: 'Clear Co-Extruded Bottom Wipe with Drip Rail (P990WS)',
     part_number: 'P990WS',
     unit_cost: 9.33,
     location: 'door-bottom',
@@ -451,7 +451,7 @@ export const SEAL_OPTIONS: SealOption[] = [
   {
     type: 'threshold',
     name: 'Half-Round Threshold',
-    description: 'CRL Half-Round Shower Threshold',
+    description: 'Half-Round Shower Threshold',
     part_number: 'CRL-THRES',
     unit_cost: 14.12,
     location: 'door-bottom',
@@ -599,7 +599,7 @@ export const HARDWARE_CATALOG_10MM: HardwareCatalogItem[] = [
   // U-Channel for 10mm (Standard 2.41m)
   {
     part_number: 'SDCD38', // Base part
-    supplier: 'CRL',
+    supplier: 'Custom Showers',
     category: 'channel',
     name: 'Deep U-Channel (2.41m)',
     description: 'Brite Anodized/Chrome/Nickel/Black available',
@@ -616,7 +616,7 @@ export const HARDWARE_CATALOG_10MM: HardwareCatalogItem[] = [
   // U-Channel for 10mm (Long 3.66m)
   {
     part_number: 'SDCD3812', // Base part
-    supplier: 'CRL',
+    supplier: 'Custom Showers',
     category: 'channel',
     name: 'Deep U-Channel (3.66m)',
     description: 'Long length for floor-to-ceiling',
@@ -634,7 +634,7 @@ export const HARDWARE_CATALOG_10MM: HardwareCatalogItem[] = [
   // Glass Clamps
   {
     part_number: 'GP-CLAMP-10',
-    supplier: 'Glass Parts UK',
+    supplier: 'Custom Showers',
     category: 'clamp',
     name: 'Glass Panel Clamp - 10mm',
     description: 'Wall mounting clamp for 10mm fixed panels',
@@ -652,7 +652,7 @@ export const HARDWARE_CATALOG_10MM: HardwareCatalogItem[] = [
   // Silicone
   {
     part_number: 'CRL-SIL-CLEAR',
-    supplier: 'CRL',
+    supplier: 'Custom Showers',
     category: 'silicone',
     name: 'Clear Silicone Sealant',
     description: 'Premium bathroom silicone, 310ml',
@@ -672,17 +672,11 @@ export const HARDWARE_CATALOG_10MM: HardwareCatalogItem[] = [
  * Supplier contact information
  */
 export const SUPPLIER_CONTACTS = {
-  CRL: {
-    name: 'CRL (C.R. Laurence)',
-    email: 'sales@crlaurence.co.uk',
-    phone: '+44 (0)20 8676 9222',
-    website: 'https://www.crlaurence.co.uk',
-  },
-  'Glass Parts UK': {
-    name: 'Glass Parts UK',
-    email: 'info@glassparts.co.uk',
-    phone: '+44 (0)1234 567890',
-    website: 'https://www.glassparts.co.uk',
+  'Custom Showers': {
+    name: 'Custom Showers',
+    email: 'sales@customshowers.uk',
+    phone: '+44 (0)20 1234 5678',
+    website: 'https://www.customshowers.uk',
   },
 } as const;
 
@@ -690,8 +684,8 @@ export const SUPPLIER_CONTACTS = {
  * Business contact information
  */
 export const BUSINESS_CONTACT = {
-  name: 'Custom Showers Website',
-  email: 'sales@bespokeframelessshowers.co.uk',
+  name: 'Custom Showers',
+  email: 'sales@customshowers.uk',
   phone: '+44 (0)20 1234 5678',
   address: {
     line1: 'Unit 5, Industrial Estate',
