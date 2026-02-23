@@ -18,6 +18,15 @@ import type {
 export const STANDARD_GLASS_THICKNESS: GlassThickness = 10;
 
 /**
+ * TECHNICAL SPECIFICATIONS - FOR FABRICATION CALCULATIONS
+ * Dimensions provided by user for standard U-channel and glass corners
+ */
+export const CHANNEL_THICKNESS_MM = 1;
+export const CHANNEL_DEPTH_MM = 19; // Projection from wall
+export const CHANNEL_WIDTH_MM = 15;
+export const CORNER_SILICONE_GAP_MM = 2; // Gap between glass panels at a corner
+
+/**
  * UK VAT Rate (20%)
  */
 export const VAT_RATE = 0.20;

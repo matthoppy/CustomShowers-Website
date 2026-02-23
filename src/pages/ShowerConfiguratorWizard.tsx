@@ -15,11 +15,14 @@ import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { DoorConfigurator } from '@/components/designer/DoorConfigurator';
+import { SquareConfigurator } from '@/components/designer/SquareConfigurator';
+import { Square1Configurator } from '@/components/designer/Square1Configurator';
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 interface DesignData {
-  category: 'fixed-panel' | 'single-door' | 'inline' | 'square' | null;
+  category: 'fixed-panel' | 'single-door' | 'inline' | 'square' | 'square1' | null;
   configType: 'door-only' | 'fixed-only' | 'door-fixed' | 'door-return' | 'custom';
   heightMm: number;
   doorWidthMm: number;
@@ -49,6 +52,9 @@ interface DesignData {
       heightMm: number;
     }>;
     rakes: {
+      plumbEntryMethod: 'direct' | 'laser';
+      laserDistanceBottom: number;
+      laserDistanceTop: number;
       floor: { amountMm: number; direction: 'none' | 'left' | 'right' | 'front' | 'back' };
       wallLeft: { amountMm: number; direction: 'none' | 'in' | 'out' };
       wallRight: { amountMm: number; direction: 'none' | 'in' | 'out' };
@@ -99,6 +105,9 @@ const INITIAL_DATA: DesignData = {
     fixedPanelWidthMm: 600,
     notches: [],
     rakes: {
+      plumbEntryMethod: 'direct',
+      laserDistanceBottom: 50,
+      laserDistanceTop: 50,
       floor: { amountMm: 0, direction: 'none' },
       wallLeft: { amountMm: 0, direction: 'none' },
       wallRight: { amountMm: 0, direction: 'none' },
@@ -284,11 +293,17 @@ export default function ShowerConfiguratorWizard() {
           { id: 'single-door', label: 'Single Door', desc: 'A standalone swinging door.' },
           { id: 'inline', label: 'Inline Shower', desc: 'Door and fixed panels in a straight line.' },
           { id: 'square', label: 'Square/Corner', desc: 'Entry door with a 90° return panel.' },
+          { id: 'square1', label: 'Square v1 (Beta)', desc: 'Plan-First approach (Beta).' },
         ].map((cat) => (
           <Card
             key={cat.id}
             className={`cursor-pointer transition-all hover:shadow-lg ${data.category === cat.id ? 'ring-2 ring-primary border-primary' : ''}`}
-            onClick={() => updateData({ category: cat.id as any })}
+            onClick={() => {
+              updateData({ category: cat.id as any });
+              if (['square1', 'single-door', 'square'].includes(cat.id)) {
+                setStep(2);
+              }
+            }}
           >
             <CardContent className="p-6">
               <h3 className="text-xl font-bold mb-2">{cat.label}</h3>
@@ -886,33 +901,113 @@ export default function ShowerConfiguratorWizard() {
           >
             <div className="space-y-5">
               <div className="p-3 bg-slate-50 rounded-lg border space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-8 bg-slate-400 rounded-full" />
-                    <div>
-                      <Label className="text-xs font-bold block">
-                        {data.configuration.mountingSide === 'left' ? 'Left Wall Plumb' : 'Right Wall Plumb'}
+                <div className="flex flex-col space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Plumb Entry Method</Label>
+                    <RadioGroup
+                      value={data.configuration.rakes.plumbEntryMethod}
+                      onValueChange={(val) => updateConfiguration({ rakes: { ...data.configuration.rakes, plumbEntryMethod: val as any } })}
+                      className="flex gap-2"
+                    >
+                      <Label className={`flex items-center space-x-1.5 px-3 py-1.5 border rounded-full cursor-pointer transition-all ${data.configuration.rakes.plumbEntryMethod === 'direct' ? 'border-primary bg-primary/10 text-primary' : 'hover:bg-slate-100'}`}>
+                        <RadioGroupItem value="direct" className="w-3 h-3" />
+                        <span className="text-[10px] font-bold">Direct Rake</span>
                       </Label>
-                      <span className="text-[10px] text-slate-500">Is the wall leaning in or out?</span>
+                      <Label className={`flex items-center space-x-1.5 px-3 py-1.5 border rounded-full cursor-pointer transition-all ${data.configuration.rakes.plumbEntryMethod === 'laser' ? 'border-primary bg-primary/10 text-primary' : 'hover:bg-slate-100'}`}>
+                        <RadioGroupItem value="laser" className="w-3 h-3" />
+                        <span className="text-[10px] font-bold">Laser Tool</span>
+                      </Label>
+                    </RadioGroup>
+                  </div>
+
+                  {data.configuration.rakes.plumbEntryMethod === 'laser' ? (
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold text-slate-400">Laser Distance (Bottom)</Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            value={data.configuration.rakes.laserDistanceBottom}
+                            onChange={(e) => {
+                              const bottom = Number(e.target.value) || 0;
+                              const top = data.configuration.rakes.laserDistanceTop;
+                              const amount = Math.abs(top - bottom);
+                              const direction = top === bottom ? 'none' : (top > bottom ? 'out' : 'in');
+                              const side = data.configuration.mountingSide;
+
+                              updateConfiguration({
+                                rakes: {
+                                  ...data.configuration.rakes,
+                                  laserDistanceBottom: bottom,
+                                  [side === 'left' ? 'wallLeft' : 'wallRight']: { amountMm: amount, direction }
+                                }
+                              });
+                            }}
+                            className="h-8 text-xs font-bold"
+                          />
+                          <span className="text-[10px] font-bold text-slate-400">mm</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold text-slate-400">Laser Distance (Top)</Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            value={data.configuration.rakes.laserDistanceTop}
+                            onChange={(e) => {
+                              const top = Number(e.target.value) || 0;
+                              const bottom = data.configuration.rakes.laserDistanceBottom;
+                              const amount = Math.abs(top - bottom);
+                              const direction = top === bottom ? 'none' : (top > bottom ? 'out' : 'in');
+                              const side = data.configuration.mountingSide;
+
+                              updateConfiguration({
+                                rakes: {
+                                  ...data.configuration.rakes,
+                                  laserDistanceTop: top,
+                                  [side === 'left' ? 'wallLeft' : 'wallRight']: { amountMm: amount, direction }
+                                }
+                              });
+                            }}
+                            className="h-8 text-xs font-bold"
+                          />
+                          <span className="text-[10px] font-bold text-slate-400">mm</span>
+                        </div>
+                      </div>
+                      <p className="col-span-2 text-[10px] text-primary bg-primary/5 p-2 rounded-md italic">
+                        The wall leans <b>{Math.abs(data.configuration.rakes.laserDistanceTop - data.configuration.rakes.laserDistanceBottom)}mm {data.configuration.rakes.laserDistanceTop > data.configuration.rakes.laserDistanceBottom ? 'OUT (away from glass)' : (data.configuration.rakes.laserDistanceTop < data.configuration.rakes.laserDistanceBottom ? 'IN (towards glass)' : '')}</b>
+                      </p>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      value={data.configuration.mountingSide === 'left' ? (data.configuration.rakes.wallLeft.amountMm || '') : (data.configuration.rakes.wallRight.amountMm || '')}
-                      onChange={(e) => {
-                        const val = Number(e.target.value) || 0;
-                        if (data.configuration.mountingSide === 'left') {
-                          updateConfiguration({ rakes: { ...data.configuration.rakes, wallLeft: { ...data.configuration.rakes.wallLeft, amountMm: val } } });
-                        } else {
-                          updateConfiguration({ rakes: { ...data.configuration.rakes, wallRight: { ...data.configuration.rakes.wallRight, amountMm: val } } });
-                        }
-                      }}
-                      className="w-16 h-8 text-xs text-center"
-                      placeholder="0"
-                    />
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">mm</span>
-                  </div>
+                  ) : (
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-8 bg-slate-400 rounded-full" />
+                        <div>
+                          <Label className="text-xs font-bold block">
+                            {data.configuration.mountingSide === 'left' ? 'Left Wall Plumb' : 'Right Wall Plumb'}
+                          </Label>
+                          <span className="text-[10px] text-slate-500">Is the wall leaning in or out?</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={data.configuration.mountingSide === 'left' ? (data.configuration.rakes.wallLeft.amountMm || '') : (data.configuration.rakes.wallRight.amountMm || '')}
+                          onChange={(e) => {
+                            const val = Number(e.target.value) || 0;
+                            if (data.configuration.mountingSide === 'left') {
+                              updateConfiguration({ rakes: { ...data.configuration.rakes, wallLeft: { ...data.configuration.rakes.wallLeft, amountMm: val } } });
+                            } else {
+                              updateConfiguration({ rakes: { ...data.configuration.rakes, wallRight: { ...data.configuration.rakes.wallRight, amountMm: val } } });
+                            }
+                          }}
+                          className="w-16 h-8 text-xs text-center"
+                          placeholder="0"
+                        />
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">mm</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {(data.configuration.mountingSide === 'left' ? data.configuration.rakes.wallLeft.amountMm > 0 : data.configuration.rakes.wallRight.amountMm > 0) && (
@@ -1023,19 +1118,8 @@ export default function ShowerConfiguratorWizard() {
             height={400}
             realHeightMm={data.heightMm}
             realWidthMm={data.configuration.fixedPanelWidthMm}
-            onHeightClick={() => {
-              const el = document.getElementById('fp-height') as HTMLInputElement;
-              if (el) { el.focus(); el.select(); }
-            }}
-            onWidthClick={() => {
-              const el = document.getElementById('fp-width') as HTMLInputElement;
-              if (el) { el.focus(); el.select(); }
-            }}
-            floorRake={data.configuration.rakes.floor.amountMm > 0 ? { amount: data.configuration.rakes.floor.amountMm * 0.13, direction: data.configuration.rakes.floor.direction as any } : undefined}
             mountingType={data.configuration.mounting}
             mountingSide={data.configuration.mountingSide}
-            shapeProfile={data.shapeProfile}
-            slopedTop={data.slopedTop}
             isActive={false} // Orange highlight logic removed
           />
 
@@ -1142,6 +1226,23 @@ export default function ShowerConfiguratorWizard() {
 
   // Main step dispatcher with category-based branching
   const renderStep = () => {
+    // Single Door specialized brain
+    if (data.category === 'single-door') {
+      if (step === 1) return renderStep1();
+      return <DoorConfigurator />;
+    }
+
+    // Square Shower specialized brain
+    if (data.category === 'square') {
+      if (step === 1) return renderStep1();
+      return <SquareConfigurator onBackToCategory={() => setStep(1)} />;
+    }
+
+    if (data.category === 'square1') {
+      if (step === 1) return renderStep1();
+      return <Square1Configurator onBackToCategory={() => setStep(1)} />;
+    }
+
     // Fixed Panel has its own flow (5 steps total)
     if (data.category === 'fixed-panel') {
       switch (step) {
@@ -1176,6 +1277,8 @@ export default function ShowerConfiguratorWizard() {
 
   // Get the total number of steps based on category
   const getTotalSteps = () => {
+    if (data.category === 'single-door') return 2;
+    if (data.category === 'square') return 2; // AI flow handles its own sub-steps
     if (data.category === 'fixed-panel') return 4;
     return 7;
   };
@@ -1186,10 +1289,16 @@ export default function ShowerConfiguratorWizard() {
     alert('Design submitted! (This is a placeholder - implement API call)');
   };
 
+  const showOuterNavigation = !(
+    (data.category === 'single-door' && step > 1) ||
+    (data.category === 'square' && step > 1) ||
+    (data.category === 'square1' && step > 1)
+  );
+
   return (
     <div className="h-screen flex flex-col bg-slate-50 overflow-hidden">
       {/* Progress indicator */}
-      <div className="bg-white border-b border-slate-200 flex-shrink-0">
+      <div className={`bg-white border-b border-slate-200 flex-shrink-0 ${!showOuterNavigation ? 'hidden' : ''}`}>
         <div className="max-w-6xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -1226,28 +1335,30 @@ export default function ShowerConfiguratorWizard() {
       </div>
 
       {/* Navigation */}
-      <div className="bg-white border-t border-slate-200 p-4 flex-shrink-0">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={prevStep}
-            disabled={step === 1}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Previous
-          </Button>
-          {step < getTotalSteps() ? (
-            <Button onClick={nextStep} disabled={!canProceed()}>
-              Next
-              <ArrowRight className="w-4 h-4 ml-2" />
+      {showOuterNavigation && (
+        <div className="bg-white border-t border-slate-200 p-4 flex-shrink-0">
+          <div className="max-w-6xl mx-auto flex items-center justify-between">
+            <Button
+              variant="outline"
+              onClick={prevStep}
+              disabled={step === 1}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Previous
             </Button>
-          ) : (
-            <Button onClick={handleSubmit} disabled={!canProceed()}>
-              Submit Request
-            </Button>
-          )}
+            {step < getTotalSteps() ? (
+              <Button onClick={nextStep} disabled={!canProceed()}>
+                Next
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            ) : (
+              <Button onClick={handleSubmit} disabled={!canProceed()}>
+                Submit Request
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

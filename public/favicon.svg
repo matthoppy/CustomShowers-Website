@@ -1,0 +1,25 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" fill="white" rx="64"/>
+
+  <!-- Shower enclosure frame -->
+  <rect x="120" y="60" width="200" height="280" fill="none" stroke="#1B3A5C" stroke-width="20" rx="4"/>
+
+  <!-- Shower head arm -->
+  <line x1="220" y1="60" x2="220" y2="100" stroke="#1B3A5C" stroke-width="12"/>
+
+  <!-- Shower head -->
+  <rect x="195" y="95" width="50" height="12" fill="#1B3A5C" rx="3"/>
+
+  <!-- Water stream -->
+  <path d="M 210 115 Q 195 200 185 280" fill="none" stroke="#4DB8E8" stroke-width="16" stroke-linecap="round"/>
+  <path d="M 230 115 Q 225 200 220 280" fill="none" stroke="#4DB8E8" stroke-width="12" stroke-linecap="round"/>
+
+  <!-- Glass panel (3D effect) -->
+  <path d="M 320 100 L 400 140 L 400 340 L 320 300 Z" fill="#E8F4F8" stroke="#B0C4D8" stroke-width="8" opacity="0.8"/>
+  <line x1="340" y1="150" x2="380" y2="290" stroke="white" stroke-width="6" opacity="0.5"/>
+  <line x1="360" y1="140" x2="390" y2="260" stroke="white" stroke-width="4" opacity="0.3"/>
+
+  <!-- Letters B F S -->
+  <text x="100" y="450" font-size="160" font-weight="bold" fill="#1B3A5C" font-family="Arial, sans-serif" letter-spacing="8">BFS</text>
+</svg>

@@ -1,12 +1,18 @@
+import { HardwareFinish, getHardwareColors } from './Hinge';
+
 interface ClampProps {
     x?: number;
     y?: number;
     orientation?: 'front' | 'left' | 'right';
     edge?: 'left' | 'right' | 'center';
+    scale?: number;
+    finish?: HardwareFinish;
 }
 
-export function Clamp({ x = 0, y = 0, orientation = 'front', edge = 'center' }: ClampProps) {
-    const size = 10; // Slightly bigger than before (was 7)
+export function Clamp({ x = 0, y = 0, orientation = 'front', edge = 'center', scale = 1, finish = 'chrome' }: ClampProps) {
+    const baseSize = 10;
+    const size = baseSize * scale;
+    const colors = getHardwareColors(finish);
 
     if (orientation === 'front') {
         // Front-facing clamp - square
@@ -22,8 +28,8 @@ export function Clamp({ x = 0, y = 0, orientation = 'front', edge = 'center' }: 
                     y={-size / 2}
                     width={size}
                     height={size}
-                    fill="#A0A0A0"
-                    stroke="#707070"
+                    fill={colors.fill}
+                    stroke={colors.stroke}
                     strokeWidth="1"
                 />
             </g>
@@ -40,8 +46,8 @@ export function Clamp({ x = 0, y = 0, orientation = 'front', edge = 'center' }: 
             <g transform={`translate(${x}, ${y})`}>
                 <path
                     d={`M ${-size / 2} ${-size / 2} L ${-size / 2 - depth * 3.5} ${-size / 2 - verticalOffset} L ${-size / 2 - depth * 3.5} ${size / 2 - verticalOffset} L ${-size / 2} ${size / 2} Z`}
-                    fill="#A0A0A0"
-                    stroke="#707070"
+                    fill={colors.fill}
+                    stroke={colors.stroke}
                     strokeWidth="1"
                 />
             </g>
@@ -58,8 +64,8 @@ export function Clamp({ x = 0, y = 0, orientation = 'front', edge = 'center' }: 
         <g transform={`translate(${x}, ${y})`}>
             <path
                 d={`M ${-size / 2} ${-size / 2} L ${-size / 2 + depth * 3.5} ${-size / 2 - verticalOffset} L ${-size / 2 + depth * 3.5} ${size / 2 - verticalOffset} L ${-size / 2} ${size / 2} Z`}
-                fill="#A0A0A0"
-                stroke="#707070"
+                fill={colors.fill}
+                stroke={colors.stroke}
                 strokeWidth="1"
             />
         </g>
