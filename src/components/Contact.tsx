@@ -2,10 +2,10 @@ import { Mail } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState, useRef } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const RECAPTCHA_SITE_KEY = "6Lf2vwQsAAAAAF8TpHeeHhN28sKolp_c5-xNKqwP";
+const WORKER_URL = "YOUR_CLOUDFLARE_WORKER_URL";
 
 const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,11 +37,13 @@ const Contact = () => {
         recaptchaToken,
       };
 
-      const { error } = await supabase.functions.invoke("send-contact-email", {
-        body: data,
+      const res = await fetch(WORKER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
       });
 
-      if (error) throw error;
+      if (!res.ok) throw new Error("Worker responded with " + res.status);
 
       toast({
         title: "Success!",
