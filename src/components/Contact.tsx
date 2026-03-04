@@ -33,6 +33,7 @@ const Contact = () => {
         name: formData.get("name") as string,
         email: formData.get("email") as string,
         phone: formData.get("phone") as string,
+        address: formData.get("address") as string,
         message: formData.get("message") as string,
         recaptchaToken,
       };
@@ -148,6 +149,19 @@ const Contact = () => {
                 />
               </div>
               
+              <div>
+                <label htmlFor="address" className="block text-sm font-medium text-primary-foreground mb-2">
+                  Address
+                </label>
+                <input
+                  type="text"
+                  id="address"
+                  name="address"
+                  className="w-full px-4 py-3 bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors duration-300"
+                  placeholder="Installation address"
+                />
+              </div>
+
               <div>
                 <label htmlFor="message" className="block text-sm font-medium text-primary-foreground mb-2">
                   Message
