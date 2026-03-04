@@ -2,17 +2,15 @@
  * Custom Showers - Cloudflare Worker
  *
  * Handles contact form submissions:
- *  1. Verifies reCAPTCHA
+ *  1. Verifies Turnstile
  *  2. Creates / updates a HubSpot contact
  *  3. Creates a HubSpot deal linked to that contact
- *  4. Sends an email notification via Cloudflare Email Routing
+ *  4. Sends an email notification via Resend
  *
- * Required environment variables (set in Cloudflare dashboard → Workers → Settings → Variables):
- *   HUBSPOT_API_TOKEN      — HubSpot Private App token
- *   TURNSTILE_SECRET_KEY   — Cloudflare Turnstile secret key
- *
- * Required binding (set in wrangler.toml or dashboard):
- *   SEND_EMAIL — Cloudflare send_email binding
+ * Required environment variables (Cloudflare dashboard → Workers → Settings → Variables):
+ *   HUBSPOT_API_TOKEN  — HubSpot Private App token
+ *   TURNSTILE_SECRET_KEY — Cloudflare Turnstile secret key
+ *   RESEND_API_KEY     — Resend API key (resend.com)
  */
 
 const CORS_HEADERS = {
@@ -103,7 +101,7 @@ export default {
         );
       }
 
-      // ── 5. Send email notification via Cloudflare Email Routing ─────────
+      // ── 5. Send email notification via Resend ────────────────────────────
       const hubspotLink = dealId
         ? `<p><a href="https://app.hubspot.com/deals/${dealId}">View deal in HubSpot →</a></p>`
         : "";
@@ -119,27 +117,19 @@ export default {
         ${hubspotLink}
       `.trim();
 
-      const rawEmail = [
-        `From: Custom Showers Website <noreply@customshowers.uk>`,
-        `To: sales@customshowers.uk`,
-        `Subject: New Enquiry from ${name}`,
-        `MIME-Version: 1.0`,
-        `Content-Type: text/html; charset=utf-8`,
-        ``,
-        htmlBody,
-      ].join("\r\n");
-
-      const { readable, writable } = new TransformStream();
-      const writer = writable.getWriter();
-      writer.write(new TextEncoder().encode(rawEmail));
-      writer.close();
-
-      const emailMessage = new EmailMessage(
-        "noreply@customshowers.uk",
-        "sales@customshowers.uk",
-        readable
-      );
-      await env.SEND_EMAIL.send(emailMessage);
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: "Custom Showers Website <noreply@customshowers.uk>",
+          to: ["sales@customshowers.uk"],
+          subject: `New Enquiry from ${name}`,
+          html: htmlBody,
+        }),
+      });
 
       return json({ success: true });
     } catch (err) {
