@@ -178,7 +178,7 @@ const Contact = () => {
 
               <div>
                 <label htmlFor="message" className="block text-sm font-medium text-primary-foreground mb-2">
-                  Message
+                  Tell Us About Your Project
                 </label>
                 <textarea
                   id="message"
