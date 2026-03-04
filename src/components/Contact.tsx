@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { useToast } from "@/hooks/use-toast";
 
-const WORKER_URL = "YOUR_CLOUDFLARE_WORKER_URL";
+const WORKER_URL = "https://customshowers-contact.vcwvk4sm9m.workers.dev";
 
 const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
