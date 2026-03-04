@@ -12,8 +12,8 @@ const Footer = () => {
               <a href="#" className="hover:text-primary transition-colors duration-300">
                 Privacy Policy
               </a>
-              <a href="#" className="hover:text-primary transition-colors duration-300">
-                Terms of Service
+              <a href="/terms-of-trade" className="hover:text-primary transition-colors duration-300">
+                Terms of Trade
               </a>
             </div>
           </div>
