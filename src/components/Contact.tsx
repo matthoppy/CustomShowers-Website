@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { useToast } from "@/hooks/use-toast";
 
-const MAKE_WEBHOOK_URL = "YOUR_MAKE_WEBHOOK_URL_HERE";
+const MAKE_WEBHOOK_URL = "https://hook.eu1.make.com/wru9vum5ew9twpibdjwvhlmpbvmmgoba";
 
 const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
