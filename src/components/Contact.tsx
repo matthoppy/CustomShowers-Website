@@ -1,26 +1,24 @@
 import { Mail } from "lucide-react";
 import { Button } from "./ui/button";
-import { useState, useRef } from "react";
-import ReCAPTCHA from "react-google-recaptcha";
+import { useState } from "react";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { useToast } from "@/hooks/use-toast";
 
-const RECAPTCHA_SITE_KEY = "6Lf2vwQsAAAAAF8TpHeeHhN28sKolp_c5-xNKqwP";
 const WORKER_URL = "YOUR_CLOUDFLARE_WORKER_URL";
 
 const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    const recaptchaToken = recaptchaRef.current?.getValue();
-    if (!recaptchaToken) {
+    if (!turnstileToken) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Please complete the reCAPTCHA verification",
+        description: "Please complete the security check",
       });
       return;
     }
@@ -35,7 +33,7 @@ const Contact = () => {
         phone: formData.get("phone") as string,
         address: formData.get("address") as string,
         message: formData.get("message") as string,
-        recaptchaToken,
+        turnstileToken,
       };
 
       const res = await fetch(WORKER_URL, {
@@ -52,7 +50,7 @@ const Contact = () => {
       });
 
       e.currentTarget.reset();
-      recaptchaRef.current?.reset();
+      setTurnstileToken(null);
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -189,13 +187,11 @@ const Contact = () => {
                 ></textarea>
               </div>
               
-              <div>
-                <ReCAPTCHA
-                  ref={recaptchaRef}
-                  sitekey={RECAPTCHA_SITE_KEY}
-                  theme="light"
-                />
-              </div>
+              <Turnstile
+                siteKey="0x4AAAAAACmVMi3ZDLDzTYwv"
+                onSuccess={(token) => setTurnstileToken(token)}
+                onExpire={() => setTurnstileToken(null)}
+              />
               
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Sending..." : "Send Message"}

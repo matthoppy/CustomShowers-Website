@@ -8,8 +8,8 @@
  *  4. Sends an email notification via Cloudflare Email Routing
  *
  * Required environment variables (set in Cloudflare dashboard → Workers → Settings → Variables):
- *   HUBSPOT_API_TOKEN   — HubSpot Private App token
- *   RECAPTCHA_SECRET_KEY — Google reCAPTCHA v2 secret key
+ *   HUBSPOT_API_TOKEN      — HubSpot Private App token
+ *   TURNSTILE_SECRET_KEY   — Cloudflare Turnstile secret key
  *
  * Required binding (set in wrangler.toml or dashboard):
  *   SEND_EMAIL — Cloudflare send_email binding
@@ -33,21 +33,21 @@ export default {
     }
 
     try {
-      const { name, email, phone, message, recaptchaToken } =
+      const { name, email, phone, address, message, turnstileToken } =
         await request.json();
 
-      // ── 1. Verify reCAPTCHA ──────────────────────────────────────────────
+      // ── 1. Verify Turnstile ──────────────────────────────────────────────
       const captchaRes = await fetch(
-        "https://www.google.com/recaptcha/api/siteverify",
+        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
         {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: `secret=${env.RECAPTCHA_SECRET_KEY}&response=${recaptchaToken}`,
+          body: `secret=${env.TURNSTILE_SECRET_KEY}&response=${turnstileToken}`,
         }
       );
       const captchaData = await captchaRes.json();
       if (!captchaData.success) {
-        return json({ error: "reCAPTCHA verification failed" }, 400);
+        return json({ error: "Security check failed" }, 400);
       }
 
       // ── 2. Create / find HubSpot contact ────────────────────────────────
@@ -57,7 +57,7 @@ export default {
       let contactId = null;
 
       const createContactRes = await hubspot("POST", "contacts", env, {
-        properties: { firstname: firstName, lastname: lastName, email, phone },
+        properties: { firstname: firstName, lastname: lastName, email, phone, address },
       });
 
       if (createContactRes.ok) {
@@ -113,8 +113,9 @@ export default {
         <p><strong>Name:</strong> ${name}</p>
         <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
         <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Address:</strong> ${address}</p>
         <p><strong>Message:</strong></p>
-        <p>${message.replace(/\n/g, "<br>")}</p>
+        <p>${message ? message.replace(/\n/g, "<br>") : "—"}</p>
         ${hubspotLink}
       `.trim();
 
