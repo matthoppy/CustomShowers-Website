@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { useToast } from "@/hooks/use-toast";
 
-const WORKER_URL = "https://customshowers-contact.vcwvk4sm9m.workers.dev";
+const MAKE_WEBHOOK_URL = "YOUR_MAKE_WEBHOOK_URL_HERE";
 
 const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,22 +27,14 @@ const Contact = () => {
 
     try {
       const formData = new FormData(e.currentTarget);
-      const data = {
-        name: formData.get("name") as string,
-        email: formData.get("email") as string,
-        phone: formData.get("phone") as string,
-        address: formData.get("address") as string,
-        message: formData.get("message") as string,
-        turnstileToken,
-      };
+      formData.append("turnstileToken", turnstileToken);
 
-      const res = await fetch(WORKER_URL, {
+      const res = await fetch(MAKE_WEBHOOK_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: formData,
       });
 
-      if (!res.ok) throw new Error("Worker responded with " + res.status);
+      if (!res.ok) throw new Error("Webhook responded with " + res.status);
 
       toast({
         title: "Success!",
