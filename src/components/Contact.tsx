@@ -157,8 +157,22 @@ const Contact = () => {
                   type="text"
                   id="address"
                   name="address"
+                  required
                   className="w-full px-4 py-3 bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors duration-300"
                   placeholder="Installation address"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="photo" className="block text-sm font-medium text-primary-foreground mb-2">
+                  Upload a photo or rough sketch
+                </label>
+                <input
+                  type="file"
+                  id="photo"
+                  name="photo"
+                  accept="image/*,.pdf"
+                  className="w-full px-4 py-3 bg-background border border-input text-foreground file:mr-4 file:py-1 file:px-3 file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:opacity-90 outline-none transition-colors duration-300"
                 />
               </div>
 
