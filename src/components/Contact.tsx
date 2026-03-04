@@ -184,7 +184,6 @@ const Contact = () => {
                   id="message"
                   name="message"
                   rows={5}
-                  required
                   className="w-full px-4 py-3 bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors duration-300 resize-none"
                   placeholder="Tell us about your project..."
                 ></textarea>
