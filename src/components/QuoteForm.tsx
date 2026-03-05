@@ -26,12 +26,32 @@ const QuoteForm = () => {
 
     try {
       const formData = new FormData(e.currentTarget);
-      formData.append("turnstileToken", turnstileToken);
+
+      let photo: { name: string; type: string; data: string } | null = null;
+      const file = formData.get("photo") as File;
+      if (file && file.size > 0) {
+        if (file.size > 5 * 1024 * 1024) {
+          toast({ variant: "destructive", title: "File too large", description: "Please upload a file under 5MB." });
+          setIsSubmitting(false);
+          return;
+        }
+        const buffer = await file.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+        photo = { name: file.name, type: file.type, data: base64 };
+      }
 
       await fetch(MAKE_WEBHOOK_URL, {
         method: "POST",
-        body: formData,
-        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.get("name"),
+          email: formData.get("email"),
+          phone: formData.get("phone"),
+          address: formData.get("address"),
+          message: formData.get("message"),
+          turnstileToken,
+          photo,
+        }),
       });
 
       toast({
