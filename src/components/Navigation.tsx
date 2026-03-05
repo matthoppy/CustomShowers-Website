@@ -4,7 +4,11 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import logo from "@/assets/mainlogo.png";
 
-const Navigation = () => {
+interface NavigationProps {
+  onOpenQuote?: () => void;
+}
+
+const Navigation = ({ onOpenQuote }: NavigationProps) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -62,8 +66,8 @@ const Navigation = () => {
 
           {/* Get Quote Button */}
           <div className="hidden md:flex items-center gap-4">
-            <Button variant="default" asChild>
-              <a href="#contact">Get A Free Quote</a>
+            <Button variant="default" onClick={onOpenQuote}>
+              Get A Free Quote
             </Button>
           </div>
 

@@ -47,14 +47,6 @@ const Services = () => {
           </Link>
         </div>
 
-        {/* Design Shower Button */}
-        <div className="mt-12 text-center">
-          <Link to="/design-shower">
-            <Button size="lg" className="px-8 py-6 text-lg">
-              Design Your Shower
-            </Button>
-          </Link>
-        </div>
       </div>
     </section>
   );

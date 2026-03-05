@@ -1,7 +1,11 @@
 import { Button } from "./ui/button";
 import heroImage from "@/assets/hero-shower.jpg";
 
-const Hero = () => {
+interface HeroProps {
+  onOpenQuote?: () => void;
+}
+
+const Hero = ({ onOpenQuote }: HeroProps) => {
   return (
     <section id="home" className="relative h-screen w-full overflow-hidden">
       {/* Background Image */}
@@ -22,8 +26,8 @@ const Hero = () => {
             Premium frameless shower enclosures. Supply only UK wide. Professional survey and installation in London.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="hero" asChild>
-              <a href="#contact">Get A Free Quote</a>
+            <Button variant="hero" onClick={onOpenQuote}>
+              Get A Free Quote
             </Button>
             <Button variant="outline" size="lg" className="bg-white text-primary hover:bg-white/90" asChild>
               <a href="#gallery">View Our Work</a>

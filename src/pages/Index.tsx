@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Navigation from "@/components/Navigation";
 import Hero from "@/components/Hero";
 import About from "@/components/About";
@@ -5,17 +6,21 @@ import Services from "@/components/Services";
 import Gallery from "@/components/Gallery";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
+import QuoteModal from "@/components/QuoteModal";
 
 const Index = () => {
+  const [quoteModalOpen, setQuoteModalOpen] = useState(false);
+
   return (
     <div className="min-h-screen">
-      <Navigation />
-      <Hero />
+      <Navigation onOpenQuote={() => setQuoteModalOpen(true)} />
+      <Hero onOpenQuote={() => setQuoteModalOpen(true)} />
       <About />
       <Services />
       <Gallery />
       <Contact />
       <Footer />
+      <QuoteModal open={quoteModalOpen} onOpenChange={setQuoteModalOpen} />
     </div>
   );
 };
