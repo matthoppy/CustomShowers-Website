@@ -164,14 +164,13 @@ const QuoteForm = () => {
         onExpire={() => setTurnstileToken(null)}
       />
 
-      <div className="flex flex-col items-center gap-2">
-        <span className="bg-white text-primary text-xs font-semibold px-4 py-1.5 rounded-full shadow-sm">
-          Free &amp; No Obligation
-        </span>
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Sending..." : "Send Message"}
-        </Button>
-      </div>
+      <Button
+        type="submit"
+        className="w-full bg-white text-primary hover:bg-white/90"
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? "Sending..." : "Send Message"}
+      </Button>
     </form>
   );
 };
