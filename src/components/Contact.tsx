@@ -1,26 +1,24 @@
 import { Mail } from "lucide-react";
 import { Button } from "./ui/button";
-import { useState, useRef } from "react";
-import ReCAPTCHA from "react-google-recaptcha";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { useToast } from "@/hooks/use-toast";
 
-const RECAPTCHA_SITE_KEY = "6Lf2vwQsAAAAAF8TpHeeHhN28sKolp_c5-xNKqwP";
+const MAKE_WEBHOOK_URL = "https://hook.eu1.make.com/wru9vum5ew9twpibdjwvhlmpbvmmgoba";
 
 const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    const recaptchaToken = recaptchaRef.current?.getValue();
-    if (!recaptchaToken) {
+    if (!turnstileToken) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Please complete the reCAPTCHA verification",
+        description: "Please complete the security check",
       });
       return;
     }
@@ -29,19 +27,14 @@ const Contact = () => {
 
     try {
       const formData = new FormData(e.currentTarget);
-      const data = {
-        name: formData.get("name") as string,
-        email: formData.get("email") as string,
-        phone: formData.get("phone") as string,
-        message: formData.get("message") as string,
-        recaptchaToken,
-      };
+      formData.append("turnstileToken", turnstileToken);
 
-      const { error } = await supabase.functions.invoke("send-contact-email", {
-        body: data,
+      const res = await fetch(MAKE_WEBHOOK_URL, {
+        method: "POST",
+        body: formData,
       });
 
-      if (error) throw error;
+      if (!res.ok) throw new Error("Webhook responded with " + res.status);
 
       toast({
         title: "Success!",
@@ -49,7 +42,7 @@ const Contact = () => {
       });
 
       e.currentTarget.reset();
-      recaptchaRef.current?.reset();
+      setTurnstileToken(null);
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -147,26 +140,50 @@ const Contact = () => {
               </div>
               
               <div>
+                <label htmlFor="address" className="block text-sm font-medium text-primary-foreground mb-2">
+                  Address
+                </label>
+                <input
+                  type="text"
+                  id="address"
+                  name="address"
+                  required
+                  className="w-full px-4 py-3 bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors duration-300"
+                  placeholder="Installation address"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="photo" className="block text-sm font-medium text-primary-foreground mb-2">
+                  Upload a photo or rough sketch
+                </label>
+                <input
+                  type="file"
+                  id="photo"
+                  name="photo"
+                  accept="image/*,.pdf"
+                  className="w-full px-4 py-3 bg-background border border-input text-foreground file:mr-4 file:py-1 file:px-3 file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:opacity-90 outline-none transition-colors duration-300"
+                />
+              </div>
+
+              <div>
                 <label htmlFor="message" className="block text-sm font-medium text-primary-foreground mb-2">
-                  Message
+                  Tell Us About Your Project
                 </label>
                 <textarea
                   id="message"
                   name="message"
                   rows={5}
-                  required
                   className="w-full px-4 py-3 bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors duration-300 resize-none"
                   placeholder="Tell us about your project..."
                 ></textarea>
               </div>
               
-              <div>
-                <ReCAPTCHA
-                  ref={recaptchaRef}
-                  sitekey={RECAPTCHA_SITE_KEY}
-                  theme="light"
-                />
-              </div>
+              <Turnstile
+                siteKey="0x4AAAAAACmVMi3ZDLDzTYwv"
+                onSuccess={(token) => setTurnstileToken(token)}
+                onExpire={() => setTurnstileToken(null)}
+              />
               
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Sending..." : "Send Message"}
