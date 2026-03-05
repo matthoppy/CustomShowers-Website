@@ -158,11 +158,13 @@ const QuoteForm = () => {
         ></textarea>
       </div>
 
-      <Turnstile
-        siteKey="0x4AAAAAACmVMi3ZDLDzTYwv"
-        onSuccess={(token) => setTurnstileToken(token)}
-        onExpire={() => setTurnstileToken(null)}
-      />
+      <div className="flex justify-center">
+        <Turnstile
+          siteKey="0x4AAAAAACmVMi3ZDLDzTYwv"
+          onSuccess={(token) => setTurnstileToken(token)}
+          onExpire={() => setTurnstileToken(null)}
+        />
+      </div>
 
       <Button
         type="submit"
