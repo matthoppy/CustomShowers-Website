@@ -26,12 +26,18 @@ const QuoteForm = () => {
 
     try {
       const formData = new FormData(e.currentTarget);
-      formData.append("turnstileToken", turnstileToken);
 
       await fetch(MAKE_WEBHOOK_URL, {
         method: "POST",
-        body: formData,
-        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.get("name"),
+          email: formData.get("email"),
+          phone: formData.get("phone"),
+          address: formData.get("address"),
+          message: formData.get("message"),
+          turnstileToken,
+        }),
       });
 
       toast({
