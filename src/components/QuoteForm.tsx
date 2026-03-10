@@ -3,7 +3,7 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-const MAKE_WEBHOOK_URL = "https://hook.eu1.make.com/wru9vum5ew9twpibdjwvhlmpbvmmgoba";
+const MAKE_WEBHOOK_URL = "https://n8n.customshowers.uk/webhook/559679be-1229-49a4-bf99-28e3f5af24b7";
 
 const QuoteForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
