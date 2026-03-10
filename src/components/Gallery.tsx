@@ -1,9 +1,12 @@
+import { useState, useEffect } from "react";
 import gallery1 from "@/assets/gallery-1.jpg";
 import gallery2 from "@/assets/gallery-2.jpg";
 import gallery3 from "@/assets/gallery-3.jpg";
 import gallery4 from "@/assets/gallery-4.jpg";
 
 const Gallery = () => {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
   const projects = [
     {
       image: gallery1,
@@ -22,6 +25,17 @@ const Gallery = () => {
       alt: "Frameless glass shower with skylight",
     },
   ];
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (lightboxIndex === null) return;
+      if (e.key === "Escape") setLightboxIndex(null);
+      if (e.key === "ArrowRight") setLightboxIndex((i) => (i! + 1) % projects.length);
+      if (e.key === "ArrowLeft") setLightboxIndex((i) => (i! - 1 + projects.length) % projects.length);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxIndex, projects.length]);
 
   return (
     <section id="gallery" className="py-24 bg-primary">
@@ -42,6 +56,7 @@ const Gallery = () => {
             <div
               key={index}
               className="relative aspect-[3/4] overflow-hidden group cursor-pointer bg-background"
+              onClick={() => setLightboxIndex(index)}
             >
               <img
                 src={project.image}
@@ -58,6 +73,54 @@ const Gallery = () => {
           ))}
         </div>
       </div>
+
+      {/* Lightbox */}
+      {lightboxIndex !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
+          onClick={() => setLightboxIndex(null)}
+        >
+          {/* Close button */}
+          <button
+            className="absolute top-4 right-4 text-white text-4xl leading-none hover:text-white/70 transition-colors"
+            onClick={() => setLightboxIndex(null)}
+            aria-label="Close"
+          >
+            &times;
+          </button>
+
+          {/* Prev button */}
+          <button
+            className="absolute left-4 text-white text-4xl leading-none hover:text-white/70 transition-colors px-2"
+            onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex - 1 + projects.length) % projects.length); }}
+            aria-label="Previous"
+          >
+            &#8249;
+          </button>
+
+          {/* Image */}
+          <img
+            src={projects[lightboxIndex].image}
+            alt={projects[lightboxIndex].alt}
+            className="max-h-[90vh] max-w-[90vw] object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {/* Next button */}
+          <button
+            className="absolute right-4 text-white text-4xl leading-none hover:text-white/70 transition-colors px-2"
+            onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex + 1) % projects.length); }}
+            aria-label="Next"
+          >
+            &#8250;
+          </button>
+
+          {/* Caption */}
+          <p className="absolute bottom-6 left-0 right-0 text-center text-white/80 text-sm">
+            {projects[lightboxIndex].alt}
+          </p>
+        </div>
+      )}
     </section>
   );
 };

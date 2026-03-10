@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -7,7 +7,9 @@ const MAKE_WEBHOOK_URL = "https://hook.eu1.make.com/wru9vum5ew9twpibdjwvhlmpbvmm
 
 const QuoteForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -25,7 +27,7 @@ const QuoteForm = () => {
     setIsSubmitting(true);
 
     try {
-      const formData = new FormData(e.currentTarget);
+      const formData = new FormData(formRef.current!);
 
       let photo: { name: string; type: string; data: string } | null = null;
       const file = formData.get("photo") as File;
@@ -54,13 +56,9 @@ const QuoteForm = () => {
         }),
       });
 
-      toast({
-        title: "Success!",
-        description: "Your message has been sent. We'll get back to you soon!",
-      });
-
-      e.currentTarget.reset();
+      formRef.current?.reset();
       setTurnstileToken(null);
+      setSubmitted(true);
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -73,8 +71,27 @@ const QuoteForm = () => {
     }
   };
 
+  if (submitted) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+        <div className="text-5xl">&#10003;</div>
+        <h3 className="text-2xl font-bold text-primary-foreground">Message Sent!</h3>
+        <p className="text-primary-foreground/80 max-w-sm">
+          Thank you for reaching out. Your form has been received and we will be in contact with you shortly.
+        </p>
+        <Button
+          type="button"
+          className="mt-4 bg-white text-primary hover:bg-white/90"
+          onClick={() => setSubmitted(false)}
+        >
+          Send Another Message
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-primary-foreground mb-2">
