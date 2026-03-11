@@ -134,7 +134,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
         }`}
       >
         <a href="#home">
-          <img src={logo} alt="Custom Showers" className="h-16 w-auto" />
+          <img src={logo} alt="Custom Showers" className="h-28 w-auto" />
         </a>
       </div>
 
