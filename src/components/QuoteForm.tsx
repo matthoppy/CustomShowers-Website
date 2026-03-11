@@ -50,6 +50,7 @@ const QuoteForm = () => {
           email: formData.get("email"),
           phone: formData.get("phone"),
           address: formData.get("address"),
+          serviceType: formData.get("serviceType"),
           message: formData.get("message"),
           turnstileToken,
           photo,
@@ -133,6 +134,29 @@ const QuoteForm = () => {
           className="w-full px-4 py-3 bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors duration-300"
           placeholder="your@email.com"
         />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-primary-foreground mb-2">
+          Service Type
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          {["Supply Only", "Supply + London Installation"].map((option) => (
+            <label
+              key={option}
+              className="flex items-center gap-3 px-4 py-3 bg-background border border-input cursor-pointer has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary transition-colors duration-200"
+            >
+              <input
+                type="radio"
+                name="serviceType"
+                value={option}
+                required
+                className="accent-primary w-4 h-4 shrink-0"
+              />
+              <span className="text-sm text-foreground font-medium">{option}</span>
+            </label>
+          ))}
+        </div>
       </div>
 
       <div>
