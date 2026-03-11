@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Phone, Menu, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
-import logo from "@/assets/CustomShowersMain.png";
+import logo from "@/assets/Custom Showers Main1.png";
 
 interface NavigationProps {
   onOpenQuote?: () => void;
