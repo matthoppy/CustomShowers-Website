@@ -38,10 +38,10 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
       >
         <div className="bg-background/95 backdrop-blur-sm shadow-sm">
           <div className="container mx-auto px-6">
-            <div className="flex items-center justify-between h-28">
+            <div className="flex items-center justify-between h-40">
               {/* Logo */}
               <a href="#home" className="flex items-center">
-                <img src={logo} alt="Custom Showers" className="h-24 w-auto" />
+                <img src={logo} alt="Custom Showers" className="h-36 w-auto" />
               </a>
 
               {/* Desktop Navigation */}
@@ -133,17 +133,9 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
             : "opacity-0 -translate-y-4 pointer-events-none"
         }`}
       >
-        <div className="flex items-center gap-5 px-5 py-3 rounded-full bg-background/80 backdrop-blur-xl border border-border/60 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
-          {/* Logo — smaller */}
-          <a href="#home" className="flex items-center shrink-0">
-            <img src={logo} alt="Custom Showers" className="h-16 w-auto" />
-          </a>
-
-          {/* Divider */}
-          <div className="w-px h-5 bg-border/60" />
-
-          {/* Nav links */}
-          <nav className="flex items-center gap-5">
+        <div className="flex items-center gap-6 px-6 py-3 rounded-full bg-background/80 backdrop-blur-xl border border-border/60 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+          {/* Nav links only */}
+          <nav className="flex items-center gap-6">
             {menuItems.map((item) =>
               item.href.startsWith("/") ? (
                 <Link
@@ -164,14 +156,6 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
               )
             )}
           </nav>
-
-          {/* Divider */}
-          <div className="w-px h-5 bg-border/60" />
-
-          {/* CTA */}
-          <Button variant="default" size="sm" onClick={onOpenQuote} className="rounded-full text-xs px-4 py-1.5 h-auto">
-            Free Quote
-          </Button>
         </div>
       </div>
 
