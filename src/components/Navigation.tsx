@@ -38,10 +38,10 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
       >
         <div className="bg-background/95 backdrop-blur-sm shadow-sm">
           <div className="container mx-auto px-6">
-            <div className="flex items-center justify-between h-52">
+            <div className="flex items-center justify-between h-24">
               {/* Logo */}
               <a href="#home" className="flex items-center">
-                <img src={logo} alt="Custom Showers" className="h-48 w-auto" />
+                <img src={logo} alt="Custom Showers" className="h-20 w-auto" />
               </a>
 
               {/* Desktop Navigation */}
