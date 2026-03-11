@@ -129,12 +129,12 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
 
       {/* Logo — top left */}
       <div
-        className={`fixed top-3 left-6 z-50 hidden lg:flex items-center transition-all duration-500 ease-in-out ${
+        className={`fixed top-4 left-6 z-50 hidden lg:flex items-center transition-all duration-500 ease-in-out ${
           isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
         }`}
       >
-        <a href="#home">
-          <img src={logo} alt="Custom Showers" className="h-28 w-auto" />
+        <a href="#home" className="bg-white rounded-full p-2 flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+          <img src={logo} alt="Custom Showers" className="h-10 w-auto" />
         </a>
       </div>
 
