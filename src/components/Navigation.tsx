@@ -125,16 +125,26 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
         </div>
       </header>
 
-      {/* Dynamic Island pill — desktop only, shown when scrolled */}
+      {/* Scrolled state — desktop only: logo left, pill centre, button right */}
+
+      {/* Logo — top left */}
+      <div
+        className={`fixed top-3 left-6 z-50 hidden lg:flex items-center transition-all duration-500 ease-in-out ${
+          isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
+        }`}
+      >
+        <a href="#home">
+          <img src={logo} alt="Custom Showers" className="h-16 w-auto" />
+        </a>
+      </div>
+
+      {/* Nav pill — centred */}
       <div
         className={`fixed top-4 left-1/2 z-50 -translate-x-1/2 hidden lg:flex items-center transition-all duration-500 ease-in-out ${
-          isScrolled
-            ? "opacity-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 -translate-y-4 pointer-events-none"
+          isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
         }`}
       >
         <div className="flex items-center gap-6 px-6 py-3 rounded-full bg-background/80 backdrop-blur-xl border border-border/60 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
-          {/* Nav links only */}
           <nav className="flex items-center gap-6">
             {menuItems.map((item) =>
               item.href.startsWith("/") ? (
@@ -157,6 +167,17 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
             )}
           </nav>
         </div>
+      </div>
+
+      {/* Quote button — top right */}
+      <div
+        className={`fixed top-4 right-6 z-50 hidden lg:flex items-center transition-all duration-500 ease-in-out ${
+          isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
+        }`}
+      >
+        <Button variant="default" onClick={onOpenQuote} className="rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+          Get A Free Quote
+        </Button>
       </div>
 
       {/* Mobile sticky header (always shown on mobile) */}
