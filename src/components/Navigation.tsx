@@ -133,10 +133,10 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
             : "opacity-0 -translate-y-4 pointer-events-none"
         }`}
       >
-        <div className="flex items-center gap-5 px-4 py-2 rounded-full bg-background/80 backdrop-blur-xl border border-border/60 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+        <div className="flex items-center gap-5 px-5 py-3 rounded-full bg-background/80 backdrop-blur-xl border border-border/60 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
           {/* Logo — smaller */}
           <a href="#home" className="flex items-center shrink-0">
-            <img src={logo} alt="Custom Showers" className="h-9 w-auto" />
+            <img src={logo} alt="Custom Showers" className="h-16 w-auto" />
           </a>
 
           {/* Divider */}
