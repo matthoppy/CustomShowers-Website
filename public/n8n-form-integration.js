@@ -33,7 +33,7 @@
       const payload = {
         timestamp: new Date().toISOString(),
         source: 'customshowers.uk',
-        customer: {
+body: {
           name: formData.get('name') || '',
           phone: formData.get('phone') || '',
           email: formData.get('email') || '',
