@@ -129,18 +129,18 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
 
       {/* Logo — top left */}
       <div
-        className={`fixed top-4 left-6 z-50 hidden lg:flex items-center transition-all duration-500 ease-in-out ${
+        className={`fixed top-5 left-6 z-50 hidden lg:flex items-center transition-all duration-500 ease-in-out ${
           isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
         }`}
       >
-        <a href="#home" className="bg-white rounded-full p-2 flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+        <a href="#home" className="bg-white p-2 flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
           <img src={logo} alt="Custom Showers" className="h-10 w-auto" />
         </a>
       </div>
 
       {/* Nav pill — centred */}
       <div
-        className={`fixed top-4 left-1/2 z-50 -translate-x-1/2 hidden lg:flex items-center transition-all duration-500 ease-in-out ${
+        className={`fixed top-5 left-1/2 z-50 -translate-x-1/2 hidden lg:flex items-center transition-all duration-500 ease-in-out ${
           isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
         }`}
       >
@@ -171,11 +171,11 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
 
       {/* Quote button — top right */}
       <div
-        className={`fixed top-4 right-6 z-50 hidden lg:flex items-center transition-all duration-500 ease-in-out ${
+        className={`fixed top-5 right-6 z-50 hidden lg:flex items-center transition-all duration-500 ease-in-out ${
           isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
         }`}
       >
-        <Button variant="default" onClick={onOpenQuote} className="rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+        <Button variant="default" onClick={onOpenQuote} className="rounded-none shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
           Get A Free Quote
         </Button>
       </div>
