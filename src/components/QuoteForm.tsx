@@ -42,11 +42,16 @@ const QuoteForm = () => {
         photo = { name: file.name, type: file.type, data: base64 };
       }
 
+      const addressLine = formData.get("addressLine") as string;
+      const city = formData.get("city") as string;
+      const postcode = formData.get("postcode") as string;
+      const address = [addressLine, city, postcode].filter(Boolean).join(", ");
+
       const payload = {
         name: formData.get("name"),
         email: formData.get("email"),
         phone: formData.get("phone"),
-        address: formData.get("address"),
+        address,
         serviceType: formData.get("serviceType"),
         message: formData.get("message"),
         turnstileToken,
@@ -171,17 +176,37 @@ const QuoteForm = () => {
       </div>
 
       <div>
-        <label htmlFor="address" className="block text-sm font-medium text-primary-foreground mb-2">
+        <label className="block text-sm font-medium text-primary-foreground mb-2">
           Address
         </label>
-        <input
-          type="text"
-          id="address"
-          name="address"
-          required
-          className="w-full px-4 py-3 bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors duration-300"
-          placeholder="Installation address"
-        />
+        <div className="space-y-3">
+          <input
+            type="text"
+            id="addressLine"
+            name="addressLine"
+            required
+            className="w-full px-4 py-3 bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors duration-300"
+            placeholder="Street address"
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              type="text"
+              id="city"
+              name="city"
+              required
+              className="w-full px-4 py-3 bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors duration-300"
+              placeholder="City"
+            />
+            <input
+              type="text"
+              id="postcode"
+              name="postcode"
+              required
+              className="w-full px-4 py-3 bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors duration-300"
+              placeholder="Postcode"
+            />
+          </div>
+        </div>
       </div>
 
       <div>
