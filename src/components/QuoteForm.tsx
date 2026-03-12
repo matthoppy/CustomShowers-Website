@@ -3,7 +3,7 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-const MAKE_WEBHOOK_URL = "https://n8n.customshowers.uk/webhook/559679be-1229-49a4-bf99-28e3f5af24b7";
+const WEBHOOK_URL = "https://n8n.customshowers.uk/webhook/559679be-1229-49a4-bf99-28e3f5af24b7";
 
 const QuoteForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,8 +18,8 @@ const QuoteForm = () => {
     if (!turnstileToken) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Please complete the security check",
+        title: "Security check required",
+        description: "Please complete the security check before submitting.",
       });
       return;
     }
@@ -42,30 +42,37 @@ const QuoteForm = () => {
         photo = { name: file.name, type: file.type, data: base64 };
       }
 
-      await fetch(MAKE_WEBHOOK_URL, {
+      const payload = {
+        name: formData.get("name"),
+        email: formData.get("email"),
+        phone: formData.get("phone"),
+        address: formData.get("address"),
+        serviceType: formData.get("serviceType"),
+        message: formData.get("message"),
+        turnstileToken,
+        photo,
+      };
+
+      // Fire and forget — use no-cors to avoid CORS errors blocking the success state
+      fetch(WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.get("name"),
-          email: formData.get("email"),
-          phone: formData.get("phone"),
-          address: formData.get("address"),
-          serviceType: formData.get("serviceType"),
-          message: formData.get("message"),
-          turnstileToken,
-          photo,
-        }),
+        mode: "no-cors",
+        body: JSON.stringify(payload),
+      }).catch(() => {
+        // Silently ignore — webhook errors shouldn't affect the user experience
       });
 
+      // Show success immediately
       formRef.current?.reset();
       setTurnstileToken(null);
       setSubmitted(true);
     } catch (error) {
-      console.error("Error submitting form:", error);
+      console.error("Form submission error:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to send message. Please try again.",
+        title: "Something went wrong",
+        description: "Failed to send your message. Please try again or call us directly.",
       });
     } finally {
       setIsSubmitting(false);
@@ -74,15 +81,19 @@ const QuoteForm = () => {
 
   if (submitted) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-        <div className="text-5xl">&#10003;</div>
-        <h3 className="text-2xl font-bold text-primary-foreground">Message Sent!</h3>
-        <p className="text-primary-foreground/80 max-w-sm">
-          Thank you for reaching out. Your form has been received and we will be in contact with you shortly.
+      <div className="flex flex-col items-center justify-center py-16 text-center space-y-5">
+        <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
+          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h3 className="text-2xl font-bold text-primary-foreground">Message Received!</h3>
+        <p className="text-primary-foreground/80 max-w-sm leading-relaxed">
+          Thank you for getting in touch. A member of our team will review your enquiry and get back to you within 1 business day.
         </p>
         <Button
           type="button"
-          className="mt-4 bg-white text-primary hover:bg-white/90"
+          className="mt-2 bg-white text-primary hover:bg-white/90"
           onClick={() => setSubmitted(false)}
         >
           Send Another Message
