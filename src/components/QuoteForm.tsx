@@ -3,7 +3,7 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-const WORKER_URL = "https://custom-showers-quote.workers.dev";
+const WORKER_URL = "https://customshowers-contact.workers.dev";
 
 const QuoteForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
