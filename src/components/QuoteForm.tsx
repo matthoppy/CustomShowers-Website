@@ -3,7 +3,7 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-const WEBHOOK_URL = "https://n8n.customshowers.uk/webhook/559679be-1229-49a4-bf99-28e3f5af24b7";
+const WORKER_URL = "https://custom-showers-quote.workers.dev";
 
 const QuoteForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,12 +58,14 @@ const QuoteForm = () => {
         photo,
       };
 
-      fetch(WEBHOOK_URL, {
+      const res = await fetch(WORKER_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        mode: "no-cors",
         body: JSON.stringify(payload),
-      }).catch(() => {});
+      });
+
+      const data = await res.json() as { success: boolean; error?: string };
+      if (!data.success) throw new Error(data.error || "Failed to send");
 
       formRef.current?.reset();
       setTurnstileToken(null);
