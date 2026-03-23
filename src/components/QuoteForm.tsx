@@ -2,8 +2,7 @@ import { useState, useRef } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
-
-const WEBHOOK_URL = "https://n8n.customshowers.uk/webhook/559679be-1229-49a4-bf99-28e3f5af24b7";
+import { supabase } from "@/integrations/supabase/client";
 
 const QuoteForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,17 +57,12 @@ const QuoteForm = () => {
         photo,
       };
 
-      // Fire and forget — use no-cors to avoid CORS errors blocking the success state
-      fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        mode: "no-cors",
-        body: JSON.stringify(payload),
-      }).catch(() => {
-        // Silently ignore — webhook errors shouldn't affect the user experience
+      const { error } = await supabase.functions.invoke("send-quote-enquiry", {
+        body: payload,
       });
 
-      // Show success immediately
+      if (error) throw error;
+
       formRef.current?.reset();
       setTurnstileToken(null);
       setSubmitted(true);

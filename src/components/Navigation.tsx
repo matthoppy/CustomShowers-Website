@@ -133,7 +133,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
           isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
         }`}
       >
-        <a href="#home" className="bg-white p-2 flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+        <a href="#home" className="bg-white p-2 flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-lg">
           <img src={logo} alt="Custom Showers" className="h-10 w-auto" />
         </a>
       </div>
@@ -175,7 +175,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
           isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
         }`}
       >
-        <Button variant="default" onClick={onOpenQuote} className="rounded-none shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+        <Button variant="default" onClick={onOpenQuote} className="rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
           Get A Free Quote
         </Button>
       </div>
