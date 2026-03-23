@@ -3,7 +3,7 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-const WORKER_URL = "https://custom-showers-quote.workers.dev";
+const WORKER_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-quote-enquiry`;
 
 const QuoteForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,7 +60,10 @@ const QuoteForm = () => {
 
       const res = await fetch(WORKER_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
         body: JSON.stringify(payload),
       });
 
