@@ -2,7 +2,8 @@ import { useState, useRef } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+
+const WEBHOOK_URL = "https://n8n.customshowers.uk/webhook/559679be-1229-49a4-bf99-28e3f5af24b7";
 
 const QuoteForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,11 +58,12 @@ const QuoteForm = () => {
         photo,
       };
 
-      const { error } = await supabase.functions.invoke("send-quote-enquiry", {
-        body: payload,
-      });
-
-      if (error) throw error;
+      fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        mode: "no-cors",
+        body: JSON.stringify(payload),
+      }).catch(() => {});
 
       formRef.current?.reset();
       setTurnstileToken(null);
