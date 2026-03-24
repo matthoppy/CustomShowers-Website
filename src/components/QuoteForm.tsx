@@ -2,7 +2,8 @@ import { useState, useRef } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+
+const WORKER_URL = "https://customshowers-contact.vcwvk4sm9m.workers.dev";
 
 const QuoteForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,11 +58,13 @@ const QuoteForm = () => {
         photo,
       };
 
-      const { error } = await supabase.functions.invoke("send-quote-enquiry", {
-        body: payload,
+      const response = await fetch(WORKER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
-      if (error) throw error;
+      if (!response.ok) throw new Error(`Request failed: ${response.status}`);
 
       formRef.current?.reset();
       setTurnstileToken(null);
