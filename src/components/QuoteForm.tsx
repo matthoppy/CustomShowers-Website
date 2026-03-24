@@ -5,7 +5,12 @@ import { useToast } from "@/hooks/use-toast";
 
 const WORKER_URL = "https://customshowers-contact.vcwvk4sm9m.workers.dev";
 
-const QuoteForm = () => {
+interface QuoteFormProps {
+  onSubmitSuccess?: () => void;
+  onClose?: () => void;
+}
+
+const QuoteForm = ({ onSubmitSuccess, onClose }: QuoteFormProps = {}) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
@@ -28,9 +33,9 @@ const QuoteForm = () => {
 
     try {
       const formData = new FormData(formRef.current!);
-
       let photo: { name: string; type: string; data: string } | null = null;
       const file = formData.get("photo") as File;
+
       if (file && file.size > 0) {
         if (file.size > 5 * 1024 * 1024) {
           toast({ variant: "destructive", title: "File too large", description: "Please upload a file under 5MB." });
@@ -69,6 +74,7 @@ const QuoteForm = () => {
       formRef.current?.reset();
       setTurnstileToken(null);
       setSubmitted(true);
+      onSubmitSuccess?.();
     } catch (error) {
       console.error("Form submission error:", error);
       toast({
@@ -93,13 +99,23 @@ const QuoteForm = () => {
         <p className="text-primary-foreground/80 max-w-sm leading-relaxed">
           Thank you for getting in touch. A member of our team will review your enquiry and get back to you within 1 business day.
         </p>
-        <Button
-          type="button"
-          className="mt-2 bg-white text-primary hover:bg-white/90"
-          onClick={() => setSubmitted(false)}
-        >
-          Send Another Message
-        </Button>
+        <div className="flex gap-3 mt-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="bg-transparent border-white/40 text-primary-foreground hover:bg-white/10"
+            onClick={() => setSubmitted(false)}
+          >
+            Send Another Message
+          </Button>
+          <Button
+            type="button"
+            className="bg-white text-primary hover:bg-white/90"
+            onClick={() => { setSubmitted(false); onClose?.(); }}
+          >
+            Close
+          </Button>
+        </div>
       </div>
     );
   }
