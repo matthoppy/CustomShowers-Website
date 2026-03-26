@@ -73,6 +73,9 @@ const QuoteForm = ({ onSubmitSuccess, onClose }: QuoteFormProps = {}) => {
 
       formRef.current?.reset();
       setTurnstileToken(null);
+        if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
+          (window as any).gtag('event', 'conversion', { send_to: 'AW-18009060377/zXn2CNeGqpAcEJnosYtD' });
+        }
       setSubmitted(true);
       onSubmitSuccess?.();
     } catch (error) {
