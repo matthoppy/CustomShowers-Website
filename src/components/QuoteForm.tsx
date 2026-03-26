@@ -73,16 +73,11 @@ const QuoteForm = ({ onSubmitSuccess, onClose }: QuoteFormProps = {}) => {
 
       formRef.current?.reset();
       setTurnstileToken(null);
-        if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
-          (window as any).gtag('event', 'conversion', { send_to: 'AW-18009060377/zXn2CNeGqpAcEJnosYtD' });
-        }
       setSubmitted(true);
 
       // Google Ads conversion tracking
       if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
-        (window as any).gtag('event', 'conversion', {
-          send_to: 'AW-16912992971/CONVERSION_LABEL',
-        });
+        (window as any).gtag('event', 'conversion', { send_to: 'AW-18009060377/zXn2CNeGqpAcEJnosYtD' });
       }
 
       onSubmitSuccess?.();
