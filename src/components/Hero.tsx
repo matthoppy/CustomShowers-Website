@@ -12,6 +12,8 @@ const Hero = ({ onOpenQuote }: HeroProps) => {
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url(${heroImage})` }}
+                role="img"
+                aria-label="Bespoke frameless glass shower enclosure installation"
       >
         <div className="absolute inset-0 bg-overlay/50" />
       </div>
@@ -20,7 +22,7 @@ const Hero = ({ onOpenQuote }: HeroProps) => {
       <div className="relative h-full flex items-center justify-center text-center px-6">
         <div className="max-w-5xl">
           <h1 className="text-5xl md:text-7xl font-black text-primary-foreground uppercase tracking-wider mb-6 animate-fade-in">
-            Custom Showers
+                        Bespoke Frameless Shower Enclosures London
           </h1>
           <p className="text-xl md:text-2xl text-primary-foreground/90 mb-8 max-w-3xl mx-auto font-light">
             Premium frameless shower enclosures. Supply only UK wide. Professional survey and installation in London.
