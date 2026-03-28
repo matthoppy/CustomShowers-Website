@@ -9,20 +9,20 @@ const Gallery = () => {
 
   const projects = [
     {
-      image: gallery1,
-      alt: "Custom shower enclosure with gold fixtures",
+      image: gallery1
+      alt: "Bespoke frameless shower enclosure with gold fixtures, London installation",
     },
     {
       image: gallery2,
-      alt: "Custom glass shower installation",
+      alt: "Custom frameless glass shower walk-in installation, London",
     },
     {
       image: gallery3,
-      alt: "Glass shower with blue tile finish",
+      alt: "Frameless glass shower enclosure with blue tile surround, London",
     },
     {
       image: gallery4,
-      alt: "Frameless glass shower with skylight",
+      alt: "Bespoke frameless shower enclosure with overhead skylight, London",
     },
   ];
 
