@@ -25,6 +25,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
     { label: "About", href: "#about" },
     { label: "Services", href: "#services" },
     { label: "Gallery", href: "#gallery" },
+    { label: "Process", href: "#process" },
     { label: "FAQ", href: "#faq" },
     { label: "Contact", href: "#contact" },
   ];
