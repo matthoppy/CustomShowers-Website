@@ -25,6 +25,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
     { label: "About", href: "#about" },
     { label: "Services", href: "#services" },
     { label: "Gallery", href: "#gallery" },
+    { label: "FAQ", href: "#faq" },
     { label: "Contact", href: "#contact" },
   ];
 
@@ -113,11 +114,11 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
                   )
                 )}
                 <a
-                  href="tel:+447123456789"
+                  href="tel:+447883318933"
                   className="flex items-center gap-2 py-3 text-primary hover:text-primary-hover transition-colors duration-300 font-semibold"
                 >
                   <Phone className="w-5 h-5" />
-                  +44 7123 456789
+                  +44 7883 318933
                 </a>
               </nav>
             )}
@@ -225,11 +226,11 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
                 )
               )}
               <a
-                href="tel:+447123456789"
+                href="tel:+447883318933"
                 className="flex items-center gap-2 py-3 text-primary transition-colors duration-300 font-semibold"
               >
                 <Phone className="w-5 h-5" />
-                +44 7123 456789
+                +44 7883 318933
               </a>
               <Button variant="default" className="mt-2 w-full" onClick={() => { onOpenQuote?.(); setIsMobileMenuOpen(false); }}>
                 Get A Free Quote
