@@ -6,6 +6,7 @@ import Stats from "@/components/Stats";
 import Services from "@/components/Services";
 import Gallery from "@/components/Gallery";
 import Testimonials from "@/components/Testimonials";
+import FAQ from "@/components/FAQ";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import QuoteModal from "@/components/QuoteModal";
@@ -22,6 +23,7 @@ const Index = () => {
       <Services />
       <Gallery />
       <Testimonials />
+      <FAQ />
       <Contact />
       <Footer />
       <QuoteModal open={quoteModalOpen} onOpenChange={setQuoteModalOpen} />
