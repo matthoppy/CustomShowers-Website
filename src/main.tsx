@@ -5,6 +5,7 @@ import ShowerConfiguratorWizard from "./pages/ShowerConfiguratorWizard";
 import TermsOfTrade from "./pages/TermsOfTrade";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import SupplyOnly from "./pages/SupplyOnly";
+import Balustrades from "./pages/Balustrades";
 import Blog from "./pages/Blog";
 import BlogArticle from "./pages/BlogArticle";
 import NotFound from "./pages/NotFound";
@@ -19,6 +20,7 @@ const App = () => {
         <Route path="/terms-of-trade" element={<TermsOfTrade />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/supply-only" element={<SupplyOnly />} />
+        <Route path="/balustrades" element={<Balustrades />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogArticle />} />
         <Route path="*" element={<NotFound />} />
