@@ -11,6 +11,8 @@ interface NavigationProps {
 const Navigation = ({ onOpenQuote }: NavigationProps) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const isHomePage = location.pathname === "/";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -20,6 +22,9 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Transparent only on home page before scrolling
+  const isTransparent = isHomePage && !isScrolled;
+
   const menuItems = [
     { label: "Home", href: "#home" },
     { label: "About", href: "#about" },
@@ -28,6 +33,8 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
     { label: "Process", href: "#process" },
     { label: "FAQ", href: "#faq" },
     { label: "Contact", href: "#contact" },
+    { label: "Supply Only", href: "/supply-only" },
+    { label: "Blog", href: "/blog" },
   ];
 
   return (
@@ -38,7 +45,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
           isScrolled ? "opacity-0 pointer-events-none -translate-y-2" : "opacity-100"
         }`}
       >
-        <div className="bg-background/95 backdrop-blur-sm shadow-sm">
+        <div className={`transition-colors duration-500 ${isTransparent ? "bg-transparent" : "bg-background/95 backdrop-blur-sm shadow-sm"}`}>
           <div className="container mx-auto px-6">
             <div className="flex items-center justify-between h-24">
               {/* Logo */}
@@ -53,7 +60,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
                     <Link
                       key={item.label}
                       to={item.href}
-                      className="text-foreground hover:text-primary transition-colors duration-300 font-medium"
+                      className={`transition-colors duration-300 font-medium ${isTransparent ? "text-white/90 hover:text-white" : "text-foreground hover:text-primary"}`}
                     >
                       {item.label}
                     </Link>
@@ -61,7 +68,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
                     <a
                       key={item.label}
                       href={item.href}
-                      className="text-foreground hover:text-primary transition-colors duration-300 font-medium"
+                      className={`transition-colors duration-300 font-medium ${isTransparent ? "text-white/90 hover:text-white" : "text-foreground hover:text-primary"}`}
                     >
                       {item.label}
                     </a>
@@ -72,7 +79,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
               {/* Get Quote Button */}
               <div className="hidden md:flex items-center gap-4">
                 <Button variant="default" onClick={onOpenQuote}>
-                  Get A Free Quote
+                  Get A Quote
                 </Button>
               </div>
 
@@ -83,9 +90,9 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
                 aria-label="Toggle menu"
               >
                 {isMobileMenuOpen ? (
-                  <X className="w-6 h-6 text-foreground" />
+                  <X className={`w-6 h-6 ${isTransparent ? "text-white" : "text-foreground"}`} />
                 ) : (
-                  <Menu className="w-6 h-6 text-foreground" />
+                  <Menu className={`w-6 h-6 ${isTransparent ? "text-white" : "text-foreground"}`} />
                 )}
               </button>
             </div>
@@ -178,7 +185,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
         }`}
       >
         <Button variant="default" onClick={onOpenQuote} className="rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
-          Get A Free Quote
+          Get A Quote
         </Button>
       </div>
 
@@ -234,7 +241,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
                 +44 7883 318933
               </a>
               <Button variant="default" className="mt-2 w-full" onClick={() => { onOpenQuote?.(); setIsMobileMenuOpen(false); }}>
-                Get A Free Quote
+                Get A Quote
               </Button>
             </nav>
           )}
