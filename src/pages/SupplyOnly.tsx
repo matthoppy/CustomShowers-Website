@@ -28,7 +28,7 @@ const steps = [
     number: "04",
     title: "Manufacturing",
     description:
-      "Your glass is manufactured to order using 8mm or 10mm toughened safety glass that meets BS EN 12150. Lead times are typically 2–4 weeks depending on complexity and current workload.",
+      "Your glass is manufactured to order using 10mm toughened safety glass that meets BS EN 12150. Lead times are typically 2–4 weeks depending on complexity and current workload.",
   },
   {
     number: "05",
@@ -61,9 +61,9 @@ const faqs = [
       "Glass is manufactured to a standard industry tolerance of ±3mm. We recommend double-checking measurements before confirming. Once manufacture has started, changes cannot be made.",
   },
   {
-    question: "What glass thicknesses do you offer?",
+    question: "What glass thickness do you use?",
     answer:
-      "We supply 8mm and 10mm toughened safety glass as standard. Both meet BS EN 12150. 10mm is recommended for larger panels or walk-in configurations.",
+      "We supply 10mm toughened safety glass as standard, fully compliant with BS EN 12150.",
   },
   {
     question: "Can I choose my own hardware finish?",
@@ -148,7 +148,7 @@ const SupplyOnly = () => {
               },
               {
                 title: "Same Quality Glass",
-                body: "Identical 8mm and 10mm toughened safety glass, premium hardware, and precise manufacturing — regardless of whether we fit it.",
+                body: "Identical 10mm toughened safety glass, premium hardware, and precise manufacturing — regardless of whether we fit it.",
               },
             ].map((card) => (
               <div key={card.title} className="bg-background rounded-xl p-8 shadow-sm">

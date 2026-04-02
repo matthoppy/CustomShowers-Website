@@ -15,7 +15,7 @@ const steps = [
     number: "03",
     title: "Bespoke Manufacture",
     description:
-      "Your enclosure is precision-cut and manufactured to your exact specifications using 8mm or 10mm toughened safety glass. Lead time is typically 3–5 weeks.",
+      "Your enclosure is precision-cut and manufactured to your exact specifications using 10mm toughened safety glass. Lead time is typically 3–5 weeks.",
   },
   {
     number: "04",

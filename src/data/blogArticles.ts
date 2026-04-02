@@ -27,7 +27,7 @@ The downsides are well-known: the metal tracks collect soap scum and limescale, 
 
 ## Frameless Enclosures
 
-Frameless enclosures use thick toughened glass — typically 8mm or 10mm — with minimal hardware. There are no metal channels running along the floor or top of the glass. Hinges fix directly to the glass or to the wall.
+Frameless enclosures use 10mm toughened glass with minimal hardware. There are no metal channels running along the floor or top of the glass. Hinges fix directly to the glass or to the wall.
 
 The aesthetic is cleaner and more timeless. Cleaning is significantly easier because there's nowhere for grime to accumulate. The glass itself is the structural element, which means the hardware needs to be quality — cheap hinges on frameless glass will cause problems.
 
@@ -76,36 +76,6 @@ Note where the shower head, valve, and any fixed fittings are. This matters if g
 You don't need CAD drawings. A clear phone photo of a hand-drawn sketch with dimensions labelled is enough. Add any notes about out-of-plumb walls, floor level changes, or access constraints.
 
 The more information you provide upfront, the more accurate your quote will be and the fewer questions we'll have before confirming manufacture.`,
-  },
-  {
-    slug: "8mm-vs-10mm-shower-glass",
-    title: "8mm vs 10mm Shower Glass: Does the Thickness Actually Matter?",
-    excerpt:
-      "We get asked this regularly. Here's the honest answer on when 10mm is worth the extra cost and when 8mm is perfectly adequate.",
-    date: "10 February 2026",
-    readTime: "4 min read",
-    category: "Materials",
-    content: `Both 8mm and 10mm toughened safety glass meet BS EN 12150 and are entirely safe for shower enclosures. The question of which to choose is more about application than safety.
-
-## When 8mm Is Fine
-
-For most standard shower enclosures — a hinged door with a fixed side panel, or a simple walk-in — 8mm is perfectly adequate. It's lighter, easier for one person to handle during installation, and costs less.
-
-Side panels up to around 900mm wide and 2000mm tall are well-suited to 8mm glass.
-
-## When 10mm Makes Sense
-
-10mm becomes the better choice in a few specific situations:
-
-**Large panels.** Walk-in shower panels over 1000mm wide, or any panel over 2100mm tall, benefit from the additional rigidity that 10mm provides. Tall panels in 8mm can flex noticeably under hand pressure — not unsafe, but not ideal.
-
-**No wall fixing.** If the glass is freestanding or has very limited wall contact, 10mm is the appropriate choice.
-
-**Premium feel.** There's a tactile difference. 10mm glass has a presence to it. For high-end bathrooms, the extra weight and solidity is worth the premium.
-
-## The Honest Recommendation
-
-If you're unsure, go 10mm for the main panels and 8mm for smaller side returns. The cost difference on a typical enclosure is modest — usually £150–£300 depending on configuration — and you'll never wish you'd gone thinner.`,
   },
   {
     slug: "cleaning-and-maintaining-frameless-glass",

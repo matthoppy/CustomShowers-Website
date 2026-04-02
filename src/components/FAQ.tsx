@@ -25,7 +25,7 @@ const faqs = [
   {
     question: "What glass thicknesses and finishes do you offer?",
     answer:
-      "We use 8mm and 10mm toughened safety glass as standard for frameless enclosures — both fully compliant with BS EN 12150. We offer a range of hardware finishes including chrome, brushed nickel, matte black, brushed brass and gold. Bespoke finishes are also available on request.",
+      "We use 10mm toughened safety glass for all frameless enclosures, fully compliant with BS EN 12150. We offer a range of hardware finishes including chrome, brushed nickel, matte black, brushed brass and gold. Bespoke finishes are also available on request.",
   },
   {
     question: "Can you work with awkward spaces like loft conversions or sloped ceilings?",
