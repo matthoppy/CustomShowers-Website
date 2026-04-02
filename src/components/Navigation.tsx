@@ -28,11 +28,10 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
   const menuItems = [
     { label: "Home", href: "#home" },
     { label: "About", href: "#about" },
-    { label: "Services", href: "#services" },
-    { label: "Gallery", href: "#gallery" },
-    { label: "FAQ", href: "#faq" },
-    { label: "Contact", href: "#contact" },
     { label: "Supply Only", href: "/supply-only" },
+    { label: "Balustrades", href: "/balustrades" },
+    { label: "Gallery", href: "#gallery" },
+    { label: "Contact", href: "#contact" },
     { label: "Blog", href: "/blog" },
   ];
 
