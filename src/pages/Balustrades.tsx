@@ -5,54 +5,73 @@ import { Button } from "../components/ui/button";
 import { useState } from "react";
 import QuoteModal from "../components/QuoteModal";
 
-const applications = [
-  {
-    title: "Staircases",
-    description:
-      "Frameless glass balustrades open up stairwells and let light flow between floors. We manufacture panels to suit straight flights, winders, and curved staircases — supply only or supply and fit across London.",
-  },
-  {
-    title: "Juliet Balconies",
-    description:
-      "A clean, minimal alternative to traditional Juliet railings. Our frameless glass Juliet balconies are fixed directly to the structural opening with no visible posts, meeting all UK building regulations.",
-  },
-  {
-    title: "Terraces & Balconies",
-    description:
-      "Preserve the view from external terraces and balconies without the bulk of steel railings. Toughened and laminated glass panels rated to building regulation loads, supplied nationwide.",
-  },
-  {
-    title: "Landing Infills",
-    description:
-      "Replace timber spindles or closed panels with frameless glass on internal landings. Dramatically brightens hallways and adds a contemporary feel to period and new-build properties alike.",
-  },
-  {
-    title: "Pool & Garden Surrounds",
-    description:
-      "Glass balustrades around swimming pools and raised garden terraces. Frameless channel-fixed systems keep sightlines completely clear while meeting safety requirements.",
-  },
-  {
-    title: "Commercial & Retail",
-    description:
-      "Mezzanine floors, office atria, and retail spaces. We work with architects and contractors on commercial projects requiring bespoke glass balustrade systems.",
-  },
+import imgChannel1 from "../assets/balustrade-channel.JPG";
+import imgChannel2 from "../assets/balustrade-channel2.JPG";
+import imgInternal1 from "../assets/balustrade-internal.JPG";
+import imgInternal2 from "../assets/balustrade-internal2.JPG";
+import imgJuliette from "../assets/balustrade-juliette.JPG";
+import imgPosts1 from "../assets/balustrade-posts1.JPG";
+import imgPosts2 from "../assets/balustrade-posts2.JPG";
+import imgStandoff1 from "../assets/balustrade-standoff.JPG";
+import imgStandoff2 from "../assets/balustrade-standoff2.JPG";
+
+const galleryImages = [
+  { src: imgChannel1, alt: "Frameless channel-fixed glass balustrade" },
+  { src: imgInternal1, alt: "Internal glass balustrade staircase" },
+  { src: imgPosts1, alt: "Post-fixed glass balustrade" },
+  { src: imgJuliette, alt: "Frameless glass Juliet balcony" },
+  { src: imgStandoff1, alt: "Standoff-fixed glass balustrade" },
+  { src: imgChannel2, alt: "Channel-fixed glass balustrade detail" },
+  { src: imgInternal2, alt: "Internal glass balustrade landing" },
+  { src: imgPosts2, alt: "Post-fixed glass balustrade installation" },
+  { src: imgStandoff2, alt: "Standoff glass balustrade detail" },
 ];
 
 const systems = [
   {
-    name: "Frameless Channel Fixed",
+    name: "Channel Fixed",
     description:
       "Glass sits in a continuous floor or wall channel with no posts. The cleanest possible look — the glass appears to float. Best for straight runs with solid substrate.",
+    images: [imgChannel1, imgChannel2],
   },
   {
-    name: "Frameless Post Fixed",
+    name: "Post Fixed",
     description:
-      "Minimal stainless steel or powder-coated posts fix into the floor or stringer. Suits timber floors, steel staircases, and situations where a channel fix isn't possible.",
+      "Minimal stainless steel or powder-coated posts fix into the floor or stringer. Suits timber floors, steel staircases, and situations where a channel fix isn't practical.",
+    images: [imgPosts1, imgPosts2],
   },
   {
-    name: "Semi-Frameless",
+    name: "Standoff Fixed",
     description:
-      "Top and bottom rails with glass infill panels. Slightly more structure than frameless, but still a clean result — a popular choice for external terraces and commercial applications.",
+      "Glass panels fixed directly to the wall or fascia via standoff fixings. Ideal for balconies, terraces, and staircase strings where floor fixing isn't possible.",
+    images: [imgStandoff1, imgStandoff2],
+  },
+];
+
+const applications = [
+  {
+    title: "Staircases",
+    description:
+      "Frameless glass balustrades open up stairwells and let light flow between floors. We manufacture panels to suit straight flights, winders, and angled staircases.",
+    image: imgInternal1,
+  },
+  {
+    title: "Juliet Balconies",
+    description:
+      "A clean, minimal alternative to traditional Juliet railings. Fixed directly to the structural opening with no visible posts, meeting all UK building regulations.",
+    image: imgJuliette,
+  },
+  {
+    title: "Terraces & Balconies",
+    description:
+      "Preserve the view from external terraces and balconies without the bulk of steel railings. Toughened and laminated glass panels rated to building regulation loads.",
+    image: imgStandoff1,
+  },
+  {
+    title: "Landing Infills",
+    description:
+      "Replace timber spindles or closed panels with frameless glass on internal landings. Dramatically brightens hallways in both period and new-build properties.",
+    image: imgInternal2,
   },
 ];
 
@@ -73,14 +92,14 @@ const faqs = [
       "Both. We supply balustrade systems nationwide with full technical drawings and installation guides. Our installation team covers London and surrounding areas for supply-and-fit projects.",
   },
   {
-    question: "Can you work with curved or shaped balustrades?",
-    answer:
-      "Straight and angled runs are our standard. Curved glass balustrades are possible but require specialist manufacture — contact us with your requirements and we'll advise on feasibility and lead times.",
-  },
-  {
     question: "What hardware finishes are available?",
     answer:
       "Posts, clamps, and handrails are available in satin stainless steel, brushed nickel, matt black, and brushed brass. Powder-coated finishes in RAL colours are available on request for commercial projects.",
+  },
+  {
+    question: "Can you work with curved or shaped balustrades?",
+    answer:
+      "Straight and angled runs are our standard. Curved glass balustrades are possible but require specialist manufacture — contact us with your requirements and we'll advise on feasibility and lead times.",
   },
   {
     question: "How do I get a quote?",
@@ -91,6 +110,7 @@ const faqs = [
 
 const Balustrades = () => {
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -120,18 +140,61 @@ const Balustrades = () => {
         </div>
       </section>
 
-      {/* Applications */}
+      {/* Photo Gallery */}
       <section className="py-20 px-6 bg-background">
+        <div className="container mx-auto max-w-6xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Our Work</h2>
+          <p className="text-center text-muted-foreground mb-12 max-w-xl mx-auto">
+            A selection of recent balustrade installations across London.
+          </p>
+          <div className="columns-2 md:columns-3 gap-4 space-y-4">
+            {galleryImages.map((img, i) => (
+              <div
+                key={i}
+                className="break-inside-avoid cursor-pointer overflow-hidden rounded-xl"
+                onClick={() => setLightboxSrc(img.src)}
+              >
+                <img
+                  src={img.src}
+                  alt={img.alt}
+                  className="w-full object-cover hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Lightbox */}
+      {lightboxSrc && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setLightboxSrc(null)}
+        >
+          <img
+            src={lightboxSrc}
+            alt="Balustrade detail"
+            className="max-h-[90vh] max-w-full rounded-lg object-contain"
+          />
+        </div>
+      )}
+
+      {/* Applications */}
+      <section className="py-20 px-6 bg-muted/40">
         <div className="container mx-auto max-w-5xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Where We Work</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Applications</h2>
           <p className="text-center text-muted-foreground mb-16 max-w-xl mx-auto">
             Frameless glass balustrades for every setting — residential, commercial, interior, and external.
           </p>
-          <div className="grid md:grid-cols-2 gap-10">
+          <div className="grid md:grid-cols-2 gap-8">
             {applications.map((app) => (
-              <div key={app.title} className="flex gap-5">
-                <div className="flex-shrink-0 w-1 rounded-full bg-primary mt-1" />
-                <div>
+              <div key={app.title} className="bg-background rounded-xl overflow-hidden shadow-sm">
+                <img
+                  src={app.image}
+                  alt={app.title}
+                  className="w-full h-52 object-cover"
+                />
+                <div className="p-6">
                   <h3 className="font-semibold text-lg mb-2">{app.title}</h3>
                   <p className="text-muted-foreground leading-relaxed">{app.description}</p>
                 </div>
@@ -141,8 +204,8 @@ const Balustrades = () => {
         </div>
       </section>
 
-      {/* Systems */}
-      <section className="py-20 px-6 bg-muted/40">
+      {/* Fixing Systems */}
+      <section className="py-20 px-6 bg-background">
         <div className="container mx-auto max-w-5xl">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Fixing Systems</h2>
           <p className="text-center text-muted-foreground mb-16 max-w-xl mx-auto">
@@ -150,37 +213,21 @@ const Balustrades = () => {
           </p>
           <div className="grid md:grid-cols-3 gap-8">
             {systems.map((system) => (
-              <div key={system.name} className="bg-background rounded-xl p-8 shadow-sm">
-                <h3 className="font-semibold text-lg mb-3">{system.name}</h3>
-                <p className="text-muted-foreground leading-relaxed">{system.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Why us */}
-      <section className="py-20 px-6 bg-background">
-        <div className="container mx-auto max-w-5xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">Why Custom Showers for Balustrades?</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                title: "Same Glass, Same Standard",
-                body: "We use 10mm toughened safety glass across our shower and balustrade work — BS EN 12150 compliant, manufactured to order, cut to your exact dimensions.",
-              },
-              {
-                title: "Nationwide Supply",
-                body: "We deliver balustrade glass and hardware anywhere in the UK, packaged to protect panels in transit. Full installation drawings included.",
-              },
-              {
-                title: "London Installation",
-                body: "Our installation team handles balustrade projects across London and the Home Counties — the same team that fits our shower enclosures.",
-              },
-            ].map((card) => (
-              <div key={card.title} className="bg-muted/40 rounded-xl p-8">
-                <h3 className="font-semibold text-lg mb-3">{card.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">{card.body}</p>
+              <div key={system.name} className="rounded-xl overflow-hidden border border-border shadow-sm">
+                <div className="grid grid-cols-2">
+                  {system.images.map((src, i) => (
+                    <img
+                      key={i}
+                      src={src}
+                      alt={`${system.name} example`}
+                      className="w-full h-36 object-cover"
+                    />
+                  ))}
+                </div>
+                <div className="p-6">
+                  <h3 className="font-semibold text-lg mb-2">{system.name}</h3>
+                  <p className="text-muted-foreground leading-relaxed text-sm">{system.description}</p>
+                </div>
               </div>
             ))}
           </div>
