@@ -9,7 +9,7 @@ const Gallery = () => {
 
   const projects = [
     {
-      image: gallery1
+      image: gallery1,
       alt: "Bespoke frameless shower enclosure with gold fixtures, London installation",
     },
     {
