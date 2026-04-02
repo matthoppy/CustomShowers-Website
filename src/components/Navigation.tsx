@@ -25,15 +25,28 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
   // Transparent only on home page before scrolling
   const isTransparent = isHomePage && !isScrolled;
 
+  // Anchor links scroll on home page; navigate to home + anchor from other pages
+  const anchor = (hash: string) => (isHomePage ? hash : `/${hash}`);
+
   const menuItems = [
-    { label: "Home", href: "#home" },
-    { label: "About", href: "#about" },
+    { label: "Home", href: "/" },
     { label: "Supply Only", href: "/supply-only" },
     { label: "Balustrades", href: "/balustrades" },
-    { label: "Gallery", href: "#gallery" },
-    { label: "Contact", href: "#contact" },
+    { label: "Gallery", href: anchor("#gallery") },
+    { label: "Contact", href: anchor("#contact") },
     { label: "Blog", href: "/blog" },
   ];
+
+  const renderLink = (item: { label: string; href: string }, extraClass = "", onClick?: () => void) => (
+    <Link
+      key={item.label}
+      to={item.href}
+      className={extraClass}
+      onClick={onClick}
+    >
+      {item.label}
+    </Link>
+  );
 
   return (
     <>
@@ -47,29 +60,16 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
           <div className="container mx-auto px-6">
             <div className="flex items-center justify-between h-24">
               {/* Logo */}
-              <a href="#home" className="flex items-center">
+              <Link to="/" className="flex items-center">
                 <img src={logo} alt="Custom Showers" className="h-20 w-auto" />
-              </a>
+              </Link>
 
               {/* Desktop Navigation */}
               <nav className="hidden lg:flex items-center gap-8">
                 {menuItems.map((item) =>
-                  item.href.startsWith("/") ? (
-                    <Link
-                      key={item.label}
-                      to={item.href}
-                      className={`transition-colors duration-300 font-medium ${isTransparent ? "text-white/90 hover:text-white" : "text-foreground hover:text-primary"}`}
-                    >
-                      {item.label}
-                    </Link>
-                  ) : (
-                    <a
-                      key={item.label}
-                      href={item.href}
-                      className={`transition-colors duration-300 font-medium ${isTransparent ? "text-white/90 hover:text-white" : "text-foreground hover:text-primary"}`}
-                    >
-                      {item.label}
-                    </a>
+                  renderLink(
+                    item,
+                    `transition-colors duration-300 font-medium ${isTransparent ? "text-white/90 hover:text-white" : "text-foreground hover:text-primary"}`
                   )
                 )}
               </nav>
@@ -99,24 +99,10 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
             {isMobileMenuOpen && (
               <nav className="lg:hidden py-6 border-t border-border">
                 {menuItems.map((item) =>
-                  item.href.startsWith("/") ? (
-                    <Link
-                      key={item.label}
-                      to={item.href}
-                      className="block py-3 text-foreground hover:text-primary transition-colors duration-300 font-medium"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      {item.label}
-                    </Link>
-                  ) : (
-                    <a
-                      key={item.label}
-                      href={item.href}
-                      className="block py-3 text-foreground hover:text-primary transition-colors duration-300 font-medium"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      {item.label}
-                    </a>
+                  renderLink(
+                    item,
+                    "block py-3 text-foreground hover:text-primary transition-colors duration-300 font-medium",
+                    () => setIsMobileMenuOpen(false)
                   )
                 )}
                 <a
@@ -140,9 +126,9 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
           isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
         }`}
       >
-        <a href="#home" className="bg-white p-2 flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-xl">
+        <Link to="/" className="bg-white p-2 flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-xl">
           <img src={logo} alt="Custom Showers" className="h-10 w-auto" />
-        </a>
+        </Link>
       </div>
 
       {/* Nav pill — centred */}
@@ -154,22 +140,9 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
         <div className="flex items-center gap-6 px-6 py-3 rounded-full bg-background/80 backdrop-blur-xl border border-border/60 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
           <nav className="flex items-center gap-6">
             {menuItems.map((item) =>
-              item.href.startsWith("/") ? (
-                <Link
-                  key={item.label}
-                  to={item.href}
-                  className="text-sm text-foreground hover:text-primary transition-colors duration-200 font-medium"
-                >
-                  {item.label}
-                </Link>
-              ) : (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className="text-sm text-foreground hover:text-primary transition-colors duration-200 font-medium"
-                >
-                  {item.label}
-                </a>
+              renderLink(
+                item,
+                "text-sm text-foreground hover:text-primary transition-colors duration-200 font-medium"
               )
             )}
           </nav>
@@ -191,9 +164,9 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
       <header className="fixed top-0 left-0 right-0 z-50 lg:hidden bg-background/95 backdrop-blur-sm shadow-sm">
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between h-16">
-            <a href="#home" className="flex items-center">
+            <Link to="/" className="flex items-center">
               <img src={logo} alt="Custom Showers" className="h-12 w-auto" />
-            </a>
+            </Link>
 
             <button
               className="p-2"
@@ -211,24 +184,10 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
           {isMobileMenuOpen && (
             <nav className="py-6 border-t border-border">
               {menuItems.map((item) =>
-                item.href.startsWith("/") ? (
-                  <Link
-                    key={item.label}
-                    to={item.href}
-                    className="block py-3 text-foreground hover:text-primary transition-colors duration-300 font-medium"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {item.label}
-                  </Link>
-                ) : (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    className="block py-3 text-foreground hover:text-primary transition-colors duration-300 font-medium"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {item.label}
-                  </a>
+                renderLink(
+                  item,
+                  "block py-3 text-foreground hover:text-primary transition-colors duration-300 font-medium",
+                  () => setIsMobileMenuOpen(false)
                 )
               )}
               <a
