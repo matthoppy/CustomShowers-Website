@@ -1,21 +1,94 @@
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
-import heroImage from "@/assets/hero-shower.jpg";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import screenSizedToLandscape from "@/assets/screen-sizedtolandscape.png";
+import showerScreenMain from "@/assets/shower-screenmain.JPG";
+import img3251 from "@/assets/IMG_3251.JPG";
+import gallery1 from "@/assets/gallery-1.jpg";
 
 interface HeroProps {
   onOpenQuote?: () => void;
 }
 
 const Hero = ({ onOpenQuote }: HeroProps) => {
+  const images = [
+    { src: screenSizedToLandscape, alt: "Screen sized to landscape" },
+    { src: showerScreenMain, alt: "Shower screen main" },
+    { src: img3251, alt: "Installation example" },
+    { src: gallery1, alt: "Gallery image 1" },
+  ];
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    }, 5000); // Rotate every 5 seconds
+
+    return () => clearInterval(timer);
+  }, [images.length]);
+
+  const goToPrevious = () => {
+    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const goToNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % images.length);
+  };
+
   return (
     <section id="home" className="relative h-screen w-full overflow-hidden">
-      {/* Background Image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${heroImage})` }}
-        role="img"
-        aria-label="Bespoke frameless glass shower enclosure installation"
+      {/* Image Carousel */}
+      <div className="absolute inset-0">
+        {images.map((image, index) => (
+          <div
+            key={index}
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              index === currentIndex ? "opacity-100" : "opacity-0"
+            }`}
+            style={{
+              backgroundImage: `url(${image.src})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+            role="img"
+            aria-label={image.alt}
+          >
+            <div className="absolute inset-0 bg-overlay/50" />
+          </div>
+        ))}
+      </div>
+
+      {/* Left Arrow */}
+      <button
+        onClick={goToPrevious}
+        className="absolute left-6 top-1/2 transform -translate-y-1/2 z-20 bg-white/20 hover:bg-white/40 text-white rounded-full p-3 transition-all duration-200 backdrop-blur-sm"
+        aria-label="Previous image"
       >
-        <div className="absolute inset-0 bg-overlay/50" />
+        <ChevronLeft size={32} />
+      </button>
+
+      {/* Right Arrow */}
+      <button
+        onClick={goToNext}
+        className="absolute right-6 top-1/2 transform -translate-y-1/2 z-20 bg-white/20 hover:bg-white/40 text-white rounded-full p-3 transition-all duration-200 backdrop-blur-sm"
+        aria-label="Next image"
+      >
+        <ChevronRight size={32} />
+      </button>
+
+      {/* Image Indicators */}
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 flex gap-2">
+        {images.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentIndex(index)}
+            className={`w-2 h-2 rounded-full transition-all duration-300 ${
+              index === currentIndex ? "bg-white w-8" : "bg-white/50 hover:bg-white/75"
+            }`}
+            aria-label={`Go to slide ${index + 1}`}
+          />
+        ))}
       </div>
 
       {/* Hero Content */}
