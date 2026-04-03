@@ -25,6 +25,90 @@ import balustradesPosts4 from "@/assets/balustrades-posts4.JPG";
 
 const WORKER_URL = "https://customshowers-contact.vcwvk4sm9m.workers.dev";
 
+const GalleryCarousel = ({
+  images,
+}: {
+  images: Array<{ src: string; alt: string }>;
+}) => {
+  const [selectedImage, setSelectedImage] = useState<typeof images[0] | null>(null);
+  const [isHovering, setIsHovering] = useState(false);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <>
+      <div
+        ref={carouselRef}
+        className="relative overflow-hidden bg-background py-8"
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+      >
+        <style>{`
+          @keyframes scroll-left {
+            0% {
+              transform: translateX(0);
+            }
+            100% {
+              transform: translateX(-50%);
+            }
+          }
+          .carousel-track {
+            animation: ${isHovering ? "none" : "scroll-left 60s linear infinite"};
+          }
+        `}</style>
+
+        <div className="carousel-track flex gap-6 w-max">
+          {[...images, ...images].map((image, idx) => (
+            <div
+              key={idx}
+              className="flex-shrink-0 w-80 h-64 overflow-hidden bg-muted border border-border cursor-pointer group"
+              onClick={() => setSelectedImage(image)}
+            >
+              <img
+                src={image.src}
+                alt={image.alt}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Lightbox Modal */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] bg-black rounded-lg overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={selectedImage.src}
+              alt={selectedImage.alt}
+              className="w-full h-full object-contain"
+            />
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-4 right-4 bg-white/20 hover:bg-white/40 text-white rounded-full p-2 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
 const BalustradeQuoteForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -328,46 +412,38 @@ const Balustrades = () => {
 
       {/* Gallery */}
       <section className="py-24 bg-muted/30">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
+        <div className="mb-16">
+          <div className="text-center mb-8">
             <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4 uppercase">
               Our Balustrade Work
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              A selection of our recent installations showcasing different styles and applications.
+              Hover to pause, click any image to enlarge
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {[
-              { src: balustradeChannel, alt: "Channel-fixed balustrade" },
-              { src: balustradeChannel2, alt: "Channel system detail" },
-              { src: balustradeChannel3, alt: "Channel balustrade installation" },
-              { src: balustradeChannel4, alt: "Channel balustrade application" },
-              { src: balustradeClamps, alt: "Clamp-fixed system" },
-              { src: balustradeClamps3, alt: "Balustrade clamps detail" },
-              { src: balustraadeCurved, alt: "Curved balustrade" },
-              { src: balustradeInternal, alt: "Internal glass railing" },
-              { src: balustradeInternal2, alt: "Internal balustrade design" },
-              { src: balustradeInternal3, alt: "Modern internal railing" },
-              { src: balustradeJuliette, alt: "Juliet balcony" },
-              { src: balustradeJuliette2, alt: "Juliet balcony installation" },
-              { src: balustradePost1, alt: "Post-supported balustrade" },
-              { src: balustradePost2, alt: "Posts and clamping" },
-              { src: balustradePost3, alt: "Staircase balustrade" },
-              { src: balustradeStandoff, alt: "Standoff system" },
-              { src: balustradeStandoff2, alt: "Standoff detail" },
-              { src: balustradesPosts4, alt: "Posts installation" },
-            ].map((image, idx) => (
-              <div key={idx} className="overflow-hidden bg-background border border-border hover:shadow-lg transition-shadow duration-300">
-                <img
-                  src={image.src}
-                  alt={image.alt}
-                  className="w-full h-64 object-cover hover:scale-105 transition-transform duration-300"
-                />
-              </div>
-            ))}
-          </div>
         </div>
+        <GalleryCarousel
+          images={[
+            { src: balustradeChannel, alt: "Channel-fixed balustrade" },
+            { src: balustradeChannel2, alt: "Channel system detail" },
+            { src: balustradeChannel3, alt: "Channel balustrade installation" },
+            { src: balustradeChannel4, alt: "Channel balustrade application" },
+            { src: balustradeClamps, alt: "Clamp-fixed system" },
+            { src: balustradeClamps3, alt: "Balustrade clamps detail" },
+            { src: balustraadeCurved, alt: "Curved balustrade" },
+            { src: balustradeInternal, alt: "Internal glass railing" },
+            { src: balustradeInternal2, alt: "Internal balustrade design" },
+            { src: balustradeInternal3, alt: "Modern internal railing" },
+            { src: balustradeJuliette, alt: "Juliet balcony" },
+            { src: balustradeJuliette2, alt: "Juliet balcony installation" },
+            { src: balustradePost1, alt: "Post-supported balustrade" },
+            { src: balustradePost2, alt: "Posts and clamping" },
+            { src: balustradePost3, alt: "Staircase balustrade" },
+            { src: balustradeStandoff, alt: "Standoff system" },
+            { src: balustradeStandoff2, alt: "Standoff detail" },
+            { src: balustradesPosts4, alt: "Posts installation" },
+          ]}
+        />
       </section>
 
       {/* Materials */}
