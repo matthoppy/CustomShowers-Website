@@ -83,7 +83,7 @@ const DesignShower = () => {
     {
       icon: Shield,
       title: "Quality Glass",
-      description: "Toughened safety glass in various thicknesses from 8mm to 12mm",
+      description: "10mm toughened safety glass, BS EN 12150 compliant",
     },
   ];
 
