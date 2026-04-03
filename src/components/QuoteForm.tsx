@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,16 @@ const QuoteForm = ({ onSubmitSuccess, onClose }: QuoteFormProps = {}) => {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const { toast } = useToast();
+
+  // Capture gclid + UTM params from URL on page load and persist to sessionStorage
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const trackingKeys = ['gclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+    trackingKeys.forEach(key => {
+      const val = params.get(key);
+      if (val) sessionStorage.setItem(key, val);
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -61,6 +71,13 @@ const QuoteForm = ({ onSubmitSuccess, onClose }: QuoteFormProps = {}) => {
         message: formData.get("message"),
         turnstileToken,
         photo,
+        // Attribution params captured from URL on landing
+        ...(sessionStorage.getItem('gclid') ? { gclid: sessionStorage.getItem('gclid') } : {}),
+        ...(sessionStorage.getItem('utm_source') ? { utm_source: sessionStorage.getItem('utm_source') } : {}),
+        ...(sessionStorage.getItem('utm_medium') ? { utm_medium: sessionStorage.getItem('utm_medium') } : {}),
+        ...(sessionStorage.getItem('utm_campaign') ? { utm_campaign: sessionStorage.getItem('utm_campaign') } : {}),
+        ...(sessionStorage.getItem('utm_term') ? { utm_term: sessionStorage.getItem('utm_term') } : {}),
+        ...(sessionStorage.getItem('utm_content') ? { utm_content: sessionStorage.getItem('utm_content') } : {}),
       };
 
       const response = await fetch(WORKER_URL, {
