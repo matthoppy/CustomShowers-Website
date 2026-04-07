@@ -119,22 +119,23 @@ const Balustrades = () => {
 
  {/* Hero */}
  <section
- className="bg-primary text-primary-foreground pt-32 pb-20 px-6 relative overflow-hidden"
+ className="relative overflow-hidden min-h-screen flex items-center justify-center"
  style={{
  backgroundImage: `url(${imgPosts3})`,
  backgroundSize: 'cover',
  backgroundPosition: 'center',
+ backgroundAttachment: 'fixed',
  }}
  >
  <div className="absolute inset-0 bg-black/40 z-0"></div>
- <div className="container mx-auto max-w-4xl text-center relative z-10">
+ <div className="container mx-auto max-w-4xl text-center relative z-10 px-6">
  <p className="text-secondary uppercase tracking-widest text-sm font-semibold mb-4">
  Staircases · Balconies · Terraces
  </p>
- <h1 className="text-4xl md:text-6xl font-black uppercase tracking-wider mb-6">
+ <h1 className="text-4xl md:text-6xl font-black uppercase tracking-wider mb-6 text-white">
  Frameless Glass Balustrades
  </h1>
- <p className="text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-10">
+ <p className="text-xl text-white/80 max-w-2xl mx-auto mb-10">
  We also design and supply frameless glass balustrade systems for staircases, Juliet balconies, terraces, and landings — using the same precision and craftsmanship as our bespoke shower enclosures. Supply only UK wide. Supply and fit across London.
  </p>
  <Button
@@ -147,8 +148,6 @@ const Balustrades = () => {
  </Button>
  </div>
  </section>
-
- {/* Photo Gallery */}
  <section className="py-20 px-6 bg-background">
  <div className="container mx-auto max-w-6xl">
  <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Our Work</h2>
