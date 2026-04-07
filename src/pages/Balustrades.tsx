@@ -5,15 +5,16 @@ import { Button } from "../components/ui/button";
 import { useState } from "react";
 import QuoteModal from "../components/QuoteModal";
 
-import imgChannel1 from "../assets/balustrade-channel.JPG";
-import imgChannel2 from "../assets/balustrade-channel2.JPG";
-import imgInternal1 from "../assets/balustrade-internal.JPG";
-import imgInternal2 from "../assets/balustrade-internal2.JPG";
-import imgJuliette from "../assets/balustrade-juliette.JPG";
-import imgPosts1 from "../assets/balustrade-posts1.JPG";
-import imgPosts2 from "../assets/balustrade-posts2.JPG";
-import imgStandoff1 from "../assets/balustrade-standoff.JPG";
-import imgStandoff2 from "../assets/balustrade-standoff2.JPG";
+// Image paths using direct URLs to bypass Vite's uppercase extension handling issues
+const imgChannel1 = "/images/balustrade-channel.JPG";
+const imgChannel2 = "/images/balustrade-channel2.JPG";
+const imgInternal1 = "/images/balustrade-internal.JPG";
+const imgInternal2 = "/images/balustrade-internal2.JPG";
+const imgJuliette = "/images/balustrade-juliette.JPG";
+const imgPosts1 = "/images/balustrade-posts1.JPG";
+const imgPosts2 = "/images/balustrade-posts2.JPG";
+const imgStandoff1 = "/images/balustrade-standoff.JPG";
+const imgStandoff2 = "/images/balustrade-standoff2.JPG";
 
 const galleryImages = [
  { src: imgChannel1, alt: "Frameless channel-fixed glass balustrade" },
@@ -124,6 +125,7 @@ const Balustrades = () => {
  backgroundSize: 'cover',
  backgroundPosition: 'center',
  backgroundAttachment: 'fixed',
+ backgroundRepeat: 'no-repeat',
  }}
  >
  <div className="absolute inset-0 bg-black/40 z-0"></div>
