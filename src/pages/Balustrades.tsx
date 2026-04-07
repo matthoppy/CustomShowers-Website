@@ -12,7 +12,6 @@ import imgInternal2 from "../assets/balustrade-internal2.JPG";
 import imgJuliette from "../assets/balustrade-juliette.JPG";
 import imgPosts1 from "../assets/balustrade-posts1.JPG";
 import imgPosts2 from "../assets/balustrade-posts2.JPG";
-import imgPosts3 from "../assets/balustrade-posts3.JPG";
 import imgStandoff1 from "../assets/balustrade-standoff.JPG";
 import imgStandoff2 from "../assets/balustrade-standoff2.JPG";
 
@@ -121,7 +120,7 @@ const Balustrades = () => {
  <section
  className="relative overflow-hidden min-h-screen flex items-center justify-center"
  style={{
- backgroundImage: `url(${imgPosts3})`,
+ backgroundImage: `url(${imgPosts2})`,
  backgroundSize: 'cover',
  backgroundPosition: 'center',
  backgroundAttachment: 'fixed',
