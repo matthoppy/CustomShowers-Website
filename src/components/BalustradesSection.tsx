@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
-import img1 from "@/assets/balustrade-channel.JPG";
-import img2 from "@/assets/balustrade-internal.JPG";
-import img3 from "@/assets/balustrade-juliette.JPG";
-import img4 from "@/assets/balustrade-posts1.JPG";
-import img5 from "@/assets/balustrade-standoff.JPG";
-import img6 from "@/assets/balustrade-standoff2.JPG";
+
+// Image paths using direct URLs to bypass Vite's uppercase extension handling issues
+const img1 = "/images/balustrade-channel.JPG";
+const img2 = "/images/balustrade-internal.JPG";
+const img3 = "/images/balustrade-juliette.JPG";
+const img4 = "/images/balustrade-posts1.JPG";
+const img5 = "/images/balustrade-standoff.JPG";
+const img6 = "/images/balustrade-standoff2.JPG";
 
 const images = [
   { src: img1, alt: "Channel-fixed frameless glass balustrade" },
