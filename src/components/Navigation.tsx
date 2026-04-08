@@ -34,7 +34,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
     { label: "Home", href: "/" },
     { label: "Supply Only", href: "/supply-only" },
     { label: "Balustrades", href: "/balustrades" },
-    { label: "Gallery", href: anchor("#gallery") },
+    { label: "Gallery", href: isHomePage ? "#gallery" : "/#gallery" },
     { label: "Contact", href: anchor("#contact") },
     // { label: "Blog", href: "/blog" },
   ];
