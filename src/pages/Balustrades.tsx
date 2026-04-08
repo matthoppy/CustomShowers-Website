@@ -13,6 +13,7 @@ const imgInternal2 = "/images/balustrade-internal2.JPG";
 const imgJuliette = "/images/balustrade-juliette.JPG";
 const imgPosts1 = "/images/balustrade-posts1.JPG";
 const imgPosts2 = "/images/balustrade-posts2.JPG";
+const imgPosts3 = "/images/balustrade-posts3.JPG";
 const imgStandoff1 = "/images/balustrade-standoff.JPG";
 const imgStandoff2 = "/images/balustrade-standoff2.JPG";
 
@@ -121,7 +122,7 @@ const Balustrades = () => {
  <section
  className="relative overflow-hidden min-h-screen flex items-center justify-center"
  style={{
- backgroundImage: `url(${imgPosts2})`,
+ backgroundImage: `url(${imgPosts3})`,
  backgroundSize: 'cover',
  backgroundPosition: 'center',
  backgroundAttachment: 'fixed',
