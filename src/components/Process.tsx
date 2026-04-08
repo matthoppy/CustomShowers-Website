@@ -64,15 +64,6 @@ const Process = () => {
           ))}
         </div>
 
-        {/* CTA */}
-        <div className="text-center mt-16">
-          <a
-            href="#contact"
-            className="inline-block bg-white text-primary px-10 py-4 font-bold uppercase tracking-widest text-sm hover:bg-white/90 transition-colors"
-          >
-            Book Your Free Survey
-          </a>
-        </div>
       </div>
     </section>
   );
