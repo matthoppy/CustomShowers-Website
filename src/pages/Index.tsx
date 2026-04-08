@@ -12,7 +12,7 @@ import FAQ from "@/components/FAQ";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import QuoteModal from "@/components/QuoteModal";
-import WhatsAppButton from "@/components/WhatsAppButton";
+// import WhatsAppButton from "@/components/WhatsAppButton";
 
 const Index = () => {
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
@@ -32,7 +32,7 @@ const Index = () => {
       <Contact />
       <Footer />
       <QuoteModal open={quoteModalOpen} onOpenChange={setQuoteModalOpen} />
-      <WhatsAppButton />
+      {/* <WhatsAppButton /> */}
     </div>
   );
 };
