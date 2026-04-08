@@ -1,7 +1,7 @@
 const steps = [
   {
     number: "01",
-    title: "Free Survey & Consultation",
+    title: "Survey & Consultation",
     description:
       "We visit your site at a time that suits you. Our surveyor takes precise measurements, discusses your vision, and advises on glass thickness, hardware finishes, and design options.",
   },
