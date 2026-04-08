@@ -39,16 +39,29 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
     // { label: "Blog", href: "/blog" },
   ];
 
-  const renderLink = (item: { label: string; href: string }, extraClass = "", onClick?: () => void) => (
-    <Link
-      key={item.label}
-      to={item.href}
-      className={extraClass}
-      onClick={onClick}
-    >
-      {item.label}
-    </Link>
-  );
+  const renderLink = (item: { label: string; href: string }, extraClass = "", onClick?: () => void) => {
+    const handleClick = (e: React.MouseEvent) => {
+      if (item.href.startsWith("#")) {
+        e.preventDefault();
+        const element = document.querySelector(item.href);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth" });
+        }
+      }
+      onClick?.();
+    };
+
+    return (
+      <Link
+        key={item.label}
+        to={item.href}
+        className={extraClass}
+        onClick={handleClick}
+      >
+        {item.label}
+      </Link>
+    );
+  };
 
   return (
     <>
