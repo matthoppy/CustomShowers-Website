@@ -20,9 +20,9 @@ const steps = [
   },
   {
     number: "03",
-    title: "Confirm & Pay Deposit",
+    title: "Confirm & Pay",
     description:
-      "Once you're happy, confirm the order and pay a 50% deposit. This triggers manufacture of your bespoke glass panels — cut and toughened to your exact measurements.",
+      "Once you're happy, confirm the order and pay in full. This triggers manufacture of your bespoke glass panels — cut and toughened to your exact measurements.",
   },
   {
     number: "04",
