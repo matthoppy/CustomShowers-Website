@@ -20,7 +20,7 @@ const faqs = [
   {
     question: "How long does it take from order to installation?",
     answer:
-      "Lead times vary by order complexity, but most bespoke enclosures are ready within 3–5 weeks from survey sign-off. We'll give you a clear timeline when you book your survey. Installation itself typically takes half a day to a full day depending on the size and complexity of the enclosure.",
+      "Lead times vary by order complexity, but most bespoke enclosures are ready within 2–4 weeks from survey sign-off. We'll give you a clear timeline when you book your survey. Installation itself typically takes half a day to a full day depending on the size and complexity of the enclosure.",
   },
   {
     question: "What glass thicknesses and finishes do you offer?",
