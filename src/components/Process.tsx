@@ -9,7 +9,7 @@ const steps = [
     number: "02",
     title: "Design & Quote",
     description:
-      "We produce detailed technical drawings and a clear, itemised quote within 48 hours. No hidden costs — everything is specified upfront before you commit.",
+      "We produce detailed technical drawings and a clear, itemised quote same day. No hidden costs — everything is specified upfront before you commit.",
   },
   {
     number: "03",
