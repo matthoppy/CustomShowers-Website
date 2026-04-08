@@ -48,7 +48,7 @@ const faqs = [
   {
     question: "Do I need to be in London?",
     answer:
-      "No. We supply across the entire UK. Delivery is available nationwide via specialist glass courier.",
+      "No. We supply across the entire UK. Delivery is available nationwide.",
   },
   {
     question: "Who installs the shower?",

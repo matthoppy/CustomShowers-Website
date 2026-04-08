@@ -56,7 +56,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
           isScrolled ? "opacity-0 pointer-events-none -translate-y-2" : "opacity-100"
         }`}
       >
-        <div className={`transition-colors duration-500 ${isTransparent ? "bg-transparent" : "bg-background/95 backdrop-blur-sm shadow-sm"}`}>
+        <div className={`transition-colors duration-500 ${isTransparent ? "bg-transparent" : "bg-primary/95 backdrop-blur-sm shadow-sm"}`}>
           <div className="container mx-auto px-6">
             <div className="flex items-center justify-between h-24">
               {/* Logo */}
@@ -69,7 +69,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
                 {menuItems.map((item) =>
                   renderLink(
                     item,
-                    `transition-colors duration-300 font-medium ${isTransparent ? "text-white/90 hover:text-white" : "text-foreground hover:text-primary"}`
+                    `transition-colors duration-300 font-medium ${isTransparent ? "text-white/90 hover:text-white" : "text-primary-foreground hover:text-white"}`
                   )
                 )}
               </nav>
@@ -88,9 +88,9 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
                 aria-label="Toggle menu"
               >
                 {isMobileMenuOpen ? (
-                  <X className={`w-6 h-6 ${isTransparent ? "text-white" : "text-foreground"}`} />
+                  <X className={`w-6 h-6 ${isTransparent ? "text-white" : "text-primary-foreground"}`} />
                 ) : (
-                  <Menu className={`w-6 h-6 ${isTransparent ? "text-white" : "text-foreground"}`} />
+                  <Menu className={`w-6 h-6 ${isTransparent ? "text-white" : "text-primary-foreground"}`} />
                 )}
               </button>
             </div>
@@ -137,12 +137,12 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
           isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
         }`}
       >
-        <div className="flex items-center gap-6 px-6 py-3 rounded-full bg-background/80 backdrop-blur-xl border border-border/60 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+        <div className="flex items-center gap-6 px-6 py-3 rounded-full bg-primary/80 backdrop-blur-xl border border-primary-foreground/20 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
           <nav className="flex items-center gap-6">
             {menuItems.map((item) =>
               renderLink(
                 item,
-                "text-sm text-foreground hover:text-primary transition-colors duration-200 font-medium"
+                "text-sm text-primary-foreground hover:text-white transition-colors duration-200 font-medium"
               )
             )}
           </nav>
@@ -161,7 +161,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
       </div>
 
       {/* Mobile sticky header (always shown on mobile) */}
-      <header className="fixed top-0 left-0 right-0 z-50 lg:hidden bg-background/95 backdrop-blur-sm shadow-sm">
+      <header className="fixed top-0 left-0 right-0 z-50 lg:hidden bg-primary/95 backdrop-blur-sm shadow-sm">
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center">
@@ -182,17 +182,17 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
           </div>
 
           {isMobileMenuOpen && (
-            <nav className="py-6 border-t border-border">
+            <nav className="py-6 border-t border-primary-foreground/20">
               {menuItems.map((item) =>
                 renderLink(
                   item,
-                  "block py-3 text-foreground hover:text-primary transition-colors duration-300 font-medium",
+                  "block py-3 text-primary-foreground hover:text-white transition-colors duration-300 font-medium",
                   () => setIsMobileMenuOpen(false)
                 )
               )}
               <a
                 href="tel:+447883318933"
-                className="flex items-center gap-2 py-3 text-primary transition-colors duration-300 font-semibold"
+                className="flex items-center gap-2 py-3 text-white hover:text-white/90 transition-colors duration-300 font-semibold"
               >
                 <Phone className="w-5 h-5" />
                 +44 7883 318933
