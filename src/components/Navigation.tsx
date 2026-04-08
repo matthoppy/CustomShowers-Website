@@ -34,7 +34,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
     { label: "Balustrades", href: "/balustrades" },
     { label: "Gallery", href: anchor("#gallery") },
     { label: "Contact", href: anchor("#contact") },
-    { label: "Blog", href: "/blog" },
+    // { label: "Blog", href: "/blog" },
   ];
 
   const renderLink = (item: { label: string; href: string }, extraClass = "", onClick?: () => void) => (
