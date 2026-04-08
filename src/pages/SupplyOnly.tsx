@@ -40,7 +40,7 @@ const steps = [
     number: "06",
     title: "Your Installer Fits",
     description:
-      "Hand the panels and hardware over to your bathroom fitter or tiler. Our frameless systems are designed to be straightforward to install for any competent tradesperson. We're available by phone or email if your installer has questions.",
+      "Hand the panels and hardware over to your bathroom fitter or tiler. You'll receive custom installation instructions prepared specifically for your shower, including detailed diagrams and measurements. Our frameless systems are designed to be straightforward to install for any competent tradesperson. We're available by phone or email if your installer has questions.",
   },
 ];
 
@@ -73,7 +73,7 @@ const faqs = [
   {
     question: "What's included in a supply-only order?",
     answer:
-      "Glass panels, hinges, channels or wall profiles, handles, seals, and any other hardware specified in your quote. Full fitting instructions are included.",
+      "Glass panels, hinges, channels or wall profiles, handles, seals, and any other hardware specified in your quote. You'll also receive custom installation instructions prepared specifically for your shower, with detailed diagrams and measurements to guide your installer.",
   },
 ];
 
