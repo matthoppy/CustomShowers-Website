@@ -72,8 +72,8 @@ const BalustradesSection = () => {
       <div className="py-24 px-6">
         <div className="container mx-auto max-w-7xl">
           <div className="text-center mb-16 max-w-3xl mx-auto">
-            <p className="text-secondary uppercase tracking-widest text-sm font-semibold mb-4">
-              Complementary Services
+            <p className="uppercase tracking-widest text-sm font-semibold mb-4">
+              We also specialise in
             </p>
             <h2 className="text-4xl md:text-5xl font-black uppercase tracking-wider mb-6">Glass Balustrades</h2>
             <p className="text-xl text-muted-foreground">
