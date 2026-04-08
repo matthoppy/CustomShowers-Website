@@ -2,7 +2,6 @@ import { useState } from "react";
 import Navigation from "@/components/Navigation";
 import Hero from "@/components/Hero";
 import About from "@/components/About";
-import Stats from "@/components/Stats";
 import Process from "@/components/Process";
 import Services from "@/components/Services";
 import Gallery from "@/components/Gallery";
@@ -22,7 +21,6 @@ const Index = () => {
       <Navigation onOpenQuote={() => setQuoteModalOpen(true)} />
       <Hero onOpenQuote={() => setQuoteModalOpen(true)} />
       <About />
-      <Stats />
       <Process />
       <Services />
       <Gallery />
