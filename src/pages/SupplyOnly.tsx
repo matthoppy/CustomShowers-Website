@@ -93,9 +93,6 @@ const SupplyOnly = () => {
       >
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative container mx-auto max-w-4xl text-center">
-          <p className="text-secondary uppercase tracking-widest text-sm font-semibold mb-4">
-            Supply Only · UK Wide
-          </p>
           <h1 className="text-4xl md:text-6xl font-black uppercase tracking-wider mb-6">
             Bespoke Glass. Delivered to Your Door.
           </h1>

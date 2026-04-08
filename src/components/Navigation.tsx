@@ -13,6 +13,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const isHomePage = location.pathname === "/";
+  const isSupplyOnlyPage = location.pathname === "/supply-only";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,11 +23,11 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Transparent only on home page before scrolling
-  const isTransparent = isHomePage && !isScrolled;
+  // Transparent on home page and supply-only page before scrolling
+  const isTransparent = (isHomePage || isSupplyOnlyPage) && !isScrolled;
 
   // Anchor links scroll on home page; navigate to home + anchor from other pages
-  const anchor = (hash: string) => (isHomePage ? hash : `/${hash}`);
+  const anchor = (hash: string) => (isHomePage || isSupplyOnlyPage ? hash : `/${hash}`);
 
   const menuItems = [
     { label: "Home", href: "/" },
