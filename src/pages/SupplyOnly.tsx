@@ -85,15 +85,21 @@ const SupplyOnly = () => {
       <Navigation onOpenQuote={() => setQuoteModalOpen(true)} />
 
       {/* Hero */}
-      <section className="bg-primary text-primary-foreground pt-32 pb-20 px-6">
-        <div className="container mx-auto max-w-4xl text-center">
+      <section
+        className="relative text-primary-foreground pt-32 pb-20 px-6 bg-cover bg-center bg-fixed"
+        style={{
+          backgroundImage: "url(/images/greentile.landscape.png)",
+        }}
+      >
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="relative container mx-auto max-w-4xl text-center">
           <p className="text-secondary uppercase tracking-widest text-sm font-semibold mb-4">
             Supply Only · UK Wide
           </p>
           <h1 className="text-4xl md:text-6xl font-black uppercase tracking-wider mb-6">
             Bespoke Glass. Delivered to Your Door.
           </h1>
-          <p className="text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-10">
+          <p className="text-xl text-primary-foreground/90 max-w-2xl mx-auto mb-10">
             Order premium frameless shower enclosures direct — measured to your specification,
             manufactured to order, and shipped anywhere in the UK. Your installer fits, we supply the glass.
           </p>
