@@ -43,10 +43,6 @@ const Process = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
           {steps.map((step, i) => (
             <div key={i} className="relative">
-              {/* Connector line (desktop) */}
-              {i < steps.length - 1 && (
-                <div className="hidden lg:block absolute top-8 left-full w-full h-px bg-white/20 z-0" />
-              )}
 
               <div className="relative z-10">
                 {/* Number */}
