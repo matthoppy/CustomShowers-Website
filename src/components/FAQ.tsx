@@ -5,7 +5,7 @@ const faqs = [
   {
     question: "How much does a custom shower enclosure cost?",
     answer:
-      "Pricing varies based on size, glass thickness, hardware finish and whether you choose supply-only or full supply & install. We provide free, no-obligation quotes tailored to your exact requirements. As a guide, most bespoke frameless enclosures start from around £800 supply-only, with installed prices depending on complexity and location.",
+      "Pricing varies based on size, hardware finish, and whether you choose supply-only or full supply & install. We provide no-obligation quotes tailored to your exact requirements — contact us to discuss your project.",
   },
   {
     question: "Do you offer supply-only or do you install as well?",
