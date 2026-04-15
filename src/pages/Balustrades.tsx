@@ -12,7 +12,7 @@ import imgInternal2 from "../assets/balustrade-internal2.JPG";
 import imgJuliette from "../assets/balustrade-juliette.JPG";
 import imgPosts1 from "../assets/balustrade-posts1.JPG";
 import imgPosts2 from "../assets/balustrade-posts2.JPG";
-import imgPosts3 from "../assets/balustrade-posts3.JPG";
+import imgHero from "../assets/hero-balustrading.jpg";
 import imgStandoff1 from "../assets/balustrade-standoff.JPG";
 import imgStandoff2 from "../assets/balustrade-standoff2.JPG";
 
@@ -25,7 +25,6 @@ const galleryImages = [
   { src: imgChannel2, alt: "Channel-fixed glass balustrade detail" },
   { src: imgInternal2, alt: "Internal glass balustrade landing" },
   { src: imgPosts2, alt: "Post-fixed glass balustrade installation" },
-  { src: imgPosts3, alt: "Post-fixed glass balustrade exterior" },
   { src: imgStandoff2, alt: "Standoff glass balustrade detail" },
 ];
 
@@ -145,7 +144,7 @@ const Balustrades = () => {
       {/* Hero */}
       <section
         className="text-white pt-32 pb-20 px-6 relative overflow-hidden"
-        style={{ backgroundImage: `url(${imgPosts3})`, backgroundSize: "cover", backgroundPosition: "center" }}
+        style={{ backgroundImage: `url(${imgHero})`, backgroundSize: "cover", backgroundPosition: "center" }}
       >
         <div className="absolute inset-0 bg-black/50 z-0" />
         <div className="container mx-auto max-w-4xl text-center relative z-10">
@@ -232,7 +231,7 @@ const Balustrades = () => {
 
         {/* Thumbnail strip */}
         <div className="container mx-auto max-w-6xl px-6 mt-4">
-          <div className="grid grid-cols-10 gap-1">
+          <div className="grid grid-cols-9 gap-1">
             {galleryImages.map((img, i) => (
               <button
                 key={i}

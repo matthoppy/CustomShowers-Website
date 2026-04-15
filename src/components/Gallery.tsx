@@ -3,27 +3,19 @@ import gallery1 from "@/assets/gallery-1.jpg";
 import gallery2 from "@/assets/gallery-2.jpg";
 import gallery3 from "@/assets/gallery-3.jpg";
 import gallery4 from "@/assets/gallery-4.jpg";
+import shower1 from "@/assets/about-shower-1.jpg";
+import shower2 from "@/assets/about-shower-2.jpg";
 
 const Gallery = () => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const projects = [
-    {
-      image: gallery1,
-      alt: "Bespoke frameless shower enclosure with gold fixtures, London installation",
-    },
-    {
-      image: gallery2,
-      alt: "Custom frameless glass shower walk-in installation, London",
-    },
-    {
-      image: gallery3,
-      alt: "Frameless glass shower enclosure with blue tile surround, London",
-    },
-    {
-      image: gallery4,
-      alt: "Bespoke frameless shower enclosure with overhead skylight, London",
-    },
+    { image: gallery1, alt: "Bespoke frameless shower enclosure with gold fixtures, London installation" },
+    { image: gallery2, alt: "Custom frameless glass shower walk-in installation, London" },
+    { image: gallery3, alt: "Frameless glass shower enclosure with blue tile surround, London" },
+    { image: gallery4, alt: "Bespoke frameless shower enclosure with overhead skylight, London" },
+    { image: shower1, alt: "Bespoke frameless shower enclosure, London installation" },
+    { image: shower2, alt: "Custom frameless shower enclosure installation, London" },
   ];
 
   useEffect(() => {
@@ -51,7 +43,7 @@ const Gallery = () => {
         </div>
 
         {/* Gallery Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
           {projects.map((project, index) => (
             <div
               key={index}
