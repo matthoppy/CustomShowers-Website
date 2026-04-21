@@ -41,16 +41,16 @@ const About = () => {
           </div>
 
           {/* Images */}
-          <div className="relative space-y-4">
+          <div className="grid grid-cols-2 gap-3">
             <img
               src={aboutShower1}
               alt="Bespoke frameless glass shower enclosure with gold trim and geometric tile flooring"
-              className="w-full h-[400px] object-cover shadow-2xl"
+              className="w-full h-[220px] object-cover shadow-2xl"
             />
             <img
               src={aboutShower2}
               alt="Custom frameless shower installation with hexagonal tile design and black frame"
-              className="w-full h-[400px] object-cover shadow-2xl"
+              className="w-full h-[220px] object-cover shadow-2xl"
             />
           </div>
         </div>
