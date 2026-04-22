@@ -9,7 +9,7 @@ const steps = [
 
 const Process = () => {
   return (
-    <section id="process" className="py-24 bg-primary">
+    <section id="process" className="py-14 bg-primary">
       <div className="container mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-16">

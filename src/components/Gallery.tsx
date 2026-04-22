@@ -38,7 +38,7 @@ const Gallery = () => {
   }, [lightboxIndex, projects.length]);
 
   return (
-    <section id="gallery" className="py-24 bg-primary">
+    <section id="gallery" className="py-14 bg-primary">
       <div className="container mx-auto px-6">
         {/* Section Header */}
         <div className="text-center mb-16">

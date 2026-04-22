@@ -62,7 +62,7 @@ const BalustradesSection = () => {
 
   return (
     <section className="bg-background">
-      <div className="py-24 px-6">
+      <div className="py-14 px-6">
         <div className="container mx-auto max-w-7xl">
           <div className="text-center mb-16 max-w-3xl mx-auto">
             <p className="uppercase tracking-widest text-sm font-semibold mb-4">
