@@ -125,60 +125,44 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
         </div>
       </header>
 
-      {/* Scrolled state — desktop only: logo left, pill centre, button right */}
-
-      {/* Logo — top left */}
-      <div
-        className={`fixed top-5 left-6 z-50 hidden lg:flex items-center transition-all duration-500 ease-in-out ${
-          isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
+      {/* Scrolled state — full-width white bar, desktop only */}
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 hidden lg:block bg-white shadow-sm transition-all duration-500 ease-in-out ${
+          isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-2 pointer-events-none"
         }`}
       >
-        <a href="#home" className="bg-white p-2 flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-lg">
-          <img src={logo} alt="Custom Showers" className="h-10 w-auto" />
-        </a>
-      </div>
-
-      {/* Nav pill — centred */}
-      <div
-        className={`fixed top-5 left-1/2 z-50 -translate-x-1/2 hidden lg:flex items-center transition-all duration-500 ease-in-out ${
-          isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
-        }`}
-      >
-        <div className="flex items-center gap-6 px-6 py-3 rounded-full bg-background/80 backdrop-blur-xl border border-border/60 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
-          <nav className="flex items-center gap-6">
-            {menuItems.map((item) =>
-              item.href.startsWith("/") ? (
-                <Link
-                  key={item.label}
-                  to={item.href}
-                  className="text-sm text-foreground hover:text-primary transition-colors duration-200 font-medium"
-                >
-                  {item.label}
-                </Link>
-              ) : (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className="text-sm text-foreground hover:text-primary transition-colors duration-200 font-medium"
-                >
-                  {item.label}
-                </a>
-              )
-            )}
-          </nav>
+        <div className="container mx-auto px-6">
+          <div className="flex items-center justify-between h-16">
+            <a href="#home" className="flex items-center">
+              <img src={logo} alt="Custom Showers" className="h-10 w-auto" />
+            </a>
+            <nav className="flex items-center gap-8">
+              {menuItems.map((item) =>
+                item.href.startsWith("/") ? (
+                  <Link
+                    key={item.label}
+                    to={item.href}
+                    className="text-sm text-foreground hover:text-primary transition-colors duration-200 font-medium"
+                  >
+                    {item.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    className="text-sm text-foreground hover:text-primary transition-colors duration-200 font-medium"
+                  >
+                    {item.label}
+                  </a>
+                )
+              )}
+            </nav>
+            <Button variant="default" onClick={onOpenQuote}>
+              Get A Free Quote
+            </Button>
+          </div>
         </div>
-      </div>
-
-      {/* Quote button — top right */}
-      <div
-        className={`fixed top-5 right-6 z-50 hidden lg:flex items-center transition-all duration-500 ease-in-out ${
-          isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
-        }`}
-      >
-        <Button variant="default" onClick={onOpenQuote} className="rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
-          Get A Free Quote
-        </Button>
-      </div>
+      </header>
 
       {/* Mobile sticky header (always shown on mobile) */}
       <header className="fixed top-0 left-0 right-0 z-50 lg:hidden bg-background/95 backdrop-blur-sm shadow-sm">
