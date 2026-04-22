@@ -13,8 +13,6 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const isHomePage = location.pathname === "/";
-  const isSupplyOnlyPage = location.pathname === "/supply-only";
-  const isBalustrades = location.pathname === "/balustrades";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,19 +22,12 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Transparent on home page, supply-only page, and balustrades page before scrolling
-  const isTransparent = (isHomePage || isSupplyOnlyPage || isBalustrades) && !isScrolled;
-
-  // Anchor links scroll on home page; navigate to home + anchor from other pages
-  const anchor = (hash: string) => (isHomePage || isSupplyOnlyPage || isBalustrades ? hash : `/${hash}`);
-
   const menuItems = [
     { label: "Home", href: "/" },
     { label: "Supply Only", href: "/supply-only" },
     { label: "Balustrades", href: "/balustrades" },
     { label: "Gallery", href: isHomePage ? "#gallery" : "/#gallery" },
-    { label: "Contact", href: anchor("#contact") },
-    // { label: "Blog", href: "/blog" },
+    { label: "Contact", href: isHomePage ? "#contact" : "/#contact" },
   ];
 
   const renderLink = (item: { label: string; href: string }, extraClass = "", onClick?: () => void) => {
@@ -44,20 +35,12 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
       if (item.href.startsWith("#")) {
         e.preventDefault();
         const element = document.querySelector(item.href);
-        if (element) {
-          element.scrollIntoView({ behavior: "smooth" });
-        }
+        if (element) element.scrollIntoView({ behavior: "smooth" });
       }
       onClick?.();
     };
-
     return (
-      <Link
-        key={item.label}
-        to={item.href}
-        className={extraClass}
-        onClick={handleClick}
-      >
+      <Link key={item.label} to={item.href} className={extraClass} onClick={handleClick}>
         {item.label}
       </Link>
     );
@@ -71,7 +54,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
           isScrolled ? "opacity-0 pointer-events-none -translate-y-2" : "opacity-100"
         }`}
       >
-        <div className={`transition-colors duration-500 ${isTransparent ? "bg-transparent" : "bg-primary/95 backdrop-blur-sm shadow-sm"}`}>
+        <div className="bg-background/95 backdrop-blur-sm shadow-sm">
           <div className="container mx-auto px-6">
             <div className="flex items-center justify-between h-24">
               {/* Logo */}
@@ -82,17 +65,14 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
               {/* Desktop Navigation */}
               <nav className="hidden lg:flex items-center gap-8">
                 {menuItems.map((item) =>
-                  renderLink(
-                    item,
-                    `transition-colors duration-300 font-medium ${isTransparent ? "text-white/90 hover:text-white" : "text-primary-foreground hover:text-white"}`
-                  )
+                  renderLink(item, "text-foreground hover:text-primary transition-colors duration-300 font-medium")
                 )}
               </nav>
 
               {/* Get Quote Button */}
               <div className="hidden md:flex items-center gap-4">
                 <Button variant="default" onClick={onOpenQuote}>
-                  Get A Quote
+                  Get A Free Quote
                 </Button>
               </div>
 
@@ -103,9 +83,9 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
                 aria-label="Toggle menu"
               >
                 {isMobileMenuOpen ? (
-                  <X className={`w-6 h-6 ${isTransparent ? "text-white" : "text-primary-foreground"}`} />
+                  <X className="w-6 h-6 text-foreground" />
                 ) : (
-                  <Menu className={`w-6 h-6 ${isTransparent ? "text-white" : "text-primary-foreground"}`} />
+                  <Menu className="w-6 h-6 text-foreground" />
                 )}
               </button>
             </div>
@@ -121,11 +101,11 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
                   )
                 )}
                 <a
-                  href="tel:+447883318933"
+                  href="tel:+447123456789"
                   className="flex items-center gap-2 py-3 text-primary hover:text-primary-hover transition-colors duration-300 font-semibold"
                 >
                   <Phone className="w-5 h-5" />
-                  +44 7883 318933
+                  +44 7123 456789
                 </a>
               </nav>
             )}
@@ -133,50 +113,31 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
         </div>
       </header>
 
-      {/* Scrolled state — desktop only: logo left, pill centre, button right */}
-
-      {/* Logo — top left */}
-      <div
-        className={`fixed top-5 left-6 z-50 hidden lg:flex items-center transition-all duration-500 ease-in-out ${
-          isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
+      {/* Scrolled state — full-width white bar, desktop only */}
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 hidden lg:block bg-white shadow-sm transition-all duration-500 ease-in-out ${
+          isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-2 pointer-events-none"
         }`}
       >
-        <Link to="/" className="bg-white p-2 flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.12)] rounded-xl">
-          <img src={logo} alt="Custom Showers" className="h-10 w-auto" />
-        </Link>
-      </div>
-
-      {/* Nav pill — centred */}
-      <div
-        className={`fixed top-5 left-1/2 z-50 -translate-x-1/2 hidden lg:flex items-center transition-all duration-500 ease-in-out ${
-          isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
-        }`}
-      >
-        <div className="flex items-center gap-6 px-6 py-3 rounded-full bg-primary/80 backdrop-blur-xl border border-primary-foreground/20 shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
-          <nav className="flex items-center gap-6">
-            {menuItems.map((item) =>
-              renderLink(
-                item,
-                "text-sm text-primary-foreground hover:text-white transition-colors duration-200 font-medium"
-              )
-            )}
-          </nav>
+        <div className="container mx-auto px-6">
+          <div className="flex items-center justify-between h-16">
+            <Link to="/" className="flex items-center">
+              <img src={logo} alt="Custom Showers" className="h-10 w-auto" />
+            </Link>
+            <nav className="flex items-center gap-8">
+              {menuItems.map((item) =>
+                renderLink(item, "text-sm text-foreground hover:text-primary transition-colors duration-200 font-medium")
+              )}
+            </nav>
+            <Button variant="default" onClick={onOpenQuote}>
+              Get A Free Quote
+            </Button>
+          </div>
         </div>
-      </div>
-
-      {/* Quote button — top right */}
-      <div
-        className={`fixed top-5 right-6 z-50 hidden lg:flex items-center transition-all duration-500 ease-in-out ${
-          isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-4 pointer-events-none"
-        }`}
-      >
-        <Button variant="default" onClick={onOpenQuote} className="rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
-          Get A Quote
-        </Button>
-      </div>
+      </header>
 
       {/* Mobile sticky header (always shown on mobile) */}
-      <header className="fixed top-0 left-0 right-0 z-50 lg:hidden bg-primary/95 backdrop-blur-sm shadow-sm">
+      <header className="fixed top-0 left-0 right-0 z-50 lg:hidden bg-background/95 backdrop-blur-sm shadow-sm">
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center">
@@ -197,23 +158,23 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
           </div>
 
           {isMobileMenuOpen && (
-            <nav className="py-6 border-t border-primary-foreground/20">
+            <nav className="py-6 border-t border-border">
               {menuItems.map((item) =>
                 renderLink(
                   item,
-                  "block py-3 text-primary-foreground hover:text-white transition-colors duration-300 font-medium",
+                  "block py-3 text-foreground hover:text-primary transition-colors duration-300 font-medium",
                   () => setIsMobileMenuOpen(false)
                 )
               )}
               <a
-                href="tel:+447883318933"
-                className="flex items-center gap-2 py-3 text-white hover:text-white/90 transition-colors duration-300 font-semibold"
+                href="tel:+447123456789"
+                className="flex items-center gap-2 py-3 text-primary transition-colors duration-300 font-semibold"
               >
                 <Phone className="w-5 h-5" />
-                +44 7883 318933
+                +44 7123 456789
               </a>
               <Button variant="default" className="mt-2 w-full" onClick={() => { onOpenQuote?.(); setIsMobileMenuOpen(false); }}>
-                Get A Quote
+                Get A Free Quote
               </Button>
             </nav>
           )}

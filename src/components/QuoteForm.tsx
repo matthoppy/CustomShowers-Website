@@ -1,31 +1,16 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-const WORKER_URL = "https://customshowers-contact.vcwvk4sm9m.workers.dev";
+const WORKER_URL = "https://customshowers-contact.workers.dev";
 
-interface QuoteFormProps {
-  onSubmitSuccess?: () => void;
-  onClose?: () => void;
-}
-
-const QuoteForm = ({ onSubmitSuccess, onClose }: QuoteFormProps = {}) => {
+const QuoteForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const { toast } = useToast();
-
-  // Capture gclid + UTM params from URL on page load and persist to sessionStorage
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const trackingKeys = ['gclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
-    trackingKeys.forEach(key => {
-      const val = params.get(key);
-      if (val) sessionStorage.setItem(key, val);
-    });
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -43,9 +28,9 @@ const QuoteForm = ({ onSubmitSuccess, onClose }: QuoteFormProps = {}) => {
 
     try {
       const formData = new FormData(formRef.current!);
+
       let photo: { name: string; type: string; data: string } | null = null;
       const file = formData.get("photo") as File;
-
       if (file && file.size > 0) {
         if (file.size > 5 * 1024 * 1024) {
           toast({ variant: "destructive", title: "File too large", description: "Please upload a file under 5MB." });
@@ -71,33 +56,20 @@ const QuoteForm = ({ onSubmitSuccess, onClose }: QuoteFormProps = {}) => {
         message: formData.get("message"),
         turnstileToken,
         photo,
-        // Attribution params captured from URL on landing
-        ...(sessionStorage.getItem('gclid') ? { gclid: sessionStorage.getItem('gclid') } : {}),
-        ...(sessionStorage.getItem('utm_source') ? { utm_source: sessionStorage.getItem('utm_source') } : {}),
-        ...(sessionStorage.getItem('utm_medium') ? { utm_medium: sessionStorage.getItem('utm_medium') } : {}),
-        ...(sessionStorage.getItem('utm_campaign') ? { utm_campaign: sessionStorage.getItem('utm_campaign') } : {}),
-        ...(sessionStorage.getItem('utm_term') ? { utm_term: sessionStorage.getItem('utm_term') } : {}),
-        ...(sessionStorage.getItem('utm_content') ? { utm_content: sessionStorage.getItem('utm_content') } : {}),
       };
 
-      const response = await fetch(WORKER_URL, {
+      const res = await fetch(WORKER_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+      const data = await res.json() as { success: boolean; error?: string };
+      if (!data.success) throw new Error(data.error || "Failed to send");
 
       formRef.current?.reset();
       setTurnstileToken(null);
       setSubmitted(true);
-
-      // Google Ads conversion tracking
-      if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
-        (window as any).gtag('event', 'conversion', { send_to: 'AW-18009060377/zXn2CNeGqpAcEJnosYtD' });
-      }
-
-      onSubmitSuccess?.();
     } catch (error) {
       console.error("Form submission error:", error);
       toast({
@@ -122,23 +94,13 @@ const QuoteForm = ({ onSubmitSuccess, onClose }: QuoteFormProps = {}) => {
         <p className="text-primary-foreground/80 max-w-sm leading-relaxed">
           Thank you for getting in touch. A member of our team will review your enquiry and get back to you within 1 business day.
         </p>
-        <div className="flex gap-3 mt-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="bg-transparent border-white/40 text-primary-foreground hover:bg-white/10"
-            onClick={() => setSubmitted(false)}
-          >
-            Send Another Message
-          </Button>
-          <Button
-            type="button"
-            className="bg-white text-primary hover:bg-white/90"
-            onClick={() => { setSubmitted(false); onClose?.(); }}
-          >
-            Close
-          </Button>
-        </div>
+        <Button
+          type="button"
+          className="mt-2 bg-white text-primary hover:bg-white/90"
+          onClick={() => setSubmitted(false)}
+        >
+          Send Another Message
+        </Button>
       </div>
     );
   }

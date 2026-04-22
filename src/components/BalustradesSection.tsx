@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 
-// Image paths using direct URLs to bypass Vite's uppercase extension handling issues
 const img1 = "/images/balustrade-channel.JPG";
 const img2 = "/images/balustrade-internal.JPG";
 const img3 = "/images/balustrade-juliette.JPG";
@@ -32,8 +31,12 @@ const images = [
 
 const BalustradesSection = () => {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
-  const [scrollSpeed, setScrollSpeed] = useState(1);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isPausedRef = useRef(false);
+
+  useEffect(() => {
+    isPausedRef.current = lightboxSrc !== null;
+  }, [lightboxSrc]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -43,29 +46,19 @@ const BalustradesSection = () => {
     let scrollPosition = 0;
 
     const scroll = () => {
-      scrollPosition += scrollSpeed * 0.5;
-
-      // Seamless loop - reset when we've scrolled past half (for infinite loop effect)
-      if (scrollPosition >= container.scrollWidth / 2) {
-        scrollPosition = 0;
+      if (!isPausedRef.current) {
+        scrollPosition += 0.5;
+        if (scrollPosition >= container.scrollWidth / 2) {
+          scrollPosition = 0;
+        }
+        container.scrollLeft = scrollPosition;
       }
-
-      container.scrollLeft = scrollPosition;
       animationId = requestAnimationFrame(scroll);
     };
 
     animationId = requestAnimationFrame(scroll);
-
     return () => cancelAnimationFrame(animationId);
-  }, [scrollSpeed]);
-
-  const speedUp = () => {
-    setScrollSpeed((prev) => Math.min(prev + 0.5, 5));
-  };
-
-  const slowDown = () => {
-    setScrollSpeed((prev) => Math.max(prev - 0.5, 0.5));
-  };
+  }, []);
 
   return (
     <section className="bg-background">
@@ -85,18 +78,15 @@ const BalustradesSection = () => {
           <h3 className="text-2xl font-bold mb-6">Featured Installations</h3>
 
           {/* Horizontal Scrolling Gallery */}
-          <div className="relative mb-8">
-            {/* Scroll Container */}
+          <div className="overflow-x-hidden mb-8">
             <div
               ref={scrollContainerRef}
-              className="flex gap-4 overflow-x-hidden pb-4 scroll-smooth"
-              style={{ scrollBehavior: "smooth" }}
+              className="flex overflow-x-hidden"
             >
-              {/* Original images */}
-              {images.map((img, i) => (
+              {[...images, ...images].map((img, i) => (
                 <div
                   key={i}
-                  className="flex-shrink-0 w-80 h-60 overflow-hidden rounded-xl cursor-pointer group"
+                  className="flex-shrink-0 w-80 h-60 overflow-hidden cursor-pointer group"
                   onClick={() => setLightboxSrc(img.src)}
                 >
                   <img
@@ -106,41 +96,6 @@ const BalustradesSection = () => {
                   />
                 </div>
               ))}
-              {/* Duplicate images for seamless loop */}
-              {images.map((img, i) => (
-                <div
-                  key={`duplicate-${i}`}
-                  className="flex-shrink-0 w-80 h-60 overflow-hidden rounded-xl cursor-pointer group"
-                  onClick={() => setLightboxSrc(img.src)}
-                >
-                  <img
-                    src={img.src}
-                    alt={img.alt}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                </div>
-              ))}
-            </div>
-
-            {/* Arrow Controls */}
-            <button
-              onClick={slowDown}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 z-10 bg-primary text-primary-foreground rounded-full p-3 hover:bg-primary/90 transition-colors shadow-lg"
-              title="Slow down scroll"
-            >
-              ←
-            </button>
-            <button
-              onClick={speedUp}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 z-10 bg-primary text-primary-foreground rounded-full p-3 hover:bg-primary/90 transition-colors shadow-lg"
-              title="Speed up scroll"
-            >
-              →
-            </button>
-
-            {/* Speed Indicator */}
-            <div className="absolute bottom-0 right-0 bg-primary/10 px-3 py-1 rounded text-sm text-muted-foreground">
-              Speed: {scrollSpeed.toFixed(1)}x
             </div>
           </div>
 
@@ -164,7 +119,7 @@ const BalustradesSection = () => {
           <img
             src={lightboxSrc}
             alt="Balustrade detail"
-            className="max-h-[90vh] max-w-full rounded-lg object-contain"
+            className="max-h-[90vh] max-w-full object-contain"
             onClick={(e) => e.stopPropagation()}
           />
           <button

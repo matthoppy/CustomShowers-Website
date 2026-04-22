@@ -1,4 +1,4 @@
-import { Mail, Phone } from "lucide-react";
+import { Mail } from "lucide-react";
 import QuoteForm from "./QuoteForm";
 
 const Contact = () => {
@@ -31,18 +31,6 @@ const Contact = () => {
                       className="text-muted-foreground hover:text-primary transition-colors duration-300"
                     >
                       sales@customshowers.uk
-                    </a>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <Phone className="w-6 h-6 text-primary mt-1 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-foreground mb-1">Phone</h4>
-                    <a
-                      href="tel:+447883318933"
-                      className="text-muted-foreground hover:text-primary transition-colors duration-300"
-                    >
-                      +44 7883 318933
                     </a>
                   </div>
                 </div>

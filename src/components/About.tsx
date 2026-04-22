@@ -20,13 +20,13 @@ const About = () => {
               About Custom Showers
             </h2>
             <p className="text-base text-gray-300 mb-3 leading-relaxed">
-              At Custom Showers, we design and supply premium frameless shower enclosures across the UK, with expert installation available throughout London.
+              At Custom Showers, we specialise in the design and supply of premium frameless shower enclosures across London.
             </p>
             <p className="text-base text-gray-300 mb-3 leading-relaxed">
-              We work with homeowners, interior designers, and contractors to create bespoke glass solutions tailored to your exact space. From frameless shower screens to walk-in wet rooms, every piece is made to order using high-quality materials and precise fabrication.
+              We work closely with homeowners, interior designers, and contractors to create stunning bespoke glass solutions tailored to your exact specifications. From frameless shower screens to walk-in wet rooms, every product is crafted to the highest standards using premium quality materials.
             </p>
             <p className="text-base text-gray-300 mb-5 leading-relaxed">
-              Whether you're looking for supply only or a full supply and install service in London, we offer a flexible approach to suit your project. You can use our online configurator to design your shower, or work with our team to bring your ideas to life.
+              Whether you're looking for supply only or require professional installation, we offer flexible options to suit your project needs. Our experienced team can handle the complete process from design consultation through to fitting, or simply provide you with beautifully crafted glass products ready for your own installer.
             </p>
             
             {/* Features List */}
@@ -41,16 +41,16 @@ const About = () => {
           </div>
 
           {/* Images */}
-          <div className="relative space-y-4">
+          <div className="grid grid-cols-2 gap-3">
             <img
               src={aboutShower1}
               alt="Bespoke frameless glass shower enclosure with gold trim and geometric tile flooring"
-              className="w-full h-[400px] object-cover shadow-2xl"
+              className="w-full h-[220px] object-cover shadow-2xl"
             />
             <img
               src={aboutShower2}
               alt="Custom frameless shower installation with hexagonal tile design and black frame"
-              className="w-full h-[400px] object-cover shadow-2xl"
+              className="w-full h-[220px] object-cover shadow-2xl"
             />
           </div>
         </div>
