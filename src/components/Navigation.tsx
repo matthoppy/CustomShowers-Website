@@ -54,7 +54,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
           isScrolled ? "opacity-0 pointer-events-none -translate-y-2" : "opacity-100"
         }`}
       >
-        <div className="bg-background/95 backdrop-blur-sm shadow-sm">
+        <div className="bg-transparent">
           <div className="container mx-auto px-6">
             <div className="flex items-center justify-between h-24">
               {/* Logo */}
@@ -65,13 +65,13 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
               {/* Desktop Navigation */}
               <nav className="hidden lg:flex items-center gap-8">
                 {menuItems.map((item) =>
-                  renderLink(item, "text-foreground hover:text-primary transition-colors duration-300 font-medium")
+                  renderLink(item, "text-white hover:text-white/70 transition-colors duration-300 font-medium drop-shadow")
                 )}
               </nav>
 
               {/* Get Quote Button */}
               <div className="hidden md:flex items-center gap-4">
-                <Button variant="default" onClick={onOpenQuote}>
+                <Button variant="outline" onClick={onOpenQuote} className="border-white text-white hover:bg-white hover:text-primary bg-transparent">
                   Get A Free Quote
                 </Button>
               </div>
@@ -83,26 +83,26 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
                 aria-label="Toggle menu"
               >
                 {isMobileMenuOpen ? (
-                  <X className="w-6 h-6 text-foreground" />
+                  <X className="w-6 h-6 text-white" />
                 ) : (
-                  <Menu className="w-6 h-6 text-foreground" />
+                  <Menu className="w-6 h-6 text-white" />
                 )}
               </button>
             </div>
 
             {/* Mobile Menu */}
             {isMobileMenuOpen && (
-              <nav className="lg:hidden py-6 border-t border-border">
+              <nav className="lg:hidden py-6 border-t border-white/20 bg-black/60 backdrop-blur-sm">
                 {menuItems.map((item) =>
                   renderLink(
                     item,
-                    "block py-3 text-foreground hover:text-primary transition-colors duration-300 font-medium",
+                    "block py-3 text-white hover:text-white/70 transition-colors duration-300 font-medium",
                     () => setIsMobileMenuOpen(false)
                   )
                 )}
                 <a
                   href="tel:+447123456789"
-                  className="flex items-center gap-2 py-3 text-primary hover:text-primary-hover transition-colors duration-300 font-semibold"
+                  className="flex items-center gap-2 py-3 text-white/80 transition-colors duration-300 font-semibold"
                 >
                   <Phone className="w-5 h-5" />
                   +44 7123 456789
