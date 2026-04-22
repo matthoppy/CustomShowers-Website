@@ -32,6 +32,11 @@ const images = [
 const BalustradesSection = () => {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isPausedRef = useRef(false);
+
+  useEffect(() => {
+    isPausedRef.current = lightboxSrc !== null;
+  }, [lightboxSrc]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -41,11 +46,13 @@ const BalustradesSection = () => {
     let scrollPosition = 0;
 
     const scroll = () => {
-      scrollPosition += 0.5;
-      if (scrollPosition >= container.scrollWidth / 2) {
-        scrollPosition = 0;
+      if (!isPausedRef.current) {
+        scrollPosition += 0.5;
+        if (scrollPosition >= container.scrollWidth / 2) {
+          scrollPosition = 0;
+        }
+        container.scrollLeft = scrollPosition;
       }
-      container.scrollLeft = scrollPosition;
       animationId = requestAnimationFrame(scroll);
     };
 
