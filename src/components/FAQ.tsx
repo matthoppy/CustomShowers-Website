@@ -5,7 +5,7 @@ const faqs = [
   {
     question: "How much does a custom shower enclosure cost?",
     answer:
-      "Pricing varies based on size, glass thickness, hardware finish and whether you choose supply-only or full supply & install. Every project is different, so we provide free, no-obligation quotes tailored to your exact requirements — get in touch and we'll turn your enquiry around quickly.",
+      "Pricing varies based on size, hardware finish and whether you choose supply-only or full supply & install. Every project is different, so we provide free, no-obligation quotes tailored to your exact requirements — get in touch and we'll turn your enquiry around quickly.",
   },
   {
     question: "Do you offer supply-only or do you install as well?",
@@ -23,9 +23,9 @@ const faqs = [
       "Lead times vary by order complexity, but most bespoke enclosures are ready within 2–4 weeks from survey sign-off. We'll give you a clear timeline when you book your survey. Installation itself typically takes half a day to a full day depending on the size and complexity of the enclosure.",
   },
   {
-    question: "What glass thicknesses and finishes do you offer?",
+    question: "What glass do you use?",
     answer:
-      "We use 10mm toughened safety glass for all frameless enclosures, fully compliant with BS EN 12150. We offer a range of hardware finishes including chrome, brushed nickel, matte black, brushed brass and gold. Bespoke finishes are also available on request.",
+      "All our frameless enclosures are made with 10mm toughened safety glass — the premium choice for frameless installations. It's heavier, more rigid, and gives a much more substantial feel than thinner alternatives, while being fully compliant with BS EN 12150. We offer a range of hardware finishes including chrome, brushed nickel, matte black, brushed brass and gold.",
   },
   {
     question: "Can you work with awkward spaces like loft conversions or sloped ceilings?",

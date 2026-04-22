@@ -83,7 +83,7 @@ const DesignShower = () => {
     {
       icon: Shield,
       title: "Quality Glass",
-      description: "Toughened safety glass in various thicknesses from 8mm to 12mm",
+      description: "Premium 10mm toughened safety glass on all frameless enclosures",
     },
   ];
 
@@ -124,7 +124,7 @@ const DesignShower = () => {
                       "Initial consultation to understand your requirements",
                       "Professional on-site survey and measurements",
                       "Custom design tailored to your bathroom layout",
-                      "Selection of glass thickness, finishes and hardware",
+                      "Selection of hardware finishes to complement your space",
                       "Detailed quotation with no hidden costs",
                     ].map((item, index) => (
                       <li key={index} className="flex items-start gap-3">
