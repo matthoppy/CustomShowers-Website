@@ -3,25 +3,7 @@ const steps = [
     number: "01",
     title: "Survey & Consultation",
     description:
-      "We visit your site at a time that suits you. Our surveyor takes precise measurements, discusses your vision, and advises on glass thickness, hardware finishes, and design options.",
-  },
-  {
-    number: "02",
-    title: "Design & Quote",
-    description:
-      "We produce detailed technical drawings and a clear, itemised quote same day. No hidden costs — everything is specified upfront before you commit.",
-  },
-  {
-    number: "03",
-    title: "Bespoke Manufacture",
-    description:
-      "Your enclosure is precision-cut and manufactured to your exact specifications using 10mm toughened safety glass. Lead time is typically 2–4 weeks.",
-  },
-  {
-    number: "04",
-    title: "Professional Installation",
-    description:
-      "Our experienced team installs your enclosure to the highest standard. We leave your bathroom spotless and walk you through everything before we go.",
+      "We visit your site at a time that suits you. Our surveyor takes precise measurements, discusses your vision, and advises on hardware finishes and design options.",
   },
 ];
 
@@ -40,7 +22,7 @@ const Process = () => {
         </div>
 
         {/* Steps */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+        <div className="flex justify-center max-w-6xl mx-auto">
           {steps.map((step, i) => (
             <div key={i} className="relative">
               {/* Connector line (desktop) */}
