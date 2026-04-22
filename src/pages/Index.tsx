@@ -4,7 +4,7 @@ import Hero from "@/components/Hero";
 import About from "@/components/About";
 import Services from "@/components/Services";
 import Gallery from "@/components/Gallery";
-import BalustradeCarousel from "@/components/BalustradeCarousel";
+import BalustradesSection from "@/components/BalustradesSection";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import QuoteModal from "@/components/QuoteModal";
@@ -19,7 +19,7 @@ const Index = () => {
       <About />
       <Services />
       <Gallery />
-      <BalustradeCarousel />
+      <BalustradesSection />
       <Contact />
       <Footer />
       <QuoteModal open={quoteModalOpen} onOpenChange={setQuoteModalOpen} />
