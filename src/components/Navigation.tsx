@@ -11,6 +11,8 @@ interface NavigationProps {
 const Navigation = ({ onOpenQuote }: NavigationProps) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const isHomePage = location.pathname === "/";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,12 +23,28 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
   }, []);
 
   const menuItems = [
-    { label: "Home", href: "#home" },
-    { label: "About", href: "#about" },
-    { label: "Services", href: "#services" },
-    { label: "Gallery", href: "#gallery" },
-    { label: "Contact", href: "#contact" },
+    { label: "Home", href: "/" },
+    { label: "Supply Only", href: "/supply-only" },
+    { label: "Balustrades", href: "/balustrades" },
+    { label: "Gallery", href: isHomePage ? "#gallery" : "/#gallery" },
+    { label: "Contact", href: isHomePage ? "#contact" : "/#contact" },
   ];
+
+  const renderLink = (item: { label: string; href: string }, extraClass = "", onClick?: () => void) => {
+    const handleClick = (e: React.MouseEvent) => {
+      if (item.href.startsWith("#")) {
+        e.preventDefault();
+        const element = document.querySelector(item.href);
+        if (element) element.scrollIntoView({ behavior: "smooth" });
+      }
+      onClick?.();
+    };
+    return (
+      <Link key={item.label} to={item.href} className={extraClass} onClick={handleClick}>
+        {item.label}
+      </Link>
+    );
+  };
 
   return (
     <>
@@ -40,30 +58,14 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
           <div className="container mx-auto px-6">
             <div className="flex items-center justify-between h-24">
               {/* Logo */}
-              <a href="#home" className="flex items-center">
+              <Link to="/" className="flex items-center">
                 <img src={logo} alt="Custom Showers" className="h-20 w-auto" />
-              </a>
+              </Link>
 
               {/* Desktop Navigation */}
               <nav className="hidden lg:flex items-center gap-8">
                 {menuItems.map((item) =>
-                  item.href.startsWith("/") ? (
-                    <Link
-                      key={item.label}
-                      to={item.href}
-                      className="text-foreground hover:text-primary transition-colors duration-300 font-medium"
-                    >
-                      {item.label}
-                    </Link>
-                  ) : (
-                    <a
-                      key={item.label}
-                      href={item.href}
-                      className="text-foreground hover:text-primary transition-colors duration-300 font-medium"
-                    >
-                      {item.label}
-                    </a>
-                  )
+                  renderLink(item, "text-foreground hover:text-primary transition-colors duration-300 font-medium")
                 )}
               </nav>
 
@@ -92,24 +94,10 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
             {isMobileMenuOpen && (
               <nav className="lg:hidden py-6 border-t border-border">
                 {menuItems.map((item) =>
-                  item.href.startsWith("/") ? (
-                    <Link
-                      key={item.label}
-                      to={item.href}
-                      className="block py-3 text-foreground hover:text-primary transition-colors duration-300 font-medium"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      {item.label}
-                    </Link>
-                  ) : (
-                    <a
-                      key={item.label}
-                      href={item.href}
-                      className="block py-3 text-foreground hover:text-primary transition-colors duration-300 font-medium"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      {item.label}
-                    </a>
+                  renderLink(
+                    item,
+                    "block py-3 text-foreground hover:text-primary transition-colors duration-300 font-medium",
+                    () => setIsMobileMenuOpen(false)
                   )
                 )}
                 <a
@@ -133,28 +121,12 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
       >
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between h-16">
-            <a href="#home" className="flex items-center">
+            <Link to="/" className="flex items-center">
               <img src={logo} alt="Custom Showers" className="h-10 w-auto" />
-            </a>
+            </Link>
             <nav className="flex items-center gap-8">
               {menuItems.map((item) =>
-                item.href.startsWith("/") ? (
-                  <Link
-                    key={item.label}
-                    to={item.href}
-                    className="text-sm text-foreground hover:text-primary transition-colors duration-200 font-medium"
-                  >
-                    {item.label}
-                  </Link>
-                ) : (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    className="text-sm text-foreground hover:text-primary transition-colors duration-200 font-medium"
-                  >
-                    {item.label}
-                  </a>
-                )
+                renderLink(item, "text-sm text-foreground hover:text-primary transition-colors duration-200 font-medium")
               )}
             </nav>
             <Button variant="default" onClick={onOpenQuote}>
@@ -168,9 +140,9 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
       <header className="fixed top-0 left-0 right-0 z-50 lg:hidden bg-background/95 backdrop-blur-sm shadow-sm">
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between h-16">
-            <a href="#home" className="flex items-center">
+            <Link to="/" className="flex items-center">
               <img src={logo} alt="Custom Showers" className="h-12 w-auto" />
-            </a>
+            </Link>
 
             <button
               className="p-2"
@@ -188,24 +160,10 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
           {isMobileMenuOpen && (
             <nav className="py-6 border-t border-border">
               {menuItems.map((item) =>
-                item.href.startsWith("/") ? (
-                  <Link
-                    key={item.label}
-                    to={item.href}
-                    className="block py-3 text-foreground hover:text-primary transition-colors duration-300 font-medium"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {item.label}
-                  </Link>
-                ) : (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    className="block py-3 text-foreground hover:text-primary transition-colors duration-300 font-medium"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {item.label}
-                  </a>
+                renderLink(
+                  item,
+                  "block py-3 text-foreground hover:text-primary transition-colors duration-300 font-medium",
+                  () => setIsMobileMenuOpen(false)
                 )
               )}
               <a

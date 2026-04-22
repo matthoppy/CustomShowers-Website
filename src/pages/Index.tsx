@@ -2,6 +2,7 @@ import { useState } from "react";
 import Navigation from "@/components/Navigation";
 import Hero from "@/components/Hero";
 import About from "@/components/About";
+import Process from "@/components/Process";
 import Services from "@/components/Services";
 import Gallery from "@/components/Gallery";
 import BalustradesSection from "@/components/BalustradesSection";
@@ -18,6 +19,7 @@ const Index = () => {
       <Navigation onOpenQuote={() => setQuoteModalOpen(true)} />
       <Hero onOpenQuote={() => setQuoteModalOpen(true)} />
       <About />
+      <Process />
       <Services />
       <Gallery />
       <BalustradesSection />
