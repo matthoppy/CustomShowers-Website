@@ -31,7 +31,7 @@ const projects = [
   { image: "/images/shower-enclosure-clamps-2.JPG", alt: "Clamp shower enclosure detail" },
 ];
 
-const IMAGE_WIDTH = 320;
+const IMAGE_WIDTH = 256;
 
 const Gallery = () => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -107,7 +107,7 @@ const Gallery = () => {
               {[...projects, ...projects].map((project, i) => (
                 <div
                   key={i}
-                  className="flex-shrink-0 w-80 h-60 overflow-hidden cursor-pointer group"
+                  className="flex-shrink-0 w-64 h-96 overflow-hidden cursor-pointer group"
                   onClick={() => handleImageClick(i)}
                 >
                   <img
