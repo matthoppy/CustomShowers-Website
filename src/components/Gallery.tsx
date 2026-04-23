@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import gallery1 from "@/assets/gallery-1.jpg";
 import gallery2 from "@/assets/gallery-2.jpg";
@@ -31,23 +31,57 @@ const projects = [
   { image: "/images/shower-enclosure-clamps-2.JPG", alt: "Clamp shower enclosure detail" },
 ];
 
-const Gallery = () => {
-  const [current, setCurrent] = useState(0);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+const IMAGE_WIDTH = 320;
 
-  const prev = () => setCurrent((c) => (c - 1 + projects.length) % projects.length);
-  const next = () => setCurrent((c) => (c + 1) % projects.length);
+const Gallery = () => {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isPausedRef = useRef(false);
+  const scrollPosRef = useRef(0);
+
+  useEffect(() => {
+    isPausedRef.current = lightboxIndex !== null;
+  }, [lightboxIndex]);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    let animationId: number;
+
+    const scroll = () => {
+      if (!isPausedRef.current) {
+        scrollPosRef.current += 0.5;
+        if (scrollPosRef.current >= container.scrollWidth / 2) {
+          scrollPosRef.current = 0;
+        }
+        container.scrollLeft = scrollPosRef.current;
+      }
+      animationId = requestAnimationFrame(scroll);
+    };
+
+    animationId = requestAnimationFrame(scroll);
+    return () => cancelAnimationFrame(animationId);
+  }, []);
+
+  const step = (dir: 1 | -1) => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    scrollPosRef.current = Math.max(0, scrollPosRef.current + dir * IMAGE_WIDTH);
+    if (scrollPosRef.current >= container.scrollWidth / 2) scrollPosRef.current = 0;
+    container.scrollLeft = scrollPosRef.current;
+  };
+
+  const handleImageClick = (index: number) => {
+    setLightboxIndex(index % projects.length);
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (lightboxIndex !== null) {
-        if (e.key === "Escape") setLightboxIndex(null);
-        if (e.key === "ArrowRight") setLightboxIndex((i) => (i! + 1) % projects.length);
-        if (e.key === "ArrowLeft") setLightboxIndex((i) => (i! - 1 + projects.length) % projects.length);
-      } else {
-        if (e.key === "ArrowRight") next();
-        if (e.key === "ArrowLeft") prev();
-      }
+      if (lightboxIndex === null) return;
+      if (e.key === "Escape") setLightboxIndex(null);
+      if (e.key === "ArrowRight") setLightboxIndex((i) => (i! + 1) % projects.length);
+      if (e.key === "ArrowLeft") setLightboxIndex((i) => (i! - 1 + projects.length) % projects.length);
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -66,27 +100,29 @@ const Gallery = () => {
           </p>
         </div>
 
-        {/* Carousel */}
-        <div className="relative max-w-3xl mx-auto">
-          {/* Image */}
-          <div
-            className="relative aspect-[4/3] overflow-hidden bg-background cursor-pointer group"
-            onClick={() => setLightboxIndex(current)}
-          >
-            <img
-              key={current}
-              src={projects[current].image}
-              alt={projects[current].alt}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-overlay/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-              <span className="text-white text-lg font-semibold">View Full Size</span>
+        {/* Scrolling strip with arrows */}
+        <div className="relative">
+          <div className="overflow-x-hidden">
+            <div ref={scrollContainerRef} className="flex overflow-x-hidden">
+              {[...projects, ...projects].map((project, i) => (
+                <div
+                  key={i}
+                  className="flex-shrink-0 w-80 h-60 overflow-hidden cursor-pointer group"
+                  onClick={() => handleImageClick(i)}
+                >
+                  <img
+                    src={project.image}
+                    alt={project.alt}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                </div>
+              ))}
             </div>
           </div>
 
           {/* Prev Arrow */}
           <button
-            onClick={prev}
+            onClick={() => step(-1)}
             className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-5 bg-white text-primary w-10 h-10 flex items-center justify-center shadow-lg hover:bg-white/90 transition-colors"
             aria-label="Previous"
           >
@@ -95,18 +131,13 @@ const Gallery = () => {
 
           {/* Next Arrow */}
           <button
-            onClick={next}
+            onClick={() => step(1)}
             className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-5 bg-white text-primary w-10 h-10 flex items-center justify-center shadow-lg hover:bg-white/90 transition-colors"
             aria-label="Next"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
-
-        {/* Counter */}
-        <p className="text-center text-primary-foreground/60 text-sm mt-4">
-          {current + 1} / {projects.length}
-        </p>
       </div>
 
       {/* Lightbox */}
