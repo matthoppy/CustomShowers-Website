@@ -7,7 +7,7 @@
  */
 
 import { useMemo } from 'react';
-import { traceChain } from '../geometry';
+import { junctionPoint, runEnds, traceChain } from '../geometry';
 import type { ConfiguratorJunction, ConfiguratorPanel } from '../types';
 
 interface PlanViewProps {
@@ -43,15 +43,26 @@ export function PlanView({
   const trace = useMemo(() => traceChain(panels, junctions), [panels, junctions]);
 
   const { scale, offsetX, offsetY } = useMemo(() => {
-    const contentW = trace.maxX - trace.minX || 1000;
-    const contentH = trace.maxY - trace.minY || 1000;
+    // The door's swing arc sweeps a quarter circle out in front of the run.
+    // It sits outside the panel bounding box, so fold it in before scaling —
+    // otherwise the arc is drawn clipped off the bottom of the viewport.
+    const door = panels[trace.anchorIndex];
+    const swingReach = door?.kind === 'door' ? door.width_mm : 0;
+
+    const minX = trace.minX;
+    const maxX = trace.maxX;
+    const minY = trace.minY;
+    const maxY = Math.max(trace.maxY, swingReach);
+
+    const contentW = maxX - minX || 1000;
+    const contentH = maxY - minY || 1000;
     const s = Math.min((width - PADDING) / contentW, (height - PADDING) / contentH);
     return {
       scale: s,
-      offsetX: width / 2 - (trace.minX + contentW / 2) * s,
-      offsetY: height / 2 - (trace.minY + contentH / 2) * s,
+      offsetX: width / 2 - (minX + contentW / 2) * s,
+      offsetY: height / 2 - (minY + contentH / 2) * s,
     };
-  }, [trace, width, height]);
+  }, [trace, panels, width, height]);
 
   if (panels.length === 0) return null;
 
@@ -61,6 +72,7 @@ export function PlanView({
   const doorSeg = trace.segments[trace.anchorIndex];
   const doorPanel = panels[trace.anchorIndex];
   const hasDoor = doorPanel?.kind === 'door';
+  const ends = runEnds(trace, panels.length);
 
   return (
     <svg width={width} height={height} className="select-none" role="img" aria-label="Top-down plan of the shower enclosure">
@@ -96,13 +108,21 @@ export function PlanView({
       })()}
 
       {/* Walls at each end of the run. */}
-      {leftWall && trace.segments[0] && (
-        <WallTick x={tx(trace.segments[0].x1)} y={ty(trace.segments[0].y1)} label="WALL" />
-      )}
-      {rightWall && trace.segments[panels.length - 1] && (
+      {leftWall && ends.left && (
         <WallTick
-          x={tx(trace.segments[panels.length - 1].x2)}
-          y={ty(trace.segments[panels.length - 1].y2)}
+          x={tx(ends.left.x)}
+          y={ty(ends.left.y)}
+          dx={ends.left.dx}
+          dy={ends.left.dy}
+          label="WALL"
+        />
+      )}
+      {rightWall && ends.right && (
+        <WallTick
+          x={tx(ends.right.x)}
+          y={ty(ends.right.y)}
+          dx={ends.right.dx}
+          dy={ends.right.dy}
           label="WALL"
         />
       )}
@@ -146,7 +166,7 @@ export function PlanView({
               y={vertical ? midY : midY - 14}
               textAnchor={vertical ? 'start' : 'middle'}
               dominantBaseline="middle"
-              className="text-[11px] font-bold"
+              fontSize={11} fontWeight={700}
               fill={isDoor ? accent : '#334155'}
             >
               {panel.width_mm}
@@ -156,7 +176,7 @@ export function PlanView({
               y={vertical ? midY + 14 : midY + 20}
               textAnchor={vertical ? 'start' : 'middle'}
               dominantBaseline="middle"
-              className="text-[9px] font-semibold tracking-widest"
+              fontSize={9} fontWeight={600} letterSpacing={1.5}
               fill="#94a3b8"
             >
               {isDoor ? 'DOOR' : 'FIXED'}
@@ -167,10 +187,10 @@ export function PlanView({
 
       {/* Corner handles — click to straighten or turn. */}
       {junctions.map((j, i) => {
-        const seg = trace.segments[i];
-        if (!seg) return null;
-        const cx = tx(seg.x2);
-        const cy = ty(seg.y2);
+        const point = junctionPoint(trace, i);
+        if (!point) return null;
+        const cx = tx(point.x);
+        const cy = ty(point.y);
         return (
           <g
             key={`junction-${i}`}
@@ -183,7 +203,7 @@ export function PlanView({
               y={cy + 1}
               textAnchor="middle"
               dominantBaseline="middle"
-              className="text-[8px] font-black"
+              fontSize={8} fontWeight={800}
               fill="#475569"
             >
               {j.angle_deg}
@@ -195,15 +215,50 @@ export function PlanView({
   );
 }
 
-function WallTick({ x, y, label }: { x: number; y: number; label: string }) {
+/**
+ * Wall at the end of the run, drawn square to the panel it abuts. `dx`/`dy` is
+ * the panel's direction of travel; the wall face sits perpendicular to it.
+ */
+function WallTick({
+  x,
+  y,
+  dx,
+  dy,
+  label,
+}: {
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  label: string;
+}) {
+  // Perpendicular to the panel, so the wall reads as a face rather than a
+  // stray dash floating alongside a vertical return.
+  const px = -dy;
+  const py = dx;
+  const half = 20;
+  // Nudge the wall and its label clear of the glass, back along the panel.
+  const backX = -dx * 6;
+  const backY = -dy * 6;
+
   return (
     <g>
-      <line x1={x - 20} y1={y - 20} x2={x + 20} y2={y - 20} stroke="#94a3b8" strokeWidth={3} />
+      <line
+        x1={x + backX - px * half}
+        y1={y + backY - py * half}
+        x2={x + backX + px * half}
+        y2={y + backY + py * half}
+        stroke="#94a3b8"
+        strokeWidth={3}
+      />
       <text
-        x={x}
-        y={y - 30}
+        x={x - dx * 22}
+        y={y - dy * 22}
         textAnchor="middle"
-        className="text-[9px] font-bold tracking-widest"
+        dominantBaseline="middle"
+        fontSize={9}
+        fontWeight={700}
+        letterSpacing={1.5}
         fill="#94a3b8"
       >
         {label}

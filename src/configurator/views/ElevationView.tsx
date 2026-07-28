@@ -161,7 +161,7 @@ export function ElevationView({
               x={x + wPx / 2}
               y={y - 12}
               textAnchor="middle"
-              className="text-[11px] font-bold"
+              fontSize={11} fontWeight={700}
               fill={isDoor ? accent : '#334155'}
             >
               {panel.width_mm}
@@ -170,7 +170,7 @@ export function ElevationView({
               x={x + wPx / 2}
               y={baselineY + 18}
               textAnchor="middle"
-              className="text-[8px] font-semibold tracking-widest"
+              fontSize={8} fontWeight={600} letterSpacing={1.2}
               fill="#94a3b8"
             >
               {isDoor ? 'DOOR' : 'FIXED'}
@@ -195,7 +195,7 @@ export function ElevationView({
           y={baselineY - heightPx / 2}
           textAnchor="end"
           dominantBaseline="middle"
-          className="text-[10px] font-bold"
+          fontSize={10} fontWeight={700}
           fill="#64748b"
         >
           {heightMm}

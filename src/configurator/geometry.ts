@@ -160,3 +160,52 @@ export function derivePlanes(
 export function totalRunWidthMm(panels: ConfiguratorPanel[]): number {
   return panels.reduce((sum, p) => sum + p.width_mm, 0);
 }
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+export interface RunEnd extends Point {
+  /** Unit vector pointing away from the run, out towards the wall. */
+  dx: number;
+  dy: number;
+}
+
+/**
+ * Where junction `i` — the joint between panel i and panel i + 1 — actually is.
+ *
+ * The walk runs outward from the anchor in both directions, so a left-side
+ * panel's x1/y1 is its edge *nearest* the anchor while a right-side panel's
+ * x2/y2 is. Getting this backwards puts corner markers on the far end of the
+ * wrong panel.
+ */
+export function junctionPoint(trace: ChainTrace, i: number): Point | null {
+  const seg = trace.segments[i];
+  if (!seg) return null;
+  return i < trace.anchorIndex ? { x: seg.x1, y: seg.y1 } : { x: seg.x2, y: seg.y2 };
+}
+
+/** The two open ends of the run, where it meets a wall. */
+export function runEnds(trace: ChainTrace, panelCount: number): {
+  left: RunEnd | null;
+  right: RunEnd | null;
+} {
+  const first = trace.segments[0];
+  const last = trace.segments[panelCount - 1];
+
+  // Panel 0 is only traced outward-from-anchor when it sits left of it. When
+  // panel 0 *is* the anchor, its left edge is x1 and "outward" is backwards
+  // along the panel.
+  const left: RunEnd | null = !first
+    ? null
+    : trace.anchorIndex > 0
+      ? { x: first.x2, y: first.y2, dx: first.dx, dy: first.dy }
+      : { x: first.x1, y: first.y1, dx: -first.dx, dy: -first.dy };
+
+  const right: RunEnd | null = !last
+    ? null
+    : { x: last.x2, y: last.y2, dx: last.dx, dy: last.dy };
+
+  return { left, right };
+}

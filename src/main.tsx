@@ -1,7 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
-import ShowerConfiguratorWizard from "./pages/ShowerConfiguratorWizard";
+import DesignShowerPage from "./pages/DesignShowerPage";
 import TermsOfTrade from "./pages/TermsOfTrade";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import SupplyOnly from "./pages/SupplyOnly";
@@ -16,7 +16,7 @@ const App = () => {
     <Router>
       <Routes>
         <Route path="/" element={<Index />} />
-        <Route path="/design-shower" element={<ShowerConfiguratorWizard />} />
+        <Route path="/design-shower" element={<DesignShowerPage />} />
         <Route path="/terms-of-trade" element={<TermsOfTrade />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/supply-only" element={<SupplyOnly />} />
