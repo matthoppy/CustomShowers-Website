@@ -79,6 +79,53 @@ A complete e-commerce platform for custom frameless glass shower enclosures with
 └── netlify.toml          # Netlify configuration
 ```
 
+## Shower configurator
+
+The configurator lives in `src/configurator/` and is self-contained. It captures
+a design and emails the measurements to the glazier — there is no pricing in the
+customer-facing flow.
+
+```
+src/configurator/
+├── types.ts        # The chain model: panels joined by 90°/180° junctions
+├── geometry.ts     # Traces the run in plan space; derives front vs return
+├── spec.ts         # Cut sizes, hinge selection, warnings (uses lib/showerCalculations)
+├── tenant.ts       # Per-glazier branding, hardware catalog, destination email
+├── submit.ts       # Rasterises the drawings and posts the enquiry
+├── views/          # PlanView (top-down) and ElevationView (front, unfolded)
+└── steps/          # Layout → Dimensions → Hardware → Review
+```
+
+Fabrication rules stay in `src/lib/showerCalculations.ts` — deductions, hinge and
+handle placement, support requirements.
+
+### Embedding on another site
+
+The configurator builds as a second entry point (`embed.html`) so it can be
+dropped into any website:
+
+```html
+<div id="glass-configurator" data-tenant="custom-showers"></div>
+<script src="https://customshowers.uk/embed.js" async></script>
+```
+
+Optional attributes: `data-theme` (`light` | `dark`) and `data-height` (initial
+px before the first resize message). The loader injects a sandboxed iframe and
+grows it to fit via `postMessage`.
+
+### Adding a glazier
+
+Add an entry to `TENANTS` in `src/configurator/tenant.ts` with their branding,
+the finishes and handles they stock, and their destination email. Then add the
+same email to `TENANT_INBOXES` in
+`supabase/functions/send-design-enquiry/index.ts` — destinations are
+allow-listed server-side so the public endpoint cannot be pointed at an
+arbitrary inbox.
+
+Each tenant needs their own Cloudflare Turnstile site key, since keys are scoped
+to the domains they are served from. A key that does not cover the host domain
+will leave the customer unable to submit.
+
 ## Prerequisites
 
 - Node.js 18+ and npm

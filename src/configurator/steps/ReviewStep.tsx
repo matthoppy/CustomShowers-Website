@@ -6,7 +6,7 @@
  * the workshop is trustworthy.
  */
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,6 +32,16 @@ export function ReviewStep({
   onTurnstileToken,
 }: ReviewStepProps) {
   const spec = useMemo(() => buildSpec(state), [state]);
+  const [challenge, setChallenge] = useState<'loading' | 'ready' | 'failed'>('loading');
+
+  // onError does not fire when the Cloudflare script is blocked outright — the
+  // widget simply never appears. Treat a long silence as a failure so the
+  // customer is told why they cannot send, rather than staring at a dead button.
+  useEffect(() => {
+    if (!tenant.turnstileSiteKey || challenge !== 'loading') return;
+    const timer = setTimeout(() => setChallenge('failed'), 12000);
+    return () => clearTimeout(timer);
+  }, [tenant.turnstileSiteKey, challenge]);
 
   return (
     <div className="space-y-6">
@@ -215,13 +225,44 @@ export function ReviewStep({
       </label>
 
       {tenant.turnstileSiteKey && (
-        <div className="flex justify-center">
-          <Turnstile
-            siteKey={tenant.turnstileSiteKey}
-            onSuccess={onTurnstileToken}
-            onExpire={() => onTurnstileToken(null)}
-            onError={() => onTurnstileToken(null)}
-          />
+        <div className="space-y-3">
+          <div className="flex justify-center">
+            <Turnstile
+              siteKey={tenant.turnstileSiteKey}
+              onSuccess={(token) => {
+                setChallenge('ready');
+                onTurnstileToken(token);
+              }}
+              onExpire={() => {
+                setChallenge('loading');
+                onTurnstileToken(null);
+              }}
+              onError={() => {
+                setChallenge('failed');
+                onTurnstileToken(null);
+              }}
+            />
+          </div>
+
+          {/* Without this, a blocked or slow challenge leaves the send button
+              disabled with nothing on screen to explain why. */}
+          {challenge === 'failed' && (
+            <div className="flex gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-4">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+              <div className="text-sm">
+                <div className="font-semibold">The security check could not load</div>
+                <p className="mt-1 text-muted-foreground">
+                  It is usually an ad blocker or a strict privacy extension. Allow{' '}
+                  <code className="rounded bg-muted px-1">challenges.cloudflare.com</code> and
+                  refresh, or email your measurements to{' '}
+                  <a href={`mailto:${tenant.destinationEmail}`} className="underline">
+                    {tenant.destinationEmail}
+                  </a>{' '}
+                  and we will pick it up from there.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
