@@ -7,6 +7,7 @@
  */
 
 import { useMemo } from 'react';
+import { Turnstile } from '@marsidev/react-turnstile';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,9 +21,16 @@ import type { StepProps } from './types';
 interface ReviewStepProps extends StepProps {
   customer: CustomerDetails;
   setCustomer: (patch: Partial<CustomerDetails>) => void;
+  onTurnstileToken: (token: string | null) => void;
 }
 
-export function ReviewStep({ tenant, state, customer, setCustomer }: ReviewStepProps) {
+export function ReviewStep({
+  tenant,
+  state,
+  customer,
+  setCustomer,
+  onTurnstileToken,
+}: ReviewStepProps) {
   const spec = useMemo(() => buildSpec(state), [state]);
 
   return (
@@ -205,6 +213,17 @@ export function ReviewStep({ tenant, state, customer, setCustomer }: ReviewStepP
         />
         <span className="text-sm text-muted-foreground">{tenant.measurementDisclaimer}</span>
       </label>
+
+      {tenant.turnstileSiteKey && (
+        <div className="flex justify-center">
+          <Turnstile
+            siteKey={tenant.turnstileSiteKey}
+            onSuccess={onTurnstileToken}
+            onExpire={() => onTurnstileToken(null)}
+            onError={() => onTurnstileToken(null)}
+          />
+        </div>
+      )}
     </div>
   );
 }

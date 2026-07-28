@@ -237,23 +237,22 @@ function WallTick({
   const px = -dy;
   const py = dx;
   const half = 20;
-  // Nudge the wall and its label clear of the glass, back along the panel.
-  const backX = -dx * 6;
-  const backY = -dy * 6;
 
   return (
     <g>
+      {/* The wall face sits on the end of the run, where the glass meets it. */}
       <line
-        x1={x + backX - px * half}
-        y1={y + backY - py * half}
-        x2={x + backX + px * half}
-        y2={y + backY + py * half}
+        x1={x - px * half}
+        y1={y - py * half}
+        x2={x + px * half}
+        y2={y + py * half}
         stroke="#94a3b8"
         strokeWidth={3}
       />
+      {/* Label goes beyond the wall, not back over the glass. */}
       <text
-        x={x - dx * 22}
-        y={y - dy * 22}
+        x={x + dx * 30}
+        y={y + dy * 30}
         textAnchor="middle"
         dominantBaseline="middle"
         fontSize={9}

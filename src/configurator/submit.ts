@@ -35,6 +35,7 @@ export interface EnquiryPayload {
   spec: ConfiguratorSpec;
   disclaimer: string;
   attachments: EnquiryAttachment[];
+  turnstileToken: string | null;
 }
 
 /**
@@ -94,7 +95,8 @@ export function buildEnquiryPayload(
   tenant: TenantConfig,
   state: ConfiguratorState,
   customer: CustomerDetails,
-  attachments: EnquiryAttachment[]
+  attachments: EnquiryAttachment[],
+  turnstileToken: string | null
 ): EnquiryPayload {
   const spec = buildSpec(state);
   return {
@@ -114,6 +116,7 @@ export function buildEnquiryPayload(
     spec,
     disclaimer: tenant.measurementDisclaimer,
     attachments,
+    turnstileToken,
   };
 }
 

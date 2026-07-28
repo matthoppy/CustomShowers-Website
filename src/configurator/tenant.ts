@@ -48,6 +48,13 @@ export interface TenantConfig {
   measurementDisclaimer: string;
   /** Optional line under the configurator heading. */
   intro?: string;
+  /**
+   * Cloudflare Turnstile site key. Public by design. Keys are domain-scoped,
+   * so a tenant embedding on their own site needs their own. Leave unset to
+   * skip the challenge — only sensible for local development, since the
+   * enquiry endpoint is reachable from anywhere.
+   */
+  turnstileSiteKey?: string;
 }
 
 const DEFAULT_HANDLES: HandleOption[] = [
@@ -75,6 +82,7 @@ export const CUSTOM_SHOWERS: TenantConfig = {
   measurementDisclaimer:
     'These measurements are provided by you as a guide. We will confirm all sizes on a site survey before any glass is cut — please do not treat this design as a final cutting list.',
   intro: 'Design your enclosure and send the measurements straight to our workshop.',
+  turnstileSiteKey: '0x4AAAAAACmVMi3ZDLDzTYwv',
 };
 
 export const TENANTS: Record<string, TenantConfig> = {

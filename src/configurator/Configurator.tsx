@@ -50,6 +50,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const drawingRef = useRef<HTMLDivElement>(null);
 
@@ -73,12 +74,14 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
         return (
           customer.name.trim().length > 1 &&
           EMAIL_PATTERN.test(customer.email) &&
-          customer.measurementsAcknowledged
+          customer.measurementsAcknowledged &&
+          // No challenge configured means none to pass.
+          (!tenant.turnstileSiteKey || !!turnstileToken)
         );
       default:
         return false;
     }
-  }, [stepId, state, customer]);
+  }, [stepId, state, customer, tenant.turnstileSiteKey, turnstileToken]);
 
   const stepProps: StepProps = {
     tenant,
@@ -104,7 +107,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
       i++;
     }
 
-    const payload = buildEnquiryPayload(tenant, state, customer, attachments);
+    const payload = buildEnquiryPayload(tenant, state, customer, attachments, turnstileToken);
     const result = await submitEnquiry(payload);
 
     setSubmitting(false);
@@ -126,6 +129,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     setStepId('layout');
     setSubmitted(false);
     setError(null);
+    setTurnstileToken(null);
   }
 
   if (submitted) {
@@ -200,7 +204,12 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
               {stepId === 'dimensions' && <DimensionsStep {...stepProps} />}
               {stepId === 'hardware' && <HardwareStep {...stepProps} />}
               {stepId === 'review' && (
-                <ReviewStep {...stepProps} customer={customer} setCustomer={setCustomer} />
+                <ReviewStep
+                  {...stepProps}
+                  customer={customer}
+                  setCustomer={setCustomer}
+                  onTurnstileToken={setTurnstileToken}
+                />
               )}
             </div>
 
