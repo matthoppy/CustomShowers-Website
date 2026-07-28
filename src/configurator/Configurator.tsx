@@ -51,6 +51,10 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [honeypot, setHoneypot] = useState('');
+  // How long the customer spent on the design. A real one cannot get through
+  // four steps in a couple of seconds; a script can.
+  const startedAtRef = useRef<number>(Date.now());
 
   const drawingRef = useRef<HTMLDivElement>(null);
 
@@ -107,7 +111,10 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
       i++;
     }
 
-    const payload = buildEnquiryPayload(tenant, state, customer, attachments, turnstileToken);
+    const payload = buildEnquiryPayload(tenant, state, customer, attachments, turnstileToken, {
+      honeypot,
+      elapsedMs: Date.now() - startedAtRef.current,
+    });
     const result = await submitEnquiry(payload);
 
     setSubmitting(false);
@@ -130,6 +137,8 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     setSubmitted(false);
     setError(null);
     setTurnstileToken(null);
+    setHoneypot('');
+    startedAtRef.current = Date.now();
   }
 
   if (submitted) {
@@ -209,6 +218,8 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                   customer={customer}
                   setCustomer={setCustomer}
                   onTurnstileToken={setTurnstileToken}
+                  honeypot={honeypot}
+                  setHoneypot={setHoneypot}
                 />
               )}
             </div>

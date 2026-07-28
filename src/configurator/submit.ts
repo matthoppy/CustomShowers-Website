@@ -36,6 +36,14 @@ export interface EnquiryPayload {
   disclaimer: string;
   attachments: EnquiryAttachment[];
   turnstileToken: string | null;
+  antispam: AntiSpamSignals;
+}
+
+export interface AntiSpamSignals {
+  /** Hidden field. Any content means a bot filled it in. */
+  honeypot: string;
+  /** Milliseconds between opening the configurator and pressing send. */
+  elapsedMs: number;
 }
 
 /**
@@ -96,7 +104,8 @@ export function buildEnquiryPayload(
   state: ConfiguratorState,
   customer: CustomerDetails,
   attachments: EnquiryAttachment[],
-  turnstileToken: string | null
+  turnstileToken: string | null,
+  antispam: AntiSpamSignals
 ): EnquiryPayload {
   const spec = buildSpec(state);
   return {
@@ -117,6 +126,7 @@ export function buildEnquiryPayload(
     disclaimer: tenant.measurementDisclaimer,
     attachments,
     turnstileToken,
+    antispam,
   };
 }
 

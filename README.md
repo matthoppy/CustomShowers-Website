@@ -122,9 +122,30 @@ same email to `TENANT_INBOXES` in
 allow-listed server-side so the public endpoint cannot be pointed at an
 arbitrary inbox.
 
-Each tenant needs their own Cloudflare Turnstile site key, since keys are scoped
-to the domains they are served from. A key that does not cover the host domain
-will leave the customer unable to submit.
+One Turnstile site key covers every embed. The widget runs inside `embed.html`,
+which is served from your own domain, so the hostname it reports is yours no
+matter whose site the iframe is on. Worth confirming with one real submission
+from a customer domain after deploying.
+
+### Spam handling
+
+Four layers, in order of how much they are trusted:
+
+| Layer | Behaviour |
+|---|---|
+| Honeypot field | Silently dropped — off-screen, aria-hidden and untabbable, so no person can fill it |
+| Turnstile | Verified server-side; runs in `interaction-only` mode so most customers never see a challenge |
+| Completion time | **Flagged, not dropped** — subject gets `[Possible spam]` and the customer copy is suppressed |
+| Rate limit | 5 per IP and 60 per tenant per 10 minutes; returns 429 |
+
+Only the honeypot drops an enquiry, because it is the only signal a human
+cannot trip. Everything else lets the enquiry through so a false positive
+never costs a real job — a lost lead leaves no trace, a junk email costs
+seconds.
+
+The rate limiter is in-memory per isolate, so it is a burst brake rather than a
+hard quota. Move it to a shared store or a Cloudflare WAF rule in front of the
+function if abuse becomes real.
 
 ## Prerequisites
 

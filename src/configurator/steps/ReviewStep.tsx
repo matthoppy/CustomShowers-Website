@@ -22,6 +22,8 @@ interface ReviewStepProps extends StepProps {
   customer: CustomerDetails;
   setCustomer: (patch: Partial<CustomerDetails>) => void;
   onTurnstileToken: (token: string | null) => void;
+  honeypot: string;
+  setHoneypot: (value: string) => void;
 }
 
 export function ReviewStep({
@@ -30,6 +32,8 @@ export function ReviewStep({
   customer,
   setCustomer,
   onTurnstileToken,
+  honeypot,
+  setHoneypot,
 }: ReviewStepProps) {
   const spec = useMemo(() => buildSpec(state), [state]);
   const [challenge, setChallenge] = useState<'loading' | 'ready' | 'failed'>('loading');
@@ -224,11 +228,40 @@ export function ReviewStep({
         <span className="text-sm text-muted-foreground">{tenant.measurementDisclaimer}</span>
       </label>
 
+      {/*
+        Honeypot. Hidden from sight and from screen readers, and skipped by
+        keyboard tabbing, so no real customer can fill it in. Naive form bots
+        populate every input they find.
+      */}
+      <div
+        aria-hidden="true"
+        // Positioned off-screen rather than display:none, because some bots
+        // skip hidden fields but will happily fill one that is merely out of
+        // view. Inline styles so this cannot be undone by a stylesheet change.
+        style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: 1, height: 1, overflow: 'hidden' }}
+      >
+        <label htmlFor="company-website">Company website</label>
+        <input
+          id="company-website"
+          name="company-website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={honeypot}
+          onChange={(e) => setHoneypot(e.target.value)}
+        />
+      </div>
+
       {tenant.turnstileSiteKey && (
         <div className="space-y-3">
           <div className="flex justify-center">
             <Turnstile
               siteKey={tenant.turnstileSiteKey}
+              // Solve silently. The widget only draws itself if Cloudflare
+              // decides this visitor needs to interact, so the overwhelming
+              // majority of customers never see a checkbox. Verification still
+              // happens server-side either way.
+              options={{ appearance: 'interaction-only' }}
               onSuccess={(token) => {
                 setChallenge('ready');
                 onTurnstileToken(token);
