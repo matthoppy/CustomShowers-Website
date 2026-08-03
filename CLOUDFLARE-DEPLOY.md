@@ -34,7 +34,7 @@ npm install -g supabase
 
 ```bash
 supabase login
-supabase link --project-ref plprhxtkpwklrgqaoxyj
+supabase link --project-ref yimbdqipoznnukhxlary
 ```
 
 ### Deploy Edge Functions
@@ -62,7 +62,7 @@ This will:
 2. **Click "Add endpoint"**
 
 3. **Configure webhook:**
-   - **Endpoint URL**: `https://plprhxtkpwklrgqaoxyj.supabase.co/functions/v1/stripe-webhook`
+   - **Endpoint URL**: `https://yimbdqipoznnukhxlary.supabase.co/functions/v1/stripe-webhook`
    - **Events to send**: Select `checkout.session.completed`
    - Click **"Add endpoint"**
 
@@ -109,7 +109,7 @@ This will:
 
    **Variable 1:**
    - Name: `VITE_SUPABASE_URL`
-   - Value: `https://plprhxtkpwklrgqaoxyj.supabase.co`
+   - Value: `https://yimbdqipoznnukhxlary.supabase.co`
 
    **Variable 2:**
    - Name: `VITE_SUPABASE_PUBLISHABLE_KEY`
@@ -345,7 +345,7 @@ Your Custom Showers Website is now deployed on Cloudflare's global network!
 
 - **Production**: `https://bfs-website.pages.dev`
 - **Cloudflare Dashboard**: https://dash.cloudflare.com
-- **Supabase Dashboard**: https://plprhxtkpwklrgqaoxyj.supabase.co
+- **Supabase Dashboard**: https://yimbdqipoznnukhxlary.supabase.co
 - **Stripe Dashboard**: https://dashboard.stripe.com/test
 - **Resend Dashboard**: https://resend.com/emails
 

@@ -113,6 +113,28 @@ Optional attributes: `data-theme` (`light` | `dark`) and `data-height` (initial
 px before the first resize message). The loader injects a sandboxed iframe and
 grows it to fit via `postMessage`.
 
+### Deploying the configurator
+
+The enquiry function must be live **before** the front end ships — the "Send my
+design" button posts to it, so a site deployed without it fails for every
+customer who finishes a design.
+
+```bash
+./scripts/deploy-configurator.sh
+```
+
+It reads the project ref from `.env`, links the CLI, checks that
+`RESEND_API_KEY`, `TURNSTILE_SECRET_KEY` and `BUSINESS_EMAIL` are set
+(prompting for any that are missing), and deploys `send-design-enquiry`. Send
+one real test enquiry to yourself before merging to main.
+
+> **Rotate the old keys.** Earlier versions of `deploy-supabase.sh`,
+> `deploy-commands.sh`, `DEPLOYMENT.md` and `SUPER-SIMPLE-DEPLOY.md` contained
+> a live Supabase service-role key, a Resend API key and a Stripe secret key.
+> They have been removed from those files, but they remain in git history and
+> should be considered compromised. The `.env` file is a different matter — it
+> only holds `VITE_`-prefixed values, which are bundled into the client anyway.
+
 ### Adding a glazier
 
 Add an entry to `TENANTS` in `src/configurator/tenant.ts` with their branding,
