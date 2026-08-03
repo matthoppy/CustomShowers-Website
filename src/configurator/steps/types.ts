@@ -12,20 +12,20 @@ export interface StepProps {
   canvasHeight: number;
 }
 
-export type StepId = 'layout' | 'dimensions' | 'hardware' | 'review';
+export type StepId = 'shape' | 'sizes' | 'hardware' | 'review';
 
 export const STEPS: { id: StepId; label: string; heading: string; blurb: string }[] = [
   {
-    id: 'layout',
-    label: 'Layout',
-    heading: 'Design your layout',
-    blurb: 'Add panels and corners until the shape matches your space. Tap a panel to edit it.',
+    id: 'shape',
+    label: 'Shape',
+    heading: 'Which one looks like your shower?',
+    blurb: 'Pick the closest match. You can change every size and move things around next.',
   },
   {
-    id: 'dimensions',
-    label: 'Dimensions',
-    heading: 'Height and out-of-square',
-    blurb: 'Tell us how tall the glass needs to be, and whether the floor or walls run off true.',
+    id: 'sizes',
+    label: 'Sizes',
+    heading: 'Your measurements',
+    blurb: 'Measure the opening and tell us how tall you want the glass.',
   },
   {
     id: 'hardware',

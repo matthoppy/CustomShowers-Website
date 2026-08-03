@@ -11,13 +11,14 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Check, Loader2, RotateCcw } from 'lucide-react';
 import { PlanView } from './views/PlanView';
 import { ElevationView } from './views/ElevationView';
-import { LayoutStep } from './steps/LayoutStep';
-import { DimensionsStep } from './steps/DimensionsStep';
+import { ShapeStep } from './steps/ShapeStep';
+import { SizesStep } from './steps/SizesStep';
 import { HardwareStep } from './steps/HardwareStep';
 import { ReviewStep } from './steps/ReviewStep';
 import { STEPS, type StepId, type StepProps } from './steps/types';
 import { createInitialState, type ConfiguratorState, type CustomerDetails } from './types';
 import { getTenant, type TenantConfig } from './tenant';
+import { TEMPLATES, type ShowerTemplate } from './templates';
 import {
   buildEnquiryPayload,
   submitEnquiry,
@@ -36,6 +37,22 @@ const EMPTY_CUSTOMER: CustomerDetails = {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ * Drop a template's shape into the current state, keeping anything the
+ * customer has already chosen that is not about shape — finish, handle,
+ * mounting — so switching template does not silently undo their hardware.
+ */
+function applyTemplate(state: ConfiguratorState, template: ShowerTemplate): ConfiguratorState {
+  return {
+    ...state,
+    panels: structuredClone(template.panels),
+    junctions: structuredClone(template.junctions),
+    leftWall: template.leftWall,
+    rightWall: template.rightWall,
+    heightMm: template.heightMm ?? state.heightMm,
+  };
+}
+
 interface ConfiguratorProps {
   tenant?: TenantConfig;
   /** Rendered inside an iframe — drops the outer page chrome. */
@@ -43,9 +60,10 @@ interface ConfiguratorProps {
 }
 
 export function Configurator({ tenant = getTenant(), embedded = false }: ConfiguratorProps) {
-  const [stepId, setStepId] = useState<StepId>('layout');
+  const [stepId, setStepId] = useState<StepId>('shape');
+  const [templateId, setTemplateId] = useState<string | null>(TEMPLATES[0].id);
   const [state, setState] = useState<ConfiguratorState>(() =>
-    createInitialState(tenant.glassThicknessMm)
+    applyTemplate(createInitialState(tenant.glassThicknessMm), TEMPLATES[0])
   );
   const [customer, setCustomerState] = useState<CustomerDetails>(EMPTY_CUSTOMER);
   const [activePanelId, setActivePanelId] = useState<string | null>(state.panels[0]?.id ?? null);
@@ -70,10 +88,15 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
 
   const canProceed = useMemo(() => {
     switch (stepId) {
-      case 'layout':
-        return state.panels.length > 0 && state.panels.every((p) => p.width_mm > 0);
-      case 'dimensions':
-        return state.heightMm >= 500 && state.heightMm <= 3000;
+      case 'shape':
+        return state.panels.length > 0;
+      case 'sizes':
+        return (
+          state.panels.length > 0 &&
+          state.panels.every((p) => p.width_mm > 0) &&
+          state.heightMm >= 500 &&
+          state.heightMm <= 3000
+        );
       case 'hardware':
         return true;
       case 'review':
@@ -131,11 +154,12 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
   }
 
   function reset() {
-    const fresh = createInitialState(tenant.glassThicknessMm);
+    const fresh = applyTemplate(createInitialState(tenant.glassThicknessMm), TEMPLATES[0]);
+    setTemplateId(TEMPLATES[0].id);
     setState(fresh);
     setCustomerState(EMPTY_CUSTOMER);
     setActivePanelId(fresh.panels[0]?.id ?? null);
-    setStepId('layout');
+    setStepId('shape');
     setSubmitted(false);
     setError(null);
     setTurnstileToken(null);
@@ -211,8 +235,24 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
 
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
             <div>
-              {stepId === 'layout' && <LayoutStep {...stepProps} />}
-              {stepId === 'dimensions' && <DimensionsStep {...stepProps} />}
+              {stepId === 'shape' && (
+                <ShapeStep
+                  {...stepProps}
+                  selectedTemplateId={templateId}
+                  onSelectTemplate={(t) => {
+                    setTemplateId(t.id);
+                    setState((s) => applyTemplate(s, t));
+                    setActivePanelId(t.panels[0].id);
+                  }}
+                  onStartFromScratch={() => {
+                    setTemplateId(null);
+                    const fresh = createInitialState(tenant.glassThicknessMm);
+                    setState((s) => ({ ...fresh, finishId: s.finishId, handleId: s.handleId }));
+                    setActivePanelId(fresh.panels[0].id);
+                  }}
+                />
+              )}
+              {stepId === 'sizes' && <SizesStep {...stepProps} />}
               {stepId === 'hardware' && <HardwareStep {...stepProps} />}
               {stepId === 'review' && (
                 <ReviewStep
@@ -241,7 +281,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                       leftWall={state.leftWall}
                       rightWall={state.rightWall}
                       width={560}
-                      height={stepId === 'layout' ? 420 : 300}
+                      height={stepId === 'shape' ? 420 : 300}
                       activePanelId={activePanelId}
                       onPanelClick={setActivePanelId}
                       onToggleJunction={(i) => {
@@ -267,7 +307,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                       heightMm={state.heightMm}
                       handleId={state.handleId}
                       width={560}
-                      height={stepId === 'layout' ? 260 : 380}
+                      height={stepId === 'shape' ? 260 : 380}
                       activePanelId={activePanelId}
                       onPanelClick={setActivePanelId}
                       accent={tenant.brand.primary}
