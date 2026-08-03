@@ -85,7 +85,7 @@ export const DEFAULT_RAKES: Rakes = {
   rightWall: { amount_mm: 0, direction: 'none' },
 };
 
-export function createInitialState(): ConfiguratorState {
+export function createInitialState(glassThicknessMm: GlassThickness = 10): ConfiguratorState {
   return {
     panels: [
       {
@@ -101,7 +101,7 @@ export function createInitialState(): ConfiguratorState {
     heightMm: 2000,
     isFloorToCeiling: false,
     mounting: 'channel',
-    glassThicknessMm: 10,
+    glassThicknessMm,
     finishId: 'chrome',
     handleId: 'pull',
     rakes: structuredClone(DEFAULT_RAKES),

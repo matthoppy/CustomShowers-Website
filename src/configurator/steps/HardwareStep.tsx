@@ -5,11 +5,9 @@
  * they actually stock.
  */
 
-import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Check } from 'lucide-react';
 import type { StepProps } from './types';
-import type { GlassThickness } from '@/types/square';
 
 export function HardwareStep({ tenant, state, update }: StepProps) {
   return (
@@ -52,7 +50,7 @@ export function HardwareStep({ tenant, state, update }: StepProps) {
         <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Finish
         </Label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {tenant.finishes.map((f) => (
             <button
               key={f.id}
@@ -95,22 +93,10 @@ export function HardwareStep({ tenant, state, update }: StepProps) {
         </div>
       </div>
 
-      <div className="space-y-3">
-        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Glass thickness
-        </Label>
-        <div className="flex gap-2">
-          {tenant.glassThicknessesMm.map((t) => (
-            <Button
-              key={t}
-              variant={state.glassThicknessMm === t ? 'default' : 'outline'}
-              onClick={() => update({ glassThicknessMm: t as GlassThickness })}
-            >
-              {t}mm
-            </Button>
-          ))}
-        </div>
-      </div>
+      <p className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
+        All enclosures are made in{' '}
+        <strong className="text-foreground">{tenant.glassThicknessMm}mm toughened safety glass</strong>.
+      </p>
     </div>
   );
 }

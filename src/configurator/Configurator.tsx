@@ -44,7 +44,9 @@ interface ConfiguratorProps {
 
 export function Configurator({ tenant = getTenant(), embedded = false }: ConfiguratorProps) {
   const [stepId, setStepId] = useState<StepId>('layout');
-  const [state, setState] = useState<ConfiguratorState>(createInitialState);
+  const [state, setState] = useState<ConfiguratorState>(() =>
+    createInitialState(tenant.glassThicknessMm)
+  );
   const [customer, setCustomerState] = useState<CustomerDetails>(EMPTY_CUSTOMER);
   const [activePanelId, setActivePanelId] = useState<string | null>(state.panels[0]?.id ?? null);
   const [submitting, setSubmitting] = useState(false);
@@ -129,7 +131,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
   }
 
   function reset() {
-    const fresh = createInitialState();
+    const fresh = createInitialState(tenant.glassThicknessMm);
     setState(fresh);
     setCustomerState(EMPTY_CUSTOMER);
     setActivePanelId(fresh.panels[0]?.id ?? null);

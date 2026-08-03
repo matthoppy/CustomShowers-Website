@@ -9,6 +9,8 @@
  * measurements to the glazier, who quotes it themselves.
  */
 
+import type { GlassThickness } from '@/types/square';
+
 export interface HardwareFinish {
   id: string;
   label: string;
@@ -39,7 +41,12 @@ export interface TenantConfig {
   fromName: string;
   finishes: HardwareFinish[];
   handles: HandleOption[];
-  glassThicknessesMm: number[];
+  /**
+   * Single thickness. Custom Showers builds everything in 10mm toughened, so
+   * there is nothing for the customer to choose. Still per-tenant, since a
+   * glazier working in 8mm only needs to change this one value.
+   */
+  glassThicknessMm: GlassThickness;
   /**
    * Shown on the review step and repeated in the email. Spells out who is
    * responsible for the measurements being right, which matters when glass is
@@ -71,14 +78,27 @@ export const CUSTOM_SHOWERS: TenantConfig = {
   },
   destinationEmail: 'enquiries@customshowers.uk',
   fromName: 'Custom Showers Design Tool',
+  // Matches HARDWARE_FINISH_NAMES in lib/constants.ts, which is the list this
+  // project already orders hinges against. Swatches are approximations for the
+  // picker, not colour matches — the customer confirms the finish on survey.
   finishes: [
-    { id: 'chrome', label: 'Polished chrome', swatch: '#c7ccd1' },
-    { id: 'brushed-nickel', label: 'Brushed nickel', swatch: '#a8a29e' },
-    { id: 'matte-black', label: 'Matte black', swatch: '#1c1917' },
-    { id: 'brushed-brass', label: 'Brushed brass', swatch: '#b08d57' },
+    { id: 'chrome', label: 'Polished chrome', swatch: '#d4d8db' },
+    { id: 'satin-chrome', label: 'Satin chrome', swatch: '#b8bcbf' },
+    { id: 'brushed-nickel', label: 'Brushed nickel', swatch: '#b0aaa2' },
+    { id: 'polished-nickel', label: 'Polished nickel', swatch: '#c8ccc9' },
+    { id: 'satin-nickel', label: 'Satin nickel', swatch: '#b6b2ab' },
+    { id: 'matte-black', label: 'Matte black', swatch: '#1c1c1c' },
+    { id: 'gun-metal', label: 'Gun metal', swatch: '#4a4f54' },
+    { id: 'polished-brass', label: 'Polished brass', swatch: '#c9a545' },
+    { id: 'satin-brass', label: 'Satin brass', swatch: '#b5a26a' },
+    { id: 'unlacquered-brass', label: 'Unlacquered brass', swatch: '#b08d3f' },
+    { id: 'antic-brass', label: 'Antique brass', swatch: '#8a6d3b' },
+    { id: 'gold', label: 'Brushed gold', swatch: '#c0a062' },
+    { id: 'brushed-bronze', label: 'Brushed bronze', swatch: '#7a5c43' },
+    { id: 'oil-rubbed-bronze', label: 'Oil rubbed bronze', swatch: '#3d2f27' },
   ],
   handles: DEFAULT_HANDLES,
-  glassThicknessesMm: [8, 10],
+  glassThicknessMm: 10,
   measurementDisclaimer:
     'These measurements are provided by you as a guide. We will confirm all sizes on a site survey before any glass is cut — please do not treat this design as a final cutting list.',
   intro: 'Design your enclosure and send the measurements straight to our workshop.',
