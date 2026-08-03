@@ -6,7 +6,7 @@
  * same component serves a route on the main site and the iframe embed.
  */
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Check, Loader2, RotateCcw } from 'lucide-react';
 import { PlanView } from './views/PlanView';
@@ -72,11 +72,39 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
   const [error, setError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [honeypot, setHoneypot] = useState('');
+  const didMountRef = useRef(false);
   // How long the customer spent on the design. A real one cannot get through
   // four steps in a couple of seconds; a script can.
   const startedAtRef = useRef<number>(Date.now());
 
   const drawingRef = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Start each step at the top.
+   *
+   * Steps differ a lot in length, so without this you press Next at the bottom
+   * of a long step and land halfway down the next one, below its heading.
+   *
+   * Embedded, the iframe has no scrollbar of its own — it grows to fit and the
+   * host page does the scrolling — so there is nothing here to scroll and we
+   * ask the parent instead.
+   */
+  useEffect(() => {
+    // Skip the very first render: scrolling on mount would yank a host page
+    // down to the widget as soon as it loads.
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+
+    if (embedded) {
+      window.parent.postMessage({ type: 'glass-configurator:scrollToTop' }, '*');
+      return;
+    }
+
+    topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [stepId, submitted, embedded]);
 
   const update = (patch: Partial<ConfiguratorState>) => setState((s) => ({ ...s, ...patch }));
   const setCustomer = (patch: Partial<CustomerDetails>) =>
@@ -190,6 +218,10 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
 
   return (
     <div className="flex min-h-full flex-col bg-background">
+      {/* Scroll target for step changes. The margin keeps the heading clear of
+          the site's sticky header, which would otherwise sit over it. */}
+      <div ref={topRef} className="scroll-mt-24" aria-hidden="true" />
+
       {/* Progress. */}
       <div className="border-b bg-background">
         <div className="mx-auto flex max-w-6xl items-center gap-1 px-6 py-4 sm:gap-2">

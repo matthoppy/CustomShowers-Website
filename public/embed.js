@@ -65,14 +65,30 @@
     el.appendChild(iframe);
 
     window.addEventListener('message', function (event) {
-      // Only trust height messages from the frame we created.
+      // Only trust messages from the frame we created.
       if (event.origin !== origin) return;
       if (event.source !== iframe.contentWindow) return;
       var data = event.data;
-      if (!data || data.type !== 'glass-configurator:height') return;
-      var height = parseInt(data.height, 10);
-      if (!height || height < 200 || height > 20000) return;
-      iframe.style.height = height + 'px';
+      if (!data) return;
+
+      if (data.type === 'glass-configurator:height') {
+        var height = parseInt(data.height, 10);
+        if (!height || height < 200 || height > 20000) return;
+        iframe.style.height = height + 'px';
+        return;
+      }
+
+      // The frame grows to fit rather than scrolling internally, so when it
+      // moves to a new step it is the host page that has to scroll back up to
+      // the top of the widget.
+      if (data.type === 'glass-configurator:scrollToTop') {
+        var top = iframe.getBoundingClientRect().top + window.pageYOffset - 24;
+        try {
+          window.scrollTo({ top: top, behavior: 'smooth' });
+        } catch (e) {
+          window.scrollTo(0, top);
+        }
+      }
     });
   }
 
