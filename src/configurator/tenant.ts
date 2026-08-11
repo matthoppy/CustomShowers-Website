@@ -37,6 +37,13 @@ export interface TenantConfig {
   brand: TenantBrand;
   /** Where completed enquiries are emailed. */
   destinationEmail: string;
+  /**
+   * Endpoint the finished design is posted to — a Cloudflare Worker that
+   * verifies Turnstile and sends the email. Per tenant so a glazier can point
+   * at their own, and so the destination inbox is decided server-side rather
+   * than by whatever the browser sends.
+   */
+  enquiryEndpoint: string;
   /** Reply-to shown on the enquiry, usually the customer's own address. */
   fromName: string;
   finishes: HardwareFinish[];
@@ -76,7 +83,8 @@ export const CUSTOM_SHOWERS: TenantConfig = {
     primary: '#1e293b',
     primaryForeground: '#ffffff',
   },
-  destinationEmail: 'enquiries@customshowers.uk',
+  destinationEmail: 'sales@customshowers.uk',
+  enquiryEndpoint: 'https://customshowers-design.workers.dev',
   fromName: 'Custom Showers Design Tool',
   // Matches HARDWARE_FINISH_NAMES in lib/constants.ts, which is the list this
   // project already orders hinges against. Swatches are approximations for the

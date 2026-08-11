@@ -168,7 +168,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
       honeypot,
       elapsedMs: Date.now() - startedAtRef.current,
     });
-    const result = await submitEnquiry(payload);
+    const result = await submitEnquiry(tenant.enquiryEndpoint, payload);
 
     setSubmitting(false);
     if (result.ok) {

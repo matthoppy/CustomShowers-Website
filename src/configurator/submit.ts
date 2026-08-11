@@ -7,7 +7,6 @@
  * HTML table that survives even when images are blocked.
  */
 
-import { supabase } from '@/integrations/supabase/client';
 import { buildSpec, type ConfiguratorSpec } from './spec';
 import { finishLabel, handleLabel, type TenantConfig } from './tenant';
 import type { ConfiguratorState, CustomerDetails } from './types';
@@ -22,9 +21,14 @@ export interface EnquiryPayload {
   tenantId: string;
   destinationEmail: string;
   customer: CustomerDetails;
+  /**
+   * Display-ready values for the email. Formatted here rather than in the
+   * worker so units travel with the number and the worker stays a dumb
+   * renderer.
+   */
   summary: {
-    runWidthMm: number;
-    heightMm: number;
+    runWidthMm: string;
+    heightMm: string;
     panelCount: number;
     cornerCount: number;
     mounting: string;
@@ -113,8 +117,11 @@ export function buildEnquiryPayload(
     destinationEmail: tenant.destinationEmail,
     customer,
     summary: {
-      runWidthMm: spec.totalRunWidthMm,
-      heightMm: spec.heightMm,
+      // Units included here rather than left to the reader: this lands in a
+      // workshop inbox and a bare "1500" is one careless glance from a
+      // mis-cut panel.
+      runWidthMm: `${spec.totalRunWidthMm}mm`,
+      heightMm: `${spec.heightMm}mm${spec.isFloorToCeiling ? ' (floor to ceiling)' : ''}`,
       panelCount: spec.panels.length,
       cornerCount: spec.cornerCount,
       mounting: state.mounting === 'channel' ? 'U-channel' : 'Glass clamps',
@@ -135,14 +142,30 @@ export interface SubmitResult {
   error?: string;
 }
 
-export async function submitEnquiry(payload: EnquiryPayload): Promise<SubmitResult> {
+export async function submitEnquiry(
+  endpoint: string,
+  payload: EnquiryPayload
+): Promise<SubmitResult> {
   try {
-    const { error } = await supabase.functions.invoke('send-design-enquiry', {
-      body: payload,
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
-    if (error) return { ok: false, error: error.message };
+
+    if (!res.ok) {
+      // The worker returns a readable reason for the cases a customer can act
+      // on, like being rate limited or failing the challenge.
+      const body = await res.json().catch(() => null);
+      return { ok: false, error: body?.error ?? `Send failed (${res.status})` };
+    }
+
     return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Something went wrong' };
+  } catch {
+    // Almost always a dropped connection or a blocked request.
+    return {
+      ok: false,
+      error: 'We could not reach our server. Check your connection and try again.',
+    };
   }
 }

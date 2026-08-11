@@ -1,0 +1,14 @@
+name = "customshowers-design"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+# Secrets are set in the Cloudflare dashboard, never here:
+#   Workers & Pages → customshowers-design → Settings → Variables and Secrets
+#
+#   RESEND_API_KEY        required — same key the contact worker uses
+#   TURNSTILE_SECRET_KEY  required — pairs with the site key in src/configurator/tenant.ts
+#   BUSINESS_EMAIL        optional — defaults to sales@customshowers.uk
+#   FROM_EMAIL            optional — defaults to noreply@customshowers.uk
+#
+# Deploy:
+#   cd design-worker && npx wrangler deploy

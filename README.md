@@ -91,9 +91,9 @@ src/configurator/
 ├── geometry.ts     # Traces the run in plan space; derives front vs return
 ├── spec.ts         # Cut sizes, hinge selection, warnings (uses lib/showerCalculations)
 ├── tenant.ts       # Per-glazier branding, hardware catalog, destination email
-├── submit.ts       # Rasterises the drawings and posts the enquiry
+├── submit.ts       # Rasterises the drawings and posts to the worker
 ├── views/          # PlanView (top-down) and ElevationView (front, unfolded)
-└── steps/          # Layout → Dimensions → Hardware → Review
+└── steps/          # Shape → Sizes → Hardware → Review
 ```
 
 Fabrication rules stay in `src/lib/showerCalculations.ts` — deductions, hinge and
@@ -115,34 +115,44 @@ grows it to fit via `postMessage`.
 
 ### Deploying the configurator
 
-The enquiry function must be live **before** the front end ships — the "Send my
-design" button posts to it, so a site deployed without it fails for every
-customer who finishes a design.
+The enquiry handler is a Cloudflare Worker, alongside the existing
+`customshowers-contact` worker that the site's quote form posts to. The site
+does not use Supabase for this.
 
 ```bash
-./scripts/deploy-configurator.sh
+cd design-worker
+npx wrangler deploy
 ```
 
-It reads the project ref from `.env`, links the CLI, checks that
-`RESEND_API_KEY`, `TURNSTILE_SECRET_KEY` and `BUSINESS_EMAIL` are set
-(prompting for any that are missing), and deploys `send-design-enquiry`. Send
-one real test enquiry to yourself before merging to main.
+Then set the secrets in the dashboard (Workers & Pages → customshowers-design →
+Settings → Variables and Secrets):
+
+| Secret | |
+|---|---|
+| `RESEND_API_KEY` | required — the same key the contact worker uses |
+| `TURNSTILE_SECRET_KEY` | required — pairs with the site key in `tenant.ts` |
+| `BUSINESS_EMAIL` | optional, defaults to `sales@customshowers.uk` |
+| `FROM_EMAIL` | optional, defaults to `noreply@customshowers.uk` |
+
+The worker must be live before the Send button works. Send one real test
+enquiry to yourself and check both emails arrive with the two PNGs attached.
+
+If the worker's URL differs from `customshowers-design.workers.dev`, update
+`enquiryEndpoint` in `src/configurator/tenant.ts`.
 
 > **Rotate the old keys.** Earlier versions of `deploy-supabase.sh`,
 > `deploy-commands.sh`, `DEPLOYMENT.md` and `SUPER-SIMPLE-DEPLOY.md` contained
 > a live Supabase service-role key, a Resend API key and a Stripe secret key.
 > They have been removed from those files, but they remain in git history and
-> should be considered compromised. The `.env` file is a different matter — it
-> only holds `VITE_`-prefixed values, which are bundled into the client anyway.
+> should be considered compromised.
 
 ### Adding a glazier
 
 Add an entry to `TENANTS` in `src/configurator/tenant.ts` with their branding,
-the finishes and handles they stock, and their destination email. Then add the
-same email to `TENANT_INBOXES` in
-`supabase/functions/send-design-enquiry/index.ts` — destinations are
-allow-listed server-side so the public endpoint cannot be pointed at an
-arbitrary inbox.
+the finishes and handles they stock, their destination email and the endpoint
+to post to. Then add the same email to `TENANT_INBOXES` in
+`design-worker/worker.js` — destinations are allow-listed server-side so the
+public endpoint cannot be pointed at an arbitrary inbox.
 
 One Turnstile site key covers every embed. The widget runs inside `embed.html`,
 which is served from your own domain, so the hostname it reports is yours no
@@ -158,7 +168,7 @@ Four layers, in order of how much they are trusted:
 | Honeypot field | Silently dropped — off-screen, aria-hidden and untabbable, so no person can fill it |
 | Turnstile | Verified server-side; runs in `interaction-only` mode so most customers never see a challenge |
 | Completion time | **Flagged, not dropped** — subject gets `[Possible spam]` and the customer copy is suppressed |
-| Rate limit | 5 per IP and 60 per tenant per 10 minutes; returns 429 |
+| Rate limit | 5 per IP per 10 minutes; returns 429 |
 
 Only the honeypot drops an enquiry, because it is the only signal a human
 cannot trip. Everything else lets the enquiry through so a false positive
