@@ -84,7 +84,7 @@ export const CUSTOM_SHOWERS: TenantConfig = {
     primaryForeground: '#ffffff',
   },
   destinationEmail: 'sales@customshowers.uk',
-  enquiryEndpoint: 'https://customshowers-design.workers.dev',
+  enquiryEndpoint: 'https://customshowers-design.vcwvk4sm9m.workers.dev',
   fromName: 'Custom Showers Design Tool',
   // Matches HARDWARE_FINISH_NAMES in lib/constants.ts, which is the list this
   // project already orders hinges against. Swatches are approximations for the
