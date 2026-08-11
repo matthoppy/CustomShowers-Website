@@ -1,70 +1,70 @@
 #!/bin/bash
+#
+# Custom Showers — deployment walkthrough.
+#
+# Prints the commands to run. It does not run them, and it no longer contains
+# any secret values.
+#
+# Earlier versions of this file listed a live Supabase service-role key, a
+# Resend API key and a Stripe secret key inline. Those are still in git
+# history and must be rotated — deleting them from this file does not undo
+# the exposure.
+#
+# For the shower configurator specifically, ./scripts/deploy-configurator.sh
+# does all of this for you.
 
-# Custom Showers Website - Complete Deployment Commands
-# Run these commands in order on your local machine
+PROJECT_REF="$(grep -E '^VITE_SUPABASE_PROJECT_ID=' .env 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"'"'"' \r')"
+PROJECT_REF="${PROJECT_REF:-<your-project-ref>}"
 
-echo "🚀 Custom Showers Website Deployment Commands"
-echo "===================================="
-echo ""
-echo "Copy and paste these commands one by one:"
-echo ""
+cat <<EOF
+🚀 Custom Showers Website Deployment
+====================================
 
-echo "# 1. Install Supabase CLI (if not already installed)"
-echo "npm install -g supabase"
-echo ""
+Project ref (read from .env): $PROJECT_REF
 
-echo "# 2. Login to Supabase"
-echo "supabase login"
-echo ""
+Run these in order:
 
-echo "# 3. Link to your project"
-echo "supabase link --project-ref plprhxtkpwklrgqaoxyj"
-echo ""
+# 1. Install the Supabase CLI
+npm install -g supabase
 
-echo "# 4. Set Resend API Key"
-echo "supabase secrets set RESEND_API_KEY=re_ZzBMdDwN_4N7M8FDLcReeuSRpuYr3LT5A"
-echo ""
+# 2. Log in
+supabase login
 
-echo "# 5. Set Stripe Secret Key"
-echo "supabase secrets set STRIPE_SECRET_KEY=sk_test_51Sj5nLDO87gISe57a8Z9VgNT4z5BB0WdVzwx1dqCOmizTT9FYnwplNMbIoleL3gaWhe3yRB21xpIMn83sT6GCEjS00fHGX5Sh6"
-echo ""
+# 3. Link the project
+supabase link --project-ref $PROJECT_REF
 
-echo "# 6. Set Supabase URL"
-echo "supabase secrets set SUPABASE_URL=https://plprhxtkpwklrgqaoxyj.supabase.co"
-echo ""
+# 4. Set secrets. Paste the real values — never commit them.
+supabase secrets set RESEND_API_KEY=...
+supabase secrets set STRIPE_SECRET_KEY=...
+supabase secrets set SUPABASE_SERVICE_ROLE_KEY=...
 
-echo "# 7. Set Supabase Service Role Key"
-echo "supabase secrets set SUPABASE_SERVICE_ROLE_KEY=sb_secret_YIv8mLlf4v3nPrdcUHBKVQ_vuwWj22D"
-echo ""
+# 5. Deploy the shower configurator enquiry function
+supabase functions deploy send-design-enquiry
+#    …or use the script, which checks secrets first:
+#    ./scripts/deploy-configurator.sh
 
-echo "# 8. Deploy Edge Functions"
-echo "supabase functions deploy send-quote-email"
-echo "supabase functions deploy send-order-confirmation"
-echo "supabase functions deploy create-checkout-session"
-echo "supabase functions deploy stripe-webhook"
-echo ""
+# 6. Deploy the quote and order functions
+supabase functions deploy send-quote-email
+supabase functions deploy send-order-confirmation
+supabase functions deploy create-checkout-session
+supabase functions deploy stripe-webhook
 
-echo "✅ After these deploy successfully, you need to:"
-echo ""
-echo "9. Configure Stripe Webhook:"
-echo "   - Go to: https://dashboard.stripe.com/test/webhooks"
-echo "   - Click 'Add endpoint'"
-echo "   - URL: https://plprhxtkpwklrgqaoxyj.supabase.co/functions/v1/stripe-webhook"
-echo "   - Event: checkout.session.completed"
-echo "   - Copy the webhook signing secret"
-echo ""
+Then:
 
-echo "10. Set Stripe Webhook Secret:"
-echo "    supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_YOUR_COPIED_SECRET"
-echo ""
+7. Configure the Stripe webhook
+   https://dashboard.stripe.com/test/webhooks
+   URL:   https://$PROJECT_REF.supabase.co/functions/v1/stripe-webhook
+   Event: checkout.session.completed
 
-echo "11. Deploy to Netlify:"
-echo "    - Go to: https://app.netlify.com"
-echo "    - Import from GitHub: matthoppy/CustomShowers-Website"
-echo "    - Add environment variables:"
-echo "      VITE_SUPABASE_URL=https://plprhxtkpwklrgqaoxyj.supabase.co"
-echo "      VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBscHJoeHRrcHdrbHJncWFveHlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0NDI5NDgsImV4cCI6MjA4MjAxODk0OH0.b0mZfY7zBzyhD6bqU4HdHXqSNUsejO1Ij5FaJ5fJCbo"
-echo "    - Click Deploy"
-echo ""
+8. Set the webhook secret
+   supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
 
-echo "🎉 That's it! Your site will be live!"
+9. Ship the front end
+   The site builds from git on Cloudflare Pages — merging to main deploys it.
+   Build command: npm run build     Output directory: dist
+   Environment variables (Pages → Settings → Environment variables):
+     VITE_SUPABASE_URL=https://$PROJECT_REF.supabase.co
+     VITE_SUPABASE_PROJECT_ID=$PROJECT_REF
+     VITE_SUPABASE_PUBLISHABLE_KEY=<the publishable/anon key>
+
+EOF

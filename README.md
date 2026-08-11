@@ -79,6 +79,96 @@ A complete e-commerce platform for custom frameless glass shower enclosures with
 └── netlify.toml          # Netlify configuration
 ```
 
+## Shower configurator
+
+The configurator lives in `src/configurator/` and is self-contained. It captures
+a design and emails the measurements to the glazier — there is no pricing in the
+customer-facing flow.
+
+```
+src/configurator/
+├── types.ts        # The chain model: panels joined by 90°/180° junctions
+├── geometry.ts     # Traces the run in plan space; derives front vs return
+├── spec.ts         # Cut sizes, hinge selection, warnings (uses lib/showerCalculations)
+├── tenant.ts       # Per-glazier branding, hardware catalog, destination email
+├── submit.ts       # Rasterises the drawings and posts the enquiry
+├── views/          # PlanView (top-down) and ElevationView (front, unfolded)
+└── steps/          # Layout → Dimensions → Hardware → Review
+```
+
+Fabrication rules stay in `src/lib/showerCalculations.ts` — deductions, hinge and
+handle placement, support requirements.
+
+### Embedding on another site
+
+The configurator builds as a second entry point (`embed.html`) so it can be
+dropped into any website:
+
+```html
+<div id="glass-configurator" data-tenant="custom-showers"></div>
+<script src="https://customshowers.uk/embed.js" async></script>
+```
+
+Optional attributes: `data-theme` (`light` | `dark`) and `data-height` (initial
+px before the first resize message). The loader injects a sandboxed iframe and
+grows it to fit via `postMessage`.
+
+### Deploying the configurator
+
+The enquiry function must be live **before** the front end ships — the "Send my
+design" button posts to it, so a site deployed without it fails for every
+customer who finishes a design.
+
+```bash
+./scripts/deploy-configurator.sh
+```
+
+It reads the project ref from `.env`, links the CLI, checks that
+`RESEND_API_KEY`, `TURNSTILE_SECRET_KEY` and `BUSINESS_EMAIL` are set
+(prompting for any that are missing), and deploys `send-design-enquiry`. Send
+one real test enquiry to yourself before merging to main.
+
+> **Rotate the old keys.** Earlier versions of `deploy-supabase.sh`,
+> `deploy-commands.sh`, `DEPLOYMENT.md` and `SUPER-SIMPLE-DEPLOY.md` contained
+> a live Supabase service-role key, a Resend API key and a Stripe secret key.
+> They have been removed from those files, but they remain in git history and
+> should be considered compromised. The `.env` file is a different matter — it
+> only holds `VITE_`-prefixed values, which are bundled into the client anyway.
+
+### Adding a glazier
+
+Add an entry to `TENANTS` in `src/configurator/tenant.ts` with their branding,
+the finishes and handles they stock, and their destination email. Then add the
+same email to `TENANT_INBOXES` in
+`supabase/functions/send-design-enquiry/index.ts` — destinations are
+allow-listed server-side so the public endpoint cannot be pointed at an
+arbitrary inbox.
+
+One Turnstile site key covers every embed. The widget runs inside `embed.html`,
+which is served from your own domain, so the hostname it reports is yours no
+matter whose site the iframe is on. Worth confirming with one real submission
+from a customer domain after deploying.
+
+### Spam handling
+
+Four layers, in order of how much they are trusted:
+
+| Layer | Behaviour |
+|---|---|
+| Honeypot field | Silently dropped — off-screen, aria-hidden and untabbable, so no person can fill it |
+| Turnstile | Verified server-side; runs in `interaction-only` mode so most customers never see a challenge |
+| Completion time | **Flagged, not dropped** — subject gets `[Possible spam]` and the customer copy is suppressed |
+| Rate limit | 5 per IP and 60 per tenant per 10 minutes; returns 429 |
+
+Only the honeypot drops an enquiry, because it is the only signal a human
+cannot trip. Everything else lets the enquiry through so a false positive
+never costs a real job — a lost lead leaves no trace, a junk email costs
+seconds.
+
+The rate limiter is in-memory per isolate, so it is a burst brake rather than a
+hard quota. Move it to a shared store or a Cloudflare WAF rule in front of the
+function if abuse becomes real.
+
 ## Prerequisites
 
 - Node.js 18+ and npm

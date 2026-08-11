@@ -4,7 +4,7 @@ Complete step-by-step guide to deploy the Custom Showers Website to production.
 
 ## ✅ What You Have
 
-- ✅ Supabase project: `https://plprhxtkpwklrgqaoxyj.supabase.co`
+- ✅ Supabase project: `https://yimbdqipoznnukhxlary.supabase.co`
 - ✅ Database migrations: Already run
 - ✅ Stripe test account with API keys
 - ✅ All keys collected
@@ -17,7 +17,7 @@ Complete step-by-step guide to deploy the Custom Showers Website to production.
 
 ```bash
 # Replace with your actual Resend API key
-supabase secrets set RESEND_API_KEY=re_your_actual_key_here
+supabase secrets set RESEND_API_KEY=re_YOUR_KEY_HERE
 ```
 
 ### Run the Deployment Script
@@ -52,7 +52,7 @@ This will:
 
 3. **Enter webhook URL:**
    ```
-   https://plprhxtkpwklrgqaoxyj.supabase.co/functions/v1/stripe-webhook
+   https://yimbdqipoznnukhxlary.supabase.co/functions/v1/stripe-webhook
    ```
 
 4. **Select events to listen to:**
@@ -98,7 +98,7 @@ This will:
 
    **Variable 1:**
    - Key: `VITE_SUPABASE_URL`
-   - Value: `https://plprhxtkpwklrgqaoxyj.supabase.co`
+   - Value: `https://yimbdqipoznnukhxlary.supabase.co`
 
    **Variable 2:**
    - Key: `VITE_SUPABASE_PUBLISHABLE_KEY`
@@ -227,7 +227,7 @@ Before going live:
 ### Your Keys (for reference)
 
 **Supabase:**
-- URL: `https://plprhxtkpwklrgqaoxyj.supabase.co`
+- URL: `https://yimbdqipoznnukhxlary.supabase.co`
 - Anon Key: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` (set in Netlify)
 
 **Stripe Test Mode:**
@@ -242,7 +242,7 @@ Before going live:
 ### Useful Links
 
 - **Netlify Dashboard:** https://app.netlify.com
-- **Supabase Dashboard:** https://plprhxtkpwklrgqaoxyj.supabase.co
+- **Supabase Dashboard:** https://yimbdqipoznnukhxlary.supabase.co
 - **Stripe Dashboard:** https://dashboard.stripe.com/test
 - **Resend Dashboard:** https://resend.com/emails
 

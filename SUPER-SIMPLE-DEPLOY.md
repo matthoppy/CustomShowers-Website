@@ -140,7 +140,7 @@ supabase login
 Copy and paste this EXACTLY:
 
 ```bash
-supabase link --project-ref plprhxtkpwklrgqaoxyj
+supabase link --project-ref yimbdqipoznnukhxlary
 ```
 
 **What you'll see:**
@@ -165,7 +165,7 @@ supabase link --project-ref plprhxtkpwklrgqaoxyj
 **Secret 1: Resend (for emails)**
 
 ```bash
-supabase secrets set RESEND_API_KEY=re_ZzBMdDwN_4N7M8FDLcReeuSRpuYr3LT5A
+supabase secrets set RESEND_API_KEY=re_YOUR_KEY_HERE
 ```
 
 Press Enter. Wait for: ✅ "Secret set successfully"
@@ -175,7 +175,7 @@ Press Enter. Wait for: ✅ "Secret set successfully"
 **Secret 2: Stripe (for payments)**
 
 ```bash
-supabase secrets set STRIPE_SECRET_KEY=sk_test_51Sj5nLDO87gISe57a8Z9VgNT4z5BB0WdVzwx1dqCOmizTT9FYnwplNMbIoleL3gaWhe3yRB21xpIMn83sT6GCEjS00fHGX5Sh6
+supabase secrets set STRIPE_SECRET_KEY=sk_test_YOUR_KEY_HERE
 ```
 
 Press Enter. Wait for: ✅ "Secret set successfully"
@@ -185,7 +185,7 @@ Press Enter. Wait for: ✅ "Secret set successfully"
 **Secret 3: Supabase URL**
 
 ```bash
-supabase secrets set SUPABASE_URL=https://plprhxtkpwklrgqaoxyj.supabase.co
+supabase secrets set SUPABASE_URL=https://yimbdqipoznnukhxlary.supabase.co
 ```
 
 Press Enter. Wait for: ✅ "Secret set successfully"
@@ -195,7 +195,7 @@ Press Enter. Wait for: ✅ "Secret set successfully"
 **Secret 4: Supabase Service Key**
 
 ```bash
-supabase secrets set SUPABASE_SERVICE_ROLE_KEY=sb_secret_YIv8mLlf4v3nPrdcUHBKVQ_vuwWj22D
+supabase secrets set SUPABASE_SERVICE_ROLE_KEY=sb_secret_YOUR_KEY_HERE
 ```
 
 Press Enter. Wait for: ✅ "Secret set successfully"
@@ -271,7 +271,7 @@ You can leave Terminal open. We'll come back to it.
 
    **Endpoint URL:** (Copy and paste this EXACTLY)
    ```
-   https://plprhxtkpwklrgqaoxyj.supabase.co/functions/v1/stripe-webhook
+   https://yimbdqipoznnukhxlary.supabase.co/functions/v1/stripe-webhook
    ```
 
 3. **Description:** (Optional, but you can type)
@@ -426,7 +426,7 @@ Press Enter. Wait for: ✅ "Secret set successfully"
 - **Variable name:** Type exactly: `VITE_SUPABASE_URL`
 - **Value:** Copy and paste exactly:
   ```
-  https://plprhxtkpwklrgqaoxyj.supabase.co
+  https://yimbdqipoznnukhxlary.supabase.co
   ```
 
 **Click "Add variable" button again**
@@ -688,7 +688,7 @@ Look for errors
 - No extra spaces
 
 **Check database:**
-- Go to: https://plprhxtkpwklrgqaoxyj.supabase.co
+- Go to: https://yimbdqipoznnukhxlary.supabase.co
 - Click "Table Editor"
 - Click "admin_users"
 - Is there a user with email `admin@bfs.co.uk`?

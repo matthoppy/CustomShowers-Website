@@ -18,7 +18,7 @@ Everything you need to deploy in 5 minutes!
 
 3. **Link to your project**:
    ```bash
-   supabase link --project-ref plprhxtkpwklrgqaoxyj
+   supabase link --project-ref yimbdqipoznnukhxlary
    ```
 
 ---
@@ -48,7 +48,7 @@ This sets all secrets and deploys 4 Edge Functions.
 2. Click **"Add endpoint"**
 
 3. Enter:
-   - **Endpoint URL**: `https://plprhxtkpwklrgqaoxyj.supabase.co/functions/v1/stripe-webhook`
+   - **Endpoint URL**: `https://yimbdqipoznnukhxlary.supabase.co/functions/v1/stripe-webhook`
    - **Events**: Select `checkout.session.completed`
 
 4. Click **"Add endpoint"**
@@ -82,7 +82,7 @@ This sets all secrets and deploys 4 Edge Functions.
 
    **Variable 1:**
    - Key: `VITE_SUPABASE_URL`
-   - Value: `https://plprhxtkpwklrgqaoxyj.supabase.co`
+   - Value: `https://yimbdqipoznnukhxlary.supabase.co`
 
    **Variable 2:**
    - Key: `VITE_SUPABASE_PUBLISHABLE_KEY`
@@ -202,7 +202,7 @@ Share your site URL and start testing!
 **Useful Links:**
 - Your site: `https://your-site-name.netlify.app`
 - Netlify dashboard: https://app.netlify.com
-- Supabase dashboard: https://plprhxtkpwklrgqaoxyj.supabase.co
+- Supabase dashboard: https://yimbdqipoznnukhxlary.supabase.co
 - Stripe dashboard: https://dashboard.stripe.com/test
 - Resend dashboard: https://resend.com/emails
 
