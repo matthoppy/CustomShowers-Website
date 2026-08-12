@@ -16,7 +16,7 @@
  */
 
 /** Bump when the code changes, so a browser visit shows which paste is live. */
-const WORKER_VERSION = "v3";
+const WORKER_VERSION = "v4";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -104,7 +104,26 @@ export default {
         const verify = await verifyRes.json();
         if (!verify.success) {
           console.error("Turnstile verification failed", verify);
-          return json({ error: "Security check failed. Please try again." }, 400);
+          // Cloudflare names the fault precisely; passing it through turns a
+          // generic "security check failed" into an actionable one. The most
+          // common by far is invalid-input-secret: the secret on this worker
+          // belongs to a different widget than the site key on the page, and
+          // the two only work as the pair Turnstile issued them in.
+          const codes = verify["error-codes"] || [];
+          const hint = codes.includes("invalid-input-secret")
+            ? "The TURNSTILE_SECRET_KEY on this worker does not match the site key the page uses. They must be the pair from the same Turnstile widget."
+            : codes.includes("invalid-input-response")
+              ? "The challenge token was not accepted — usually the secret belongs to a different widget than the site key."
+              : codes.includes("timeout-or-duplicate")
+                ? "The challenge token had already been used or expired. Reload the page and try again."
+                : "";
+          return json(
+            {
+              error: `Security check failed. ${hint}`.trim(),
+              detail: codes.join(", ") || null,
+            },
+            400
+          );
         }
       }
 
