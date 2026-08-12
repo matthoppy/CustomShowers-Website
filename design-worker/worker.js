@@ -143,6 +143,22 @@ export default {
       return json({ success: true });
     } catch (err) {
       console.error("design-worker error:", err);
+
+      // Setup faults are the overwhelmingly likely cause of a failure here,
+      // and "internal server error" sends whoever is debugging into the logs
+      // for something the response could simply have told them.
+      if (err instanceof MailError) {
+        const hint =
+          err.status === 401
+            ? "The RESEND_API_KEY on this worker is missing or wrong."
+            : err.status === 403
+              ? "Resend refused the sender address — the domain in FROM_EMAIL is probably not verified."
+              : err.status === 0
+                ? "No RESEND_API_KEY is set on this worker."
+                : "The email provider rejected the message.";
+        return json({ error: `Could not send the email. ${hint}`, detail: err.detail }, 502);
+      }
+
       return json({ error: "Internal server error" }, 500);
     }
   },
@@ -178,7 +194,23 @@ function rateLimited(key, max) {
   return false;
 }
 
+/**
+ * Thrown when the mail provider refuses the message, so the handler can report
+ * something more useful than "internal server error".
+ */
+class MailError extends Error {
+  constructor(message, status, detail) {
+    super(message);
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
 async function sendEmail(env, payload) {
+  if (!env.RESEND_API_KEY) {
+    throw new MailError("RESEND_API_KEY is not set on this worker", 0, null);
+  }
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -187,10 +219,13 @@ async function sendEmail(env, payload) {
     },
     body: JSON.stringify(payload),
   });
+
   if (!res.ok) {
-    // Surface the reason in the worker log rather than failing silently.
-    console.error("Resend rejected the message", res.status, await res.text());
-    throw new Error(`Resend returned ${res.status}`);
+    const detail = await res.text().catch(() => "");
+    console.error("Resend rejected the message", res.status, detail);
+    // 401 means the key is wrong or missing; 403 usually means the sending
+    // domain is not verified in Resend. Both are setup problems worth naming.
+    throw new MailError(`Resend returned ${res.status}`, res.status, detail.slice(0, 300));
   }
 }
 
