@@ -71,6 +71,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [challengeState, setChallengeState] = useState<'loading' | 'ready' | 'failed'>('loading');
   const [honeypot, setHoneypot] = useState('');
   const didMountRef = useRef(false);
   // How long the customer spent on the design. A real one cannot get through
@@ -132,13 +133,17 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
           customer.name.trim().length > 1 &&
           EMAIL_PATTERN.test(customer.email) &&
           customer.measurementsAcknowledged &&
-          // No challenge configured means none to pass.
-          (!tenant.turnstileSiteKey || !!turnstileToken)
+          // A solved challenge, no challenge configured, or a challenge that
+          // could not load. Blocking on the last case dead-ends the customer
+          // over something outside their control — an ad blocker, or a widget
+          // rotated in the dashboard — and a lost enquiry leaves no trace.
+          // The worker flags tokenless submissions instead of trusting them.
+          (!tenant.turnstileSiteKey || !!turnstileToken || challengeState === 'failed')
         );
       default:
         return false;
     }
-  }, [stepId, state, customer, tenant.turnstileSiteKey, turnstileToken]);
+  }, [stepId, state, customer, tenant.turnstileSiteKey, turnstileToken, challengeState]);
 
   const stepProps: StepProps = {
     tenant,
@@ -191,6 +196,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     setSubmitted(false);
     setError(null);
     setTurnstileToken(null);
+    setChallengeState('loading');
     setHoneypot('');
     startedAtRef.current = Date.now();
   }
@@ -292,6 +298,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                   customer={customer}
                   setCustomer={setCustomer}
                   onTurnstileToken={setTurnstileToken}
+                  onChallengeState={setChallengeState}
                   honeypot={honeypot}
                   setHoneypot={setHoneypot}
                 />

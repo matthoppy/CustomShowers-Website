@@ -110,7 +110,11 @@ export const CUSTOM_SHOWERS: TenantConfig = {
   measurementDisclaimer:
     'These measurements are provided by you as a guide. We will confirm all sizes on a site survey before any glass is cut — please do not treat this design as a final cutting list.',
   intro: 'Design your enclosure and send the measurements straight to our workshop.',
-  turnstileSiteKey: '0x4AAAAAACmVMi3ZDLDzTYwv',
+  // Overridable at build time via VITE_TURNSTILE_SITE_KEY, set in the
+  // Cloudflare Pages environment variables. Rotating a Turnstile widget then
+  // needs no code change — the last swap took a deploy and a debugging round
+  // purely because this was hardcoded.
+  turnstileSiteKey: import.meta.env.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAACmVMi3ZDLDzTYwv',
 };
 
 export const TENANTS: Record<string, TenantConfig> = {

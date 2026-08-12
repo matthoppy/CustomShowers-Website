@@ -16,7 +16,7 @@
  */
 
 /** Bump when the code changes, so a browser visit shows which paste is live. */
-const WORKER_VERSION = "v4";
+const WORKER_VERSION = "v5";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -90,9 +90,17 @@ export default {
         );
       }
 
-      // Verified whenever a secret is configured, so local development works
-      // without one but production always checks.
-      if (env.TURNSTILE_SECRET_KEY) {
+      // A token is verified strictly whenever one is present. A *missing*
+      // token means the widget never loaded for that visitor — an ad blocker,
+      // a rotated widget, a Cloudflare outage — none of which is the
+      // customer's doing. Rejecting there loses a real job silently, so it is
+      // flagged instead, exactly like a suspiciously fast completion.
+      const challengeSkipped = env.TURNSTILE_SECRET_KEY && !turnstileToken;
+      if (challengeSkipped) {
+        console.warn("Flagged: no challenge token", { ip: clientIp(request), tenantId });
+      }
+
+      if (env.TURNSTILE_SECRET_KEY && turnstileToken) {
         const verifyRes = await fetch(
           "https://challenges.cloudflare.com/turnstile/v0/siteverify",
           {
@@ -133,6 +141,10 @@ export default {
         console.warn("Flagged: submitted quickly", { elapsedMs: antispam.elapsedMs, tenantId });
       }
 
+      // Only speed suppresses the customer copy — a blocked challenge says
+      // nothing about whether the address is real.
+      const suspicious = tooFast || challengeSkipped;
+
       const businessEmail = TENANT_INBOXES[tenantId] || env.BUSINESS_EMAIL || "sales@customshowers.uk";
       const fromAddress = env.FROM_EMAIL || "Custom Showers <noreply@customshowers.uk>";
 
@@ -148,16 +160,18 @@ export default {
         from: fromAddress,
         to: [businessEmail],
         reply_to: customer.email,
-        subject: `${tooFast ? "[Possible spam] " : ""}Shower design from ${customer.name}${
+        subject: `${suspicious ? "[Check] " : ""}Shower design from ${customer.name}${
           customer.postcode ? ` (${customer.postcode})` : ""
         }`,
-        html: businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast, antispam, mailAttachments }),
+        html: businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast, challengeSkipped, antispam, mailAttachments }),
         attachments: mailAttachments,
       });
 
-      // Copy to the customer. Skipped when the submission looks automated —
-      // the address may belong to someone who never filled anything in, and
-      // mailing them would make us the one sending junk.
+      // Copy to the customer, suppressed only on a suspiciously fast
+      // completion — there the address may belong to someone who never filled
+      // anything in, and mailing them would make us the one sending junk. A
+      // merely unverified challenge is not that signal: it is almost always a
+      // real person behind an ad blocker, and they are expecting this email.
       if (!tooFast) {
         await sendEmail(env, {
           from: fromAddress,
@@ -337,7 +351,7 @@ function buildSpecTable(panels) {
     </table>`;
 }
 
-function businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast, antispam, mailAttachments }) {
+function businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast, challengeSkipped, antispam, mailAttachments }) {
   const warnings = spec?.warnings || [];
   const rakeNotes = spec?.rakeNotes || [];
 
@@ -352,6 +366,15 @@ function businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast,
                <strong>Possibly automated.</strong> The whole design was completed in
                ${esc(Math.round((antispam?.elapsedMs || 0) / 1000))} seconds, faster than a person
                usually manages. Worth a glance before you reply.
+             </div>`
+          : ""
+      }
+      ${
+        challengeSkipped
+          ? `<div style="margin:0 0 20px;padding:12px 14px;background:#fffbeb;border:1px solid #fcd34d;border-radius:6px;color:#92400e;font-size:13px;">
+               <strong>Security check did not run.</strong> The Turnstile widget failed to load for
+               this visitor, usually an ad blocker. Most likely a real customer, but it was not
+               verified.
              </div>`
           : ""
       }

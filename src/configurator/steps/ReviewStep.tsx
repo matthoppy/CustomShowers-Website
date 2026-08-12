@@ -22,6 +22,8 @@ interface ReviewStepProps extends StepProps {
   customer: CustomerDetails;
   setCustomer: (patch: Partial<CustomerDetails>) => void;
   onTurnstileToken: (token: string | null) => void;
+  /** Lets the shell stop blocking submission when the challenge cannot load. */
+  onChallengeState: (state: 'loading' | 'ready' | 'failed') => void;
   honeypot: string;
   setHoneypot: (value: string) => void;
 }
@@ -32,6 +34,7 @@ export function ReviewStep({
   customer,
   setCustomer,
   onTurnstileToken,
+  onChallengeState,
   honeypot,
   setHoneypot,
 }: ReviewStepProps) {
@@ -46,6 +49,10 @@ export function ReviewStep({
     const timer = setTimeout(() => setChallenge('failed'), 12000);
     return () => clearTimeout(timer);
   }, [tenant.turnstileSiteKey, challenge]);
+
+  useEffect(() => {
+    onChallengeState(challenge);
+  }, [challenge, onChallengeState]);
 
   return (
     <div className="space-y-6">
@@ -285,13 +292,10 @@ export function ReviewStep({
               <div className="text-sm">
                 <div className="font-semibold">The security check could not load</div>
                 <p className="mt-1 text-muted-foreground">
-                  It is usually an ad blocker or a strict privacy extension. Allow{' '}
+                  Usually an ad blocker or a privacy extension. You can still send your design —
+                  we will just take an extra look at it before replying. To clear it, allow{' '}
                   <code className="rounded bg-muted px-1">challenges.cloudflare.com</code> and
-                  refresh, or email your measurements to{' '}
-                  <a href={`mailto:${tenant.destinationEmail}`} className="underline">
-                    {tenant.destinationEmail}
-                  </a>{' '}
-                  and we will pick it up from there.
+                  refresh.
                 </p>
               </div>
             </div>
