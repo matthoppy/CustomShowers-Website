@@ -15,6 +15,9 @@
  *   FROM_EMAIL            optional, defaults to noreply@customshowers.uk
  */
 
+/** Bump when the code changes, so a browser visit shows which paste is live. */
+const WORKER_VERSION = "v3";
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -52,8 +55,14 @@ export default {
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: CORS_HEADERS });
     }
+    // A browser GET lands here. Return the version so opening the URL in a tab
+    // confirms which paste is actually live — otherwise "did the deploy take?"
+    // is only answerable by triggering a failure and reading the logs.
     if (request.method !== "POST") {
-      return new Response("Method not allowed", { status: 405, headers: CORS_HEADERS });
+      return new Response(
+        `customshowers-design ${WORKER_VERSION} — this endpoint only accepts POST from the configurator.`,
+        { status: 405, headers: { "Content-Type": "text/plain", ...CORS_HEADERS } }
+      );
     }
 
     try {
