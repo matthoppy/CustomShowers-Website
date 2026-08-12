@@ -157,12 +157,19 @@ export async function submitEnquiry(
       // The worker returns a readable reason for the cases a customer can act
       // on, like being rate limited or failing the challenge.
       const body = await res.json().catch(() => null);
+      // eslint-disable-next-line no-console
+      console.error(`[configurator] ${endpoint} returned ${res.status}`, body);
       return { ok: false, error: body?.error ?? `Send failed (${res.status})` };
     }
 
     return { ok: true };
-  } catch {
-    // Almost always a dropped connection or a blocked request.
+  } catch (e) {
+    // fetch only throws before it gets a reply at all: the hostname does not
+    // resolve, the CORS preflight was refused, or the connection dropped. That
+    // is a very different fault from the server returning an error, so name the
+    // endpoint in the console — otherwise diagnosing it means guessing.
+    // eslint-disable-next-line no-console
+    console.error(`[configurator] could not reach ${endpoint}`, e);
     return {
       ok: false,
       error: 'We could not reach our server. Check your connection and try again.',
