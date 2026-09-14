@@ -24,6 +24,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
 
   const menuItems = [
     { label: "Home", href: "/" },
+    { label: "Design Your Shower", href: "/design-shower" },
     { label: "Supply Only", href: "/supply-only" },
     { label: "Balustrades", href: "/balustrades" },
     { label: "Gallery", href: isHomePage ? "#gallery" : "/#gallery" },
