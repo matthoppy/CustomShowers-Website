@@ -13,17 +13,12 @@ const TermsOfTrade = () => {
 
           <section>
             <h2 className="text-xl font-semibold mb-2">1. Application</h2>
-            <p>These Terms of Trade apply to all goods and services supplied by Custom Showers. By requesting a quote, placing an order, or accepting delivery or installation, you agree to these Terms.</p>
+            <p>These Terms of Trade apply to all goods and services supplied by Custom Showers. By requesting a quote, placing an order, or accepting delivery, you agree to these Terms.</p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold mb-2">2. Services</h2>
-            <p>We provide:</p>
-            <ul className="list-disc pl-6 space-y-1">
-              <li>Supply of bespoke shower enclosures and glass products</li>
-              <li>Supply and installation services</li>
-              <li>Installation-only services where agreed in writing</li>
-            </ul>
+            <p>We provide supply of bespoke shower enclosures and glass products.</p>
           </section>
 
           <section>
@@ -63,14 +58,7 @@ const TermsOfTrade = () => {
               <li>Incorrect specification or quantity</li>
             </ul>
             <p className="mt-3">If defects are not reported within 24 hours, the goods will be deemed accepted and any replacement or re-order costs will be payable by the Customer.</p>
-            <p className="mt-2">Glass that has been handled, stored incorrectly, or installed is not eligible for replacement.</p>
-
-            <h3 className="text-lg font-medium mt-4 mb-2">6.2 Installed Projects</h3>
-            <p>Where installation is provided:</p>
-            <ul className="list-disc pl-6 space-y-1 mt-2">
-              <li>Defects relating to workmanship or supplied materials must be notified within 7 days of installation completion.</li>
-              <li>Verified defects caused by our workmanship will be remedied within a reasonable timeframe.</li>
-            </ul>
+            <p className="mt-2">Glass that has been handled, stored incorrectly, or installed by the customer&apos;s own fitter is not eligible for replacement.</p>
             <p className="mt-2">This does not affect your statutory rights.</p>
           </section>
 
@@ -98,16 +86,7 @@ const TermsOfTrade = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">8. Installation</h2>
-            <ul className="list-disc pl-6 space-y-1">
-              <li>Installation dates are estimates only.</li>
-              <li>Delays may occur due to site readiness, supplier delays, or events beyond our control.</li>
-              <li>Customers should protect installed glass and fittings until all other bathroom works are completed.</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold mb-2">9. Frameless Glass Shower Characteristics</h2>
+            <h2 className="text-xl font-semibold mb-2">8. Frameless Glass Shower Characteristics</h2>
             <p>Frameless glass shower enclosures are not fully watertight systems. Due to their design:</p>
             <ul className="list-disc pl-6 space-y-1 mt-2">
               <li>Minor water leakage may occur</li>
@@ -118,24 +97,24 @@ const TermsOfTrade = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">10. Payment Terms</h2>
+            <h2 className="text-xl font-semibold mb-2">9. Payment Terms</h2>
             <p>Unless otherwise agreed in writing:</p>
             <ul className="list-disc pl-6 space-y-1 mt-2">
-              <li>Residential customers: balance payable within 7 days of delivery or installation completion</li>
+              <li>Residential customers: balance payable within 7 days of delivery</li>
               <li>Commercial customers: payment due in accordance with agreed credit terms</li>
             </ul>
             <p className="mt-3">All prices are exclusive of VAT unless stated otherwise.</p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">11. Ownership of Goods</h2>
+            <h2 className="text-xl font-semibold mb-2">10. Ownership of Goods</h2>
             <p>Ownership of goods remains with Custom Showers until payment is made in full.</p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">12. Post-Installation Responsibility</h2>
-            <p>Once installation is completed and accepted, responsibility for the care and protection of the glass and fittings passes to the Customer.</p>
-            <p className="mt-3">We are not liable for damage occurring after installation, including:</p>
+            <h2 className="text-xl font-semibold mb-2">11. Post-Delivery Responsibility</h2>
+            <p>Once delivery is completed and accepted, responsibility for the care and protection of the glass and fittings passes to the Customer.</p>
+            <p className="mt-3">We are not liable for damage occurring after delivery, including damage during installation by the customer&apos;s own fitter:</p>
             <ul className="list-disc pl-6 space-y-1 mt-2">
               <li>Damage by other trades or contractors</li>
               <li>Accidental impact</li>
@@ -148,11 +127,8 @@ const TermsOfTrade = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">13. Warranty</h2>
-            <ul className="list-disc pl-6 space-y-1">
-              <li>Installation workmanship is warranted for 12 months from completion.</li>
-              <li>Manufacturer warranties apply to supplied products and fittings.</li>
-            </ul>
+            <h2 className="text-xl font-semibold mb-2">12. Warranty</h2>
+            <p>Manufacturer warranties apply to supplied products and fittings.</p>
             <p className="mt-3">The warranty does not cover:</p>
             <ul className="list-disc pl-6 space-y-1 mt-2">
               <li>Normal wear and tear</li>
@@ -162,12 +138,12 @@ const TermsOfTrade = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">14. Consumer Rights</h2>
+            <h2 className="text-xl font-semibold mb-2">13. Consumer Rights</h2>
             <p>Nothing in these Terms limits your rights under the Consumer Rights Act 2015.</p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">15. Limitation of Liability</h2>
+            <h2 className="text-xl font-semibold mb-2">14. Limitation of Liability</h2>
             <p>Where legally permitted:</p>
             <ul className="list-disc pl-6 space-y-1 mt-2">
               <li>We are not liable for indirect or consequential loss</li>
@@ -176,7 +152,7 @@ const TermsOfTrade = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">16. Cancellation</h2>
+            <h2 className="text-xl font-semibold mb-2">15. Cancellation</h2>
             <ul className="list-disc pl-6 space-y-1">
               <li>Orders cancelled before manufacture may incur costs already incurred.</li>
               <li>Bespoke orders cannot be cancelled once manufacture begins, except where required by law.</li>
@@ -184,12 +160,12 @@ const TermsOfTrade = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">17. Force Majeure</h2>
+            <h2 className="text-xl font-semibold mb-2">16. Force Majeure</h2>
             <p>We are not liable for delays caused by events beyond our reasonable control.</p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">18. Governing Law</h2>
+            <h2 className="text-xl font-semibold mb-2">17. Governing Law</h2>
             <p>These Terms are governed by the laws of England and Wales.</p>
           </section>
 

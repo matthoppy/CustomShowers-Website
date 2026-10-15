@@ -99,7 +99,7 @@ const BlogArticle = () => {
           <div className="mt-16 p-8 bg-muted/50 rounded-2xl text-center border border-border">
             <h3 className="text-xl font-bold mb-3">Have a project in mind?</h3>
             <p className="text-muted-foreground mb-6">
-              Get in touch for a quote — supply only nationwide or supply and fit across London.
+              Get in touch for a quote — supply only nationwide.
             </p>
             <Button onClick={() => setQuoteModalOpen(true)}>Get A Quote</Button>
           </div>

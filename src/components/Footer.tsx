@@ -137,7 +137,7 @@ We collect information when you:
 - Submit an enquiry via our website
 - Request a quote
 - Place an order
-- Arrange delivery or installation
+- Arrange delivery
 - Contact us by phone or email
 
 4. How We Use Your Information
