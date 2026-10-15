@@ -49,7 +49,7 @@ export default function QuoteView() {
     if (paymentStatus === 'success') {
       toast({
         title: 'Payment Successful!',
-        description: 'Thank you for your payment. We\'ll be in touch shortly to arrange installation.',
+        description: 'Thank you for your payment. We\'ll be in touch shortly to confirm delivery.',
         variant: 'default',
       });
       clearPaymentStatus();
