@@ -151,7 +151,7 @@ const SupplyOnly = () => {
               },
               {
                 title: "Same Quality Glass",
-                body: "Identical 10mm toughened safety glass, premium hardware, and precise manufacturing — regardless of whether we fit it.",
+                body: "Identical 10mm toughened safety glass, premium hardware, and precise manufacturing, ready for your fitter.",
               },
             ].map((card) => (
               <div key={card.title} className="bg-background rounded-xl p-8 shadow-sm">
