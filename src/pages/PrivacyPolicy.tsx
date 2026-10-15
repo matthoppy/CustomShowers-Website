@@ -13,7 +13,7 @@ const PrivacyPolicy = () => {
 
           <section>
             <h2 className="text-xl font-semibold mb-2">1. Who We Are</h2>
-            <p>Custom Showers (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) supplies and installs bespoke shower enclosures and related glass products across the United Kingdom.</p>
+            <p>Custom Showers (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) supplies bespoke shower enclosures and related glass products across the United Kingdom.</p>
             <p className="mt-3">We are committed to protecting your personal data and complying with the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018.</p>
           </section>
 
@@ -24,7 +24,7 @@ const PrivacyPolicy = () => {
               <li>Name</li>
               <li>Email address</li>
               <li>Phone number</li>
-              <li>Billing and installation address</li>
+              <li>Billing address</li>
               <li>Project details, measurements, and specifications</li>
               <li>Payment and invoicing information</li>
               <li>Website usage data (cookies and analytics where applicable)</li>
@@ -38,7 +38,7 @@ const PrivacyPolicy = () => {
               <li>Submit an enquiry via our website</li>
               <li>Request a quote</li>
               <li>Place an order</li>
-              <li>Arrange delivery or installation</li>
+              <li>Arrange delivery</li>
               <li>Contact us by phone or email</li>
             </ul>
           </section>
@@ -48,8 +48,8 @@ const PrivacyPolicy = () => {
             <p>We use personal data to:</p>
             <ul className="list-disc pl-6 space-y-1 mt-2">
               <li>Provide quotes and estimates</li>
-              <li>Manufacture, supply, and install products</li>
-              <li>Arrange delivery and installation</li>
+              <li>Manufacture, supply, and deliver products</li>
+              <li>Arrange delivery</li>
               <li>Issue invoices and process payments</li>
               <li>Communicate about your project</li>
               <li>Comply with legal and accounting obligations</li>
@@ -72,7 +72,6 @@ const PrivacyPolicy = () => {
             <h2 className="text-xl font-semibold mb-2">6. Sharing Information</h2>
             <p>We may share personal data with:</p>
             <ul className="list-disc pl-6 space-y-1 mt-2">
-              <li>Installation staff or subcontractors</li>
               <li>Suppliers and manufacturers</li>
               <li>Payment processors</li>
               <li>Professional advisers</li>
@@ -103,7 +102,6 @@ const PrivacyPolicy = () => {
             <ul className="list-none pl-0 space-y-1 mt-3">
               <li><strong>Custom Showers</strong></li>
               <li>Email: <a href="mailto:matt@customshowers.uk" className="text-primary hover:underline">matt@customshowers.uk</a></li>
-              <li>Phone: <a href="tel:+447462150006" className="text-primary hover:underline">+44 7462 150006</a></li>
             </ul>
           </section>
 

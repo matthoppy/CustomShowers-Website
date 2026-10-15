@@ -5,7 +5,6 @@ import About from "@/components/About";
 import Process from "@/components/Process";
 import Services from "@/components/Services";
 import Gallery from "@/components/Gallery";
-import BalustradesSection from "@/components/BalustradesSection";
 import FAQ from "@/components/FAQ";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
@@ -22,7 +21,6 @@ const Index = () => {
       <Process />
       <Services />
       <Gallery />
-      <BalustradesSection />
       <FAQ />
       <Contact />
       <Footer />

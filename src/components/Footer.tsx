@@ -4,13 +4,11 @@ const TERMS_TEXT = `TERMS OF TRADE
 Custom Showers — Last updated: 1st March 2026
 
 1. Application
-These Terms of Trade apply to all goods and services supplied by Custom Showers. By requesting a quote, placing an order, or accepting delivery or installation, you agree to these Terms.
+These Terms of Trade apply to all goods and services supplied by Custom Showers. By requesting a quote, placing an order, or accepting delivery, you agree to these Terms.
 
 2. Services
 We provide:
 - Supply of bespoke shower enclosures and glass products
-- Supply and installation services
-- Installation-only services where agreed in writing
 
 3. Quotations
 - Quotes are valid for 30 days unless stated otherwise.
@@ -38,10 +36,6 @@ Defects must be reported within 24 hours, including:
 If defects are not reported within 24 hours, the goods will be deemed accepted and any replacement or re-order costs will be payable by the Customer.
 Glass that has been handled, stored incorrectly, or installed is not eligible for replacement.
 
-6.2 Installed Projects
-Where installation is provided:
-- Defects relating to workmanship or supplied materials must be notified within 7 days of installation completion.
-- Verified defects caused by our workmanship will be remedied within a reasonable timeframe.
 This does not affect your statutory rights.
 
 7. Site Conditions & Measurements
@@ -64,12 +58,7 @@ We are not responsible for:
 
 Minor visual gaps do not constitute a defect.
 
-8. Installation
-- Installation dates are estimates only.
-- Delays may occur due to site readiness, supplier delays, or events beyond our control.
-- Customers should protect installed glass and fittings until all other bathroom works are completed.
-
-9. Frameless Glass Shower Characteristics
+8. Payment Terms
 Frameless glass shower enclosures are not fully watertight systems.
 Due to their design:
 - Minor water leakage may occur
@@ -78,19 +67,19 @@ Due to their design:
 Proper waterproofing, floor falls, and drainage are essential and are the responsibility of others involved in the build.
 Minor water escape consistent with frameless shower design does not constitute a defect.
 
-10. Payment Terms
+9. Payment Terms
 Unless otherwise agreed in writing:
-- Residential customers: balance payable within 7 days of delivery or installation completion
+- Residential customers: balance payable within 7 days of delivery
 - Commercial customers: payment due in accordance with agreed credit terms
 
 All prices are exclusive of VAT unless stated otherwise.
 
-11. Ownership of Goods
+10. Ownership of Goods
 Ownership of goods remains with Custom Showers until payment is made in full.
 
-12. Post-Installation Responsibility
-Once installation is completed and accepted, responsibility for the care and protection of the glass and fittings passes to the Customer.
-We are not liable for damage occurring after installation, including:
+11. Post-Delivery Responsibility
+Once delivery is completed and accepted, responsibility for the care and protection of the glass and fittings passes to the Customer.
+We are not liable for damage occurring after delivery, including:
 - Damage by other trades or contractors
 - Accidental impact
 - Building movement
@@ -100,8 +89,7 @@ We are not liable for damage occurring after installation, including:
 
 Repairs or replacements required as a result of the above will be chargeable.
 
-13. Warranty
-- Installation workmanship is warranted for 12 months from completion.
+12. Warranty
 - Manufacturer warranties apply to supplied products and fittings.
 
 The warranty does not cover:
@@ -109,10 +97,10 @@ The warranty does not cover:
 - Misuse or lack of maintenance
 - Water leakage consistent with frameless design
 
-14. Consumer Rights
+13. Consumer Rights
 Nothing in these Terms limits your rights under the Consumer Rights Act 2015.
 
-15. Limitation of Liability
+14. Limitation of Liability
 Where legally permitted:
 - We are not liable for indirect or consequential loss
 - Our liability is limited to the value of the goods and services supplied under the relevant contract
@@ -121,17 +109,17 @@ Where legally permitted:
 - Orders cancelled before manufacture may incur costs already incurred.
 - Bespoke orders cannot be cancelled once manufacture begins, except where required by law.
 
-17. Force Majeure
+16. Force Majeure
 We are not liable for delays caused by events beyond our reasonable control.
 
-18. Governing Law
+17. Governing Law
 These Terms are governed by the laws of England and Wales.`;
 
 const PRIVACY_TEXT = `PRIVACY POLICY
 Custom Showers — Last updated: 1st March 2026
 
 1. Who We Are
-Custom Showers ("we", "us", "our") supplies and installs bespoke shower enclosures and related glass products across the United Kingdom.
+Custom Showers ("we", "us", "our") supplies bespoke shower enclosures and related glass products across the United Kingdom.
 We are committed to protecting your personal data and complying with the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018.
 
 2. What Information We Collect
@@ -139,7 +127,7 @@ We may collect the following personal data:
 - Name
 - Email address
 - Phone number
-- Billing and installation address
+- Billing address
 - Project details, measurements, and specifications
 - Payment and invoicing information
 - Website usage data (cookies and analytics where applicable)
@@ -155,8 +143,8 @@ We collect information when you:
 4. How We Use Your Information
 We use personal data to:
 - Provide quotes and estimates
-- Manufacture, supply, and install products
-- Arrange delivery and installation
+- Manufacture, supply, and deliver products
+- Arrange delivery
 - Issue invoices and process payments
 - Communicate about your project
 - Comply with legal and accounting obligations
@@ -172,7 +160,6 @@ We process personal data under one or more of the following lawful bases:
 
 6. Sharing Information
 We may share personal data with:
-- Installation staff or subcontractors
 - Suppliers and manufacturers
 - Payment processors
 - Professional advisers
@@ -193,23 +180,17 @@ You may also lodge a complaint with the Information Commissioner's Office (ICO):
 
 9. Contact
 Custom Showers
-Email: matt@customshowers.uk
-Phone: +44 7462 150006`;
+Email: matt@customshowers.uk`;
 
 const TermsContent = () => (
   <>
     <section>
       <h2 className="text-base font-semibold mb-1">1. Application</h2>
-      <p>These Terms of Trade apply to all goods and services supplied by Custom Showers. By requesting a quote, placing an order, or accepting delivery or installation, you agree to these Terms.</p>
+      <p>These Terms of Trade apply to all goods and services supplied by Custom Showers. By requesting a quote, placing an order, or accepting delivery, you agree to these Terms.</p>
     </section>
     <section>
       <h2 className="text-base font-semibold mb-1">2. Services</h2>
-      <p>We provide:</p>
-      <ul className="list-disc pl-5 space-y-0.5 mt-1">
-        <li>Supply of bespoke shower enclosures and glass products</li>
-        <li>Supply and installation services</li>
-        <li>Installation-only services where agreed in writing</li>
-      </ul>
+      <p>We provide supply of bespoke shower enclosures and glass products.</p>
     </section>
     <section>
       <h2 className="text-base font-semibold mb-1">3. Quotations</h2>
@@ -244,11 +225,6 @@ const TermsContent = () => (
         <li>Incorrect specification or quantity</li>
       </ul>
       <p className="mt-2">If defects are not reported within 24 hours, the goods will be deemed accepted and any replacement or re-order costs will be payable by the Customer. Glass that has been handled, stored incorrectly, or installed is not eligible for replacement.</p>
-      <h3 className="font-medium mt-3 mb-1">6.2 Installed Projects</h3>
-      <ul className="list-disc pl-5 space-y-0.5">
-        <li>Defects relating to workmanship or supplied materials must be notified within 7 days of installation completion.</li>
-        <li>Verified defects caused by our workmanship will be remedied within a reasonable timeframe.</li>
-      </ul>
       <p className="mt-2">This does not affect your statutory rights.</p>
     </section>
     <section>
@@ -258,12 +234,12 @@ const TermsContent = () => (
       <p className="mt-2">We are not responsible for changes to site conditions after measurement, building movement or settlement, or variations caused by uneven surfaces. Minor visual gaps do not constitute a defect.</p>
     </section>
     <section>
-      <h2 className="text-base font-semibold mb-1">8. Installation</h2>
+      <h2 className="text-base font-semibold mb-1">8. Payment Terms</h2>
       <ul className="list-disc pl-5 space-y-0.5">
-        <li>Installation dates are estimates only.</li>
-        <li>Delays may occur due to site readiness, supplier delays, or events beyond our control.</li>
-        <li>Customers should protect installed glass and fittings until all other bathroom works are completed.</li>
+        <li>Residential customers: balance payable within 7 days of delivery.</li>
+        <li>Commercial customers: payment due in accordance with agreed credit terms.</li>
       </ul>
+      <p className="mt-2">All prices are exclusive of VAT unless stated otherwise.</p>
     </section>
     <section>
       <h2 className="text-base font-semibold mb-1">9. Frameless Glass Shower Characteristics</h2>
@@ -271,47 +247,39 @@ const TermsContent = () => (
       <p className="mt-2">Minor water escape consistent with frameless shower design does not constitute a defect.</p>
     </section>
     <section>
-      <h2 className="text-base font-semibold mb-1">10. Payment Terms</h2>
-      <ul className="list-disc pl-5 space-y-0.5">
-        <li>Residential customers: balance payable within 7 days of delivery or installation completion.</li>
-        <li>Commercial customers: payment due in accordance with agreed credit terms.</li>
-      </ul>
-      <p className="mt-2">All prices are exclusive of VAT unless stated otherwise.</p>
-    </section>
-    <section>
-      <h2 className="text-base font-semibold mb-1">11. Ownership of Goods</h2>
+      <h2 className="text-base font-semibold mb-1">10. Ownership of Goods</h2>
       <p>Ownership of goods remains with Custom Showers until payment is made in full.</p>
     </section>
     <section>
-      <h2 className="text-base font-semibold mb-1">12. Post-Installation Responsibility</h2>
-      <p>Once installation is completed and accepted, responsibility for the care and protection of the glass and fittings passes to the Customer. We are not liable for damage by other trades, accidental impact, building movement, tiling or plumbing issues, alterations by others, or incorrect cleaning.</p>
+      <h2 className="text-base font-semibold mb-1">11. Post-Delivery Responsibility</h2>
+      <p>Once delivery is completed and accepted, responsibility for the care and protection of the glass and fittings passes to the Customer. We are not liable for damage by other trades, accidental impact, building movement, tiling or plumbing issues, alterations by others, or incorrect cleaning.</p>
       <p className="mt-2">Repairs or replacements required as a result of the above will be chargeable.</p>
     </section>
     <section>
-      <h2 className="text-base font-semibold mb-1">13. Warranty</h2>
-      <p>Installation workmanship is warranted for 12 months from completion. Manufacturer warranties apply to supplied products and fittings. The warranty does not cover normal wear and tear, misuse or lack of maintenance, or water leakage consistent with frameless design.</p>
+      <h2 className="text-base font-semibold mb-1">12. Warranty</h2>
+      <p>Manufacturer warranties apply to supplied products and fittings. The warranty does not cover normal wear and tear, misuse or lack of maintenance, or water leakage consistent with frameless design.</p>
     </section>
     <section>
-      <h2 className="text-base font-semibold mb-1">14. Consumer Rights</h2>
+      <h2 className="text-base font-semibold mb-1">13. Consumer Rights</h2>
       <p>Nothing in these Terms limits your rights under the Consumer Rights Act 2015.</p>
     </section>
     <section>
-      <h2 className="text-base font-semibold mb-1">15. Limitation of Liability</h2>
+      <h2 className="text-base font-semibold mb-1">14. Limitation of Liability</h2>
       <p>Where legally permitted, we are not liable for indirect or consequential loss. Our liability is limited to the value of the goods and services supplied under the relevant contract.</p>
     </section>
     <section>
-      <h2 className="text-base font-semibold mb-1">16. Cancellation</h2>
+      <h2 className="text-base font-semibold mb-1">15. Cancellation</h2>
       <ul className="list-disc pl-5 space-y-0.5">
         <li>Orders cancelled before manufacture may incur costs already incurred.</li>
         <li>Bespoke orders cannot be cancelled once manufacture begins, except where required by law.</li>
       </ul>
     </section>
     <section>
-      <h2 className="text-base font-semibold mb-1">17. Force Majeure</h2>
+      <h2 className="text-base font-semibold mb-1">16. Force Majeure</h2>
       <p>We are not liable for delays caused by events beyond our reasonable control.</p>
     </section>
     <section>
-      <h2 className="text-base font-semibold mb-1">18. Governing Law</h2>
+      <h2 className="text-base font-semibold mb-1">17. Governing Law</h2>
       <p>These Terms are governed by the laws of England and Wales.</p>
     </section>
   </>
@@ -321,7 +289,7 @@ const PrivacyContent = () => (
   <>
     <section>
       <h2 className="text-base font-semibold mb-1">1. Who We Are</h2>
-      <p>Custom Showers (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) supplies and installs bespoke shower enclosures and related glass products across the United Kingdom.</p>
+      <p>Custom Showers (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) supplies bespoke shower enclosures and related glass products across the United Kingdom.</p>
       <p className="mt-2">We are committed to protecting your personal data and complying with the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018.</p>
     </section>
     <section>
@@ -331,7 +299,7 @@ const PrivacyContent = () => (
         <li>Name</li>
         <li>Email address</li>
         <li>Phone number</li>
-        <li>Billing and installation address</li>
+        <li>Billing address</li>
         <li>Project details, measurements, and specifications</li>
         <li>Payment and invoicing information</li>
         <li>Website usage data (cookies and analytics where applicable)</li>
@@ -344,7 +312,7 @@ const PrivacyContent = () => (
         <li>Submit an enquiry via our website</li>
         <li>Request a quote</li>
         <li>Place an order</li>
-        <li>Arrange delivery or installation</li>
+        <li>Arrange delivery</li>
         <li>Contact us by phone or email</li>
       </ul>
     </section>
@@ -353,8 +321,8 @@ const PrivacyContent = () => (
       <p>We use personal data to:</p>
       <ul className="list-disc pl-5 space-y-0.5 mt-1">
         <li>Provide quotes and estimates</li>
-        <li>Manufacture, supply, and install products</li>
-        <li>Arrange delivery and installation</li>
+        <li>Manufacture, supply, and deliver products</li>
+        <li>Arrange delivery</li>
         <li>Issue invoices and process payments</li>
         <li>Communicate about your project</li>
         <li>Comply with legal and accounting obligations</li>
@@ -373,7 +341,7 @@ const PrivacyContent = () => (
     </section>
     <section>
       <h2 className="text-base font-semibold mb-1">6. Sharing Information</h2>
-      <p>We may share personal data with installation staff or subcontractors, suppliers and manufacturers, payment processors, and professional advisers. Only information necessary to perform our services is shared.</p>
+      <p>We may share personal data with suppliers and manufacturers, payment processors, and professional advisers. Only information necessary to perform our services is shared.</p>
     </section>
     <section>
       <h2 className="text-base font-semibold mb-1">7. Data Security &amp; Retention</h2>
@@ -390,7 +358,6 @@ const PrivacyContent = () => (
       <ul className="list-none pl-0 space-y-1 mt-2">
         <li><strong>Custom Showers</strong></li>
         <li>Email: <a href="mailto:matt@customshowers.uk" className="text-primary hover:underline">matt@customshowers.uk</a></li>
-        <li>Phone: <a href="tel:+447462150006" className="text-primary hover:underline">+44 7462 150006</a></li>
       </ul>
     </section>
   </>

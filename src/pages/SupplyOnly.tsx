@@ -53,7 +53,7 @@ const faqs = [
   {
     question: "Who installs the shower?",
     answer:
-      "You arrange installation through your own bathroom fitter, tiler, or builder. We provide the glass and hardware only. If you're in London and need installation, ask us about our full supply-and-fit service.",
+      "You arrange installation through your own bathroom fitter, tiler, or builder. We provide the glass and hardware only.",
   },
   {
     question: "What if my measurements are slightly off?",

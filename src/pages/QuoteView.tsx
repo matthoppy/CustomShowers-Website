@@ -447,12 +447,6 @@ export default function QuoteView() {
                     Email Us
                   </a>
                 </Button>
-                <Button variant="outline" asChild>
-                  <a href="tel:+441234567890">
-                    <Phone className="w-4 h-4 mr-2" />
-                    Call Us
-                  </a>
-                </Button>
               </div>
             </CardContent>
           </Card>

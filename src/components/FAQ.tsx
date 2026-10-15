@@ -5,22 +5,22 @@ const faqs = [
   {
     question: "How much does a custom shower enclosure cost?",
     answer:
-      "Pricing varies based on size, hardware finish and whether you choose supply-only or full supply & install. Every project is different, so we provide free, no-obligation quotes tailored to your exact requirements — get in touch and we'll turn your enquiry around quickly.",
+      "Pricing varies based on size and hardware finish. Every project is different, so we provide free, no-obligation quotes tailored to your exact requirements — get in touch and we'll turn your enquiry around quickly.",
   },
   {
-    question: "Do you offer supply-only or do you install as well?",
+    question: "Do you supply only or do you install as well?",
     answer:
-      "We offer both. Many customers choose our supply-only service — we produce fully bespoke enclosures with detailed technical drawings and installation guides so your own fitter can install with confidence. We also offer a full supply and install service across London with our own experienced team.",
+      "We are supply-only. We produce fully bespoke enclosures with detailed technical drawings and installation guides so your own fitter can install with confidence. We provide full technical support to your installer throughout the process.",
   },
   {
     question: "What areas do you cover?",
     answer:
-      "We supply nationwide across the UK. Our installation team covers all London boroughs and surrounding areas including Surrey, Essex, Hertfordshire and Kent. Contact us to confirm availability in your area.",
+      "We supply nationwide across the UK. Our survey team covers London and surrounding areas. For projects outside London, we can work from your measurements or recommend trusted local surveyors.",
   },
   {
-    question: "How long does it take from order to installation?",
+    question: "How long does it take from order to delivery?",
     answer:
-      "Lead times vary by order complexity, but most bespoke enclosures are ready within 2–4 weeks from survey sign-off. We'll give you a clear timeline when you book your survey. Installation itself typically takes half a day to a full day depending on the size and complexity of the enclosure.",
+      "Lead times vary by order complexity, but most bespoke enclosures are ready within 2–4 weeks from survey sign-off. We'll give you a clear timeline when you book your survey.",
   },
   {
     question: "What glass do you use?",
@@ -35,7 +35,7 @@ const faqs = [
   {
     question: "Do you offer a warranty on your products?",
     answer:
-      "Yes. All our enclosures come with a manufacturer's warranty covering glass and hardware. Our installation work is also guaranteed. Full warranty terms are provided with every order.",
+      "Yes. All our enclosures come with a manufacturer's warranty covering glass and hardware. Full warranty terms are provided with every order.",
   },
   {
     question: "What is the difference between frameless and semi-frameless?",
