@@ -34,10 +34,12 @@ export function PhotoMarking({ photoDataUrl, onComplete, onBack }: PhotoMarkingP
       updateCanvas();
     };
     img.src = photoDataUrl;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [photoDataUrl]);
 
   useEffect(() => {
     updateCanvas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [corners, imgDimensions, displayDimensions]);
 
   useEffect(() => {

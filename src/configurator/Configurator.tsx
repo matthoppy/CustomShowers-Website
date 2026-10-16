@@ -71,7 +71,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
   const [photoStep, setPhotoStep] = useState<'upload' | 'marking' | 'suggestions'>('upload');
   const [photoCorners, setPhotoCorners] = useState<Array<{ x: number; y: number }>>([]);
   const [photoKnownWidth, setPhotoKnownWidth] = useState(0);
-  const [suggestions, setSuggestions] = useState<Array<any>>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
   const [stepId, setStepId] = useState<StepId>('shape');
@@ -262,7 +262,11 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     setStepId('sizes');
   };
 
-  const handleWizardComplete = (result: any) => {
+  const handleWizardComplete = (result: {
+    showerType: string;
+    openingWidthMm: number;
+    heightMm: number;
+  }) => {
     const fresh = createInitialState(tenant.glassThicknessMm);
     const template =
       result.showerType === 'alcove'

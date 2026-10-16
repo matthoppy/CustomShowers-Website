@@ -85,7 +85,7 @@ export const MEASUREMENT_PLANS: Record<string, MeasurementPlan> = {
         id: 'opening-width-top',
         title: 'Opening width at the top',
         description: 'Measure wall to wall at the finished glass height',
-        tip: 'At the height the glass will finish. We'll use the smallest of the three measurements.',
+        tip: 'At the height the glass will finish. We will use the smallest of the three measurements.',
         illustrationId: 'alcove-width-top',
         required: true,
       },
@@ -163,9 +163,9 @@ export const MEASUREMENT_PLANS: Record<string, MeasurementPlan> = {
     id: 'alcove-panel-door',
     name: 'Panel and door (alcove)',
     description: 'Fixed panel beside the door, wall to wall',
-    // NEEDS TRADE REVIEW: Should we measure the full alcove width first,
-    // or the panel width and door width separately? Does the fitter work
-    // from the total and divide it, or measure each separately?
+    /* NEEDS TRADE REVIEW: Should we measure the full alcove width first,
+       or the panel width and door width separately? Does the fitter work
+       from the total and divide it, or measure each separately? */
     steps: [
       {
         id: 'opening-width-bottom',
@@ -265,9 +265,9 @@ export const MEASUREMENT_PLANS: Record<string, MeasurementPlan> = {
     id: 'walk-in',
     name: 'Walk-in screen',
     description: 'Single fixed panel, no door',
-    // NEEDS TRADE REVIEW: For a walk-in anchored at one end, do we measure
-    // the wall width first, or just the panel width and wall plumb? Does the
-    // wall width matter if the panel doesn't span it?
+    /* NEEDS TRADE REVIEW: For a walk-in anchored at one end, do we measure
+       the wall width first, or just the panel width and wall plumb? Does the
+       wall width matter if the panel doesn't span it? */
     steps: [
       {
         id: 'panel-width-bottom',
@@ -350,10 +350,10 @@ export const MEASUREMENT_PLANS: Record<string, MeasurementPlan> = {
     id: 'walk-in-return',
     name: 'Walk-in with return',
     description: 'Walk-in screen with a short return panel',
-    // NEEDS TRADE REVIEW: Measure order for L-shaped walk-in: main panel
-    // width first, then return width? Or back wall width, then front panel,
-    // then return? Does the corner junction measurement come before or after
-    // the individual panel widths?
+    /* NEEDS TRADE REVIEW: Measure order for L-shaped walk-in: main panel
+       width first, then return width? Or back wall width, then front panel,
+       then return? Does the corner junction measurement come before or after
+       the individual panel widths? */
     steps: [
       {
         id: 'main-panel-width-bottom',
@@ -461,10 +461,10 @@ export const MEASUREMENT_PLANS: Record<string, MeasurementPlan> = {
     id: 'corner-door-return',
     name: 'Corner enclosure (door + side)',
     description: 'Door on front with one side panel returning to wall',
-    // NEEDS TRADE REVIEW: Corner enclosure measurement sequence. Do we measure:
-    // 1) Back wall full width, then front opening width, then return depth?
-    // 2) Or return depth (wall-to-wall), then front opening, then back?
-    // 3) Does the fitter need the diagonal corner-to-corner, or just the three edges?
+    /* NEEDS TRADE REVIEW: Corner enclosure measurement sequence. Do we measure:
+       1) Back wall full width, then front opening width, then return depth?
+       2) Or return depth (wall-to-wall), then front opening, then back?
+       3) Does the fitter need the diagonal corner-to-corner, or just the three edges? */
     steps: [
       {
         id: 'front-opening-width-bottom',
@@ -646,9 +646,9 @@ export const MEASUREMENT_PLANS: Record<string, MeasurementPlan> = {
     id: 'custom',
     name: 'Custom configuration',
     description: 'Configured from scratch in the tool',
-    // NEEDS TRADE REVIEW: For custom/freeform configurations built in the tool,
-    // what's the correct general measurement sequence? Should we default to
-    // the alcove plan and let them adjust, or provide a minimal generic plan?
+    /* NEEDS TRADE REVIEW: For custom/freeform configurations built in the tool,
+       what's the correct general measurement sequence? Should we default to
+       the alcove plan and let them adjust, or provide a minimal generic plan? */
     steps: [
       {
         id: 'opening-width-bottom',

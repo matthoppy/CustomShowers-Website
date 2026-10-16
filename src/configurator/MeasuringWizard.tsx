@@ -140,8 +140,8 @@ const STEPS: WizardStep[] = [
     },
     tip: (method) =>
       method === 'laser'
-        ? 'Hold the laser flat against the wall or tile and aim square at the opposite wall. Measure at three heights — we'll use the smallest.'
-        : 'Walls are rarely perfectly straight. Measure at three heights and we'll use the smallest — glass won't fit if we use the widest.',
+        ? 'Hold the laser flat against the wall or tile and aim square at the opposite wall. Measure at three heights — we will use the smallest.'
+        : 'Walls are rarely perfectly straight. Measure at three heights and we will use the smallest — glass will not fit if we use the widest.',
   },
   {
     id: 'depth',
@@ -205,7 +205,7 @@ const STEPS: WizardStep[] = [
         <text x="100" y="140" textAnchor="middle" className="fill-muted-foreground text-xs">Hold a level against the wall</text>
       </svg>
     ),
-    tip: 'If walls lean or the floor slopes, we'll cut the glass to fit. Skip this and we'll check on survey.',
+    tip: 'If walls lean or the floor slopes, we will cut the glass to fit. Skip this and we will check on survey.',
     canSkip: true,
   },
   {
