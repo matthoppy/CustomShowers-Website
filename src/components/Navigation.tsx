@@ -48,7 +48,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
-      {/* Desktop header */}
+      {/* Desktop header - hidden on mobile */}
       <div className="hidden lg:block">
         {/* Transparent header when not scrolled */}
         {!isScrolled && (

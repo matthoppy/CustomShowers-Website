@@ -6,7 +6,7 @@
  * the workshop is trustworthy.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -39,8 +39,14 @@ export function ReviewStep({
 }: ReviewStepProps) {
   const spec = useMemo(() => buildSpec(state), [state]);
   const [challenge, setChallenge] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const challengeRef = useRef<'loading' | 'ready' | 'failed'>('loading');
   const [widgetId, setWidgetId] = useState<string | null>(null);
   const [hasToken, setHasToken] = useState(false);
+  
+  // Keep ref in sync with state
+  useEffect(() => {
+    challengeRef.current = challenge;
+  }, [challenge]);
   
   // Debug mode diagnostics (only shown with ?debug=1)
   const [debugInfo, setDebugInfo] = useState({
@@ -233,21 +239,22 @@ export function ReviewStep({
     if (!tenant.turnstileSiteKey || challenge !== 'loading') return;
     
     const timer = setTimeout(() => {
-      // Only set timeout if still in loading state (success might have cleared it)
-      if (challenge === 'loading') {
+      // Use ref to check current state (avoids stale closure)
+      if (challengeRef.current === 'loading') {
         console.warn('Turnstile widget timed out after 20 seconds');
         setChallenge('failed');
         if (debugMode) {
           setDebugInfo(prev => ({ ...prev, timeoutFired: true }));
         }
+      } else {
+        console.log('Timeout fired but challenge already resolved:', challengeRef.current);
       }
     }, 20000);
     
     return () => {
       clearTimeout(timer);
-      // Timeout was cleared by state change (success or error), not by timeout
-      if (debugMode && challenge !== 'loading') {
-        console.log('Timeout cleared due to challenge state change:', challenge);
+      if (debugMode && challengeRef.current !== 'loading') {
+        console.log('Timeout cleared due to challenge state change:', challengeRef.current);
       }
     };
   }, [tenant.turnstileSiteKey, challenge, debugMode]);
