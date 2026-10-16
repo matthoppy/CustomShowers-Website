@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turnstile Test</title>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+</head>
+<body>
+    <h1>Turnstile Test Page</h1>
+    <p>Domain: <span id="domain"></span></p>
+    <p>Test Sitekey: 1x00000000000000000000AA (always passes)</p>
+    
+    <h2>Widget Area:</h2>
+    <div id="turnstile-widget"></div>
+    
+    <h2>Status:</h2>
+    <div id="status">Loading...</div>
+    
+    <h2>Token:</h2>
+    <div id="token" style="word-break: break-all;">Waiting for token...</div>
+    
+    <script>
+        document.getElementById('domain').textContent = window.location.hostname;
+        
+        let widgetId;
+        
+        window.onloadTurnstileCallback = function() {
+            console.log('Turnstile script loaded');
+            document.getElementById('status').textContent = 'Turnstile script loaded, rendering widget...';
+            
+            widgetId = turnstile.render('#turnstile-widget', {
+                sitekey: '1x00000000000000000000AA',
+                theme: 'light',
+                size: 'normal',
+                callback: function(token) {
+                    console.log('Success! Token:', token);
+                    document.getElementById('status').textContent = 'Success! Token received.';
+                    document.getElementById('token').textContent = token;
+                },
+                'error-callback': function(error) {
+                    console.error('Error:', error);
+                    document.getElementById('status').textContent = 'Error: ' + error;
+                },
+                'expired-callback': function() {
+                    console.log('Token expired');
+                    document.getElementById('status').textContent = 'Token expired';
+                },
+                'before-interactive-callback': function() {
+                    console.log('Before interactive');
+                },
+                'after-interactive-callback': function() {
+                    console.log('After interactive');
+                }
+            });
+        };
+        
+        // Timeout check
+        setTimeout(function() {
+            if (document.getElementById('status').textContent === 'Loading...') {
+                document.getElementById('status').textContent = 'Timeout: Widget did not render after 15 seconds';
+            }
+        }, 15000);
+    </script>
+</body>
+</html>
