@@ -114,37 +114,47 @@ If limescale has already built up, a gel-based limescale remover applied for 10�
 Wipe down hinges and handles with a damp cloth regularly. For brushed or matt black finishes, avoid acidic cleaners — a damp microfibre cloth is sufficient.`,
   },
   {
-    slug: "supply-only-vs-supply-and-fit",
-    title: "Supply Only vs Supply and Fit: Which Option Is Right for Your Project?",
+    slug: "supply-only-guide",
+    title: "Supply Only: Working with Your Own Installer",
     excerpt:
-      "Both options have their place. Here's how to decide which makes more sense for your bathroom renovation.",
+      "How our supply-only service works, what's included, and what to expect when you arrange installation through your own bathroom fitter.",
     date: "15 January 2026",
     readTime: "4 min read",
     category: "Buying Guide",
-    content: `When ordering a bespoke frameless shower enclosure, you have two options: supply only (we deliver the glass and hardware, you arrange installation) or supply and fit (we handle everything end to end). Here's how to think about it.
+    content: `When ordering a bespoke frameless shower enclosure on a supply-only basis, you take the measurements (or arrange a survey), we manufacture the glass and hardware to your specification, and your own bathroom fitter installs it.
 
-## Supply and Fit
+## What's Included
 
-Our supply-and-fit service covers London and the surrounding area. We visit the site for a survey, take measurements, advise on configuration, manufacture the glass, and return to install it.
+You receive all glass panels cut to size, hinges, channels or wall profiles, handles, seals, and any other hardware specified in your quote. We also provide detailed installation instructions prepared specifically for your shower, with technical drawings showing exact placement of hardware and panel positions.
 
-This is the right option if you want one point of contact and no coordination between trades. It's also the better choice for complex configurations — frameless wet rooms, large walk-in panels, or enclosures where the walls are significantly out of plumb.
+## How It Works
 
-The survey visit before manufacture means we catch any issues before the glass is cut. That's a meaningful benefit.
+You send us your measurements — either from your own site visit or from your bathroom fitter. We review them, advise on any issues (out-of-plumb walls, access constraints, plumbing clashes), and provide a detailed quote.
 
-## Supply Only
+Once you accept the quote and pay the deposit, we manufacture your glass. Lead time is typically 2–4 weeks. The glass arrives in purpose-built A-frames designed to protect it in transit. You'll receive tracking and a delivery window.
 
-Supply-only works well when you already have a competent bathroom fitter you trust, or when you're outside London and a site visit isn't practical.
+Your installer fits the glass following the instructions we provide. We're available by phone or email if your fitter has questions during installation.
 
-You take the measurements, we quote, manufacture, and deliver. Your installer handles the fit. We provide full hardware and fitting instructions, and we're available on the phone if your fitter has questions during installation.
+## Why Choose Supply Only
 
-For straightforward configurations — a standard hinged door with a fixed side panel, or a simple walk-in — most experienced bathroom fitters are comfortable working with frameless glass.
+**You have a trusted installer**: If you're already working with a bathroom fitter you trust, supply-only means they install our glass — you don't pay for labour you don't need.
 
-## The Decision
+**Available nationwide**: We supply across the entire UK. Our survey service covers London and surrounding areas, but supply-only orders ship anywhere.
 
-If you're in London: consider supply and fit, particularly for a first frameless installation or any non-standard configuration.
+**Same quality glass**: Identical 10mm toughened safety glass, premium hardware, and precise manufacturing — regardless of who installs it.
 
-If you're outside London, or you have an installer you trust: supply only is straightforward and cost-effective.
+## What Your Installer Needs to Know
 
-When in doubt, contact us. We'll give you an honest view of which option suits your project.`,
+Frameless glass is heavier and requires more care than framed alternatives. Most experienced bathroom fitters are comfortable with it, but if it's their first frameless install, they should review the instructions before starting.
+
+Hinges must be correctly torqued to specification. Over-tightening can crack the glass. Under-tightening causes the door to sag over time. We provide torque specs with every order.
+
+Seals along the bottom of panels are cut to length on-site and pressed into the channel. They should sit flush without gaps.
+
+## When to Measure
+
+Measure after tiling and waterproofing are complete, with the shower tray (if applicable) in place. Walls need to be at their finished surface, and plumbing should be in its final position.
+
+If you measure too early and the wall position changes by 10mm before the glass arrives, the glass won't fit. That's a costly mistake with bespoke products.`,
   },
 ];

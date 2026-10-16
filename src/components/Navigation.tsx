@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Phone, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import logo from "@/assets/Custom Showers Main1.png";
@@ -26,7 +26,6 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
     { label: "Home", href: "/" },
     { label: "Design Your Shower", href: "/design-shower" },
     { label: "Supply Only", href: "/supply-only" },
-    { label: "Balustrades", href: "/balustrades" },
     { label: "Gallery", href: isHomePage ? "#gallery" : "/#gallery" },
     { label: "Contact", href: isHomePage ? "#contact" : "/#contact" },
   ];
@@ -51,7 +50,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
     <>
       {/* Full-width header — desktop only, shown when NOT scrolled */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${
+        className={`fixed top-0 left-0 right-0 z-50 hidden lg:block transition-all duration-500 ease-in-out ${
           isScrolled ? "opacity-0 pointer-events-none -translate-y-2" : "opacity-100"
         }`}
       >
@@ -101,13 +100,6 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
                     () => setIsMobileMenuOpen(false)
                   )
                 )}
-                <a
-                  href="tel:+447123456789"
-                  className="flex items-center gap-2 py-3 text-white/80 transition-colors duration-300 font-semibold"
-                >
-                  <Phone className="w-5 h-5" />
-                  +44 7123 456789
-                </a>
               </nav>
             )}
           </div>
@@ -167,13 +159,6 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
                   () => setIsMobileMenuOpen(false)
                 )
               )}
-              <a
-                href="tel:+447123456789"
-                className="flex items-center gap-2 py-3 text-primary transition-colors duration-300 font-semibold"
-              >
-                <Phone className="w-5 h-5" />
-                +44 7123 456789
-              </a>
               <Button variant="default" className="mt-2 w-full" onClick={() => { onOpenQuote?.(); setIsMobileMenuOpen(false); }}>
                 Get A Free Quote
               </Button>

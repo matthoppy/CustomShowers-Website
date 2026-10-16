@@ -49,7 +49,7 @@ export default function QuoteView() {
     if (paymentStatus === 'success') {
       toast({
         title: 'Payment Successful!',
-        description: 'Thank you for your payment. We\'ll be in touch shortly to arrange installation.',
+        description: 'Thank you for your payment. We\'ll be in touch shortly to confirm delivery.',
         variant: 'default',
       });
       clearPaymentStatus();
@@ -445,12 +445,6 @@ export default function QuoteView() {
                   <a href="mailto:sales@customshowers.uk">
                     <Mail className="w-4 h-4 mr-2" />
                     Email Us
-                  </a>
-                </Button>
-                <Button variant="outline" asChild>
-                  <a href="tel:+441234567890">
-                    <Phone className="w-4 h-4 mr-2" />
-                    Call Us
                   </a>
                 </Button>
               </div>

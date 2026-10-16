@@ -19,9 +19,9 @@ const steps = [
   },
   {
     number: "04",
-    title: "Professional Installation",
+    title: "Delivery & Support",
     description:
-      "Our experienced team installs your enclosure to the highest standard. We leave your bathroom spotless and walk you through everything before we go.",
+      "Your glass arrives in purpose-built A-frames with detailed installation guides. We provide full technical support to your installer throughout the process.",
   },
 ];
 
@@ -35,7 +35,7 @@ const Process = () => {
             How It Works
           </h2>
           <p className="text-xl text-white/70 max-w-2xl mx-auto">
-            From first contact to finished installation — a simple, stress-free process
+            From first contact to delivery — a simple, stress-free process
           </p>
         </div>
 

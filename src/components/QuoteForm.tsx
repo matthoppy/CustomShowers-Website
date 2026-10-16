@@ -152,10 +152,10 @@ const QuoteForm = () => {
 
       <div>
         <label className="block text-sm font-medium text-primary-foreground mb-2">
-          Service Type
+          Bathroom Location
         </label>
         <div className="grid grid-cols-2 gap-3">
-          {["Supply Only", "Supply + London Installation"].map((option) => (
+          {["London", "Outside London"].map((option) => (
             <label
               key={option}
               className="flex items-center gap-3 px-4 py-3 bg-background border border-input cursor-pointer has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary transition-colors duration-200"

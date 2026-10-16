@@ -8,7 +8,7 @@ const testimonials = [
   {
     name: "James T.",
     location: "Islington, London",
-    text: "Absolutely thrilled with our new frameless shower enclosure. The team was professional throughout — from the survey to installation. The glass quality is exceptional and it's completely transformed our bathroom.",
+    text: "Absolutely thrilled with our new frameless shower enclosure. The team was professional throughout — from the survey to delivery. The glass quality is exceptional and it's completely transformed our bathroom.",
     project: "Frameless Walk-In Enclosure",
   },
   {
@@ -32,14 +32,14 @@ const testimonials = [
   {
     name: "Tom W.",
     location: "Battersea, London",
-    text: "Quick turnaround, great communication and the installation team left the bathroom spotless. Our walk-in shower is now the centrepiece of the whole bathroom. 10/10.",
+    text: "Quick turnaround, great communication and everything arrived perfectly. Our walk-in shower is now the centrepiece of the whole bathroom. 10/10.",
     project: "Walk-In Frameless Screen",
   },
   {
     name: "Charlotte B.",
     location: "Fulham, London",
     text: "We've used Custom Showers twice now — once for our master bathroom and again after we renovated a second bathroom. Consistently excellent quality and service every time.",
-    project: "Two Separate Installations",
+    project: "Two Supply-Only Orders",
   },
 ];
 

@@ -96,7 +96,7 @@ const Gallery = () => {
             Our Projects
           </h2>
           <p className="text-xl text-primary-foreground/80 max-w-2xl mx-auto">
-            Explore our portfolio of completed installations
+            Explore our portfolio of completed projects
           </p>
         </div>
 

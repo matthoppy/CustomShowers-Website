@@ -53,7 +53,7 @@ const faqs = [
   {
     question: "Who installs the shower?",
     answer:
-      "You arrange installation through your own bathroom fitter, tiler, or builder. We provide the glass and hardware only. If you're in London and need installation, ask us about our full supply-and-fit service.",
+      "You arrange installation through your own bathroom fitter, tiler, or builder. We provide the glass and hardware only.",
   },
   {
     question: "What if my measurements are slightly off?",
@@ -151,7 +151,7 @@ const SupplyOnly = () => {
               },
               {
                 title: "Same Quality Glass",
-                body: "Identical 10mm toughened safety glass, premium hardware, and precise manufacturing — regardless of whether we fit it.",
+                body: "Identical 10mm toughened safety glass, premium hardware, and precise manufacturing, ready for your fitter.",
               },
             ].map((card) => (
               <div key={card.title} className="bg-background rounded-xl p-8 shadow-sm">
