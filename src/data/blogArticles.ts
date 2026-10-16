@@ -133,7 +133,7 @@ You send us your measurements — either from your own site visit or from your b
 
 Once you accept the quote and pay the deposit, we manufacture your glass. Lead time is typically 2–4 weeks. The glass arrives in purpose-built A-frames designed to protect it in transit. You'll receive tracking and a delivery window.
 
-Your installer fits the glass following the instructions we provide. We're available by phone or email if your fitter has questions during installation.
+Your installer fits the glass following the instructions we provide. We're available by email if your fitter has questions during installation.
 
 ## Why Choose Supply Only
 

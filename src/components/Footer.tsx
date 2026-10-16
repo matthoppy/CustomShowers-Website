@@ -138,7 +138,7 @@ We collect information when you:
 - Request a quote
 - Place an order
 - Arrange delivery
-- Contact us by phone or email
+- Contact us by email
 
 4. How We Use Your Information
 We use personal data to:
@@ -313,7 +313,7 @@ const PrivacyContent = () => (
         <li>Request a quote</li>
         <li>Place an order</li>
         <li>Arrange delivery</li>
-        <li>Contact us by phone or email</li>
+        <li>Contact us by email</li>
       </ul>
     </section>
     <section>
