@@ -265,6 +265,55 @@ export function ReviewStep({
 
   return (
     <div className="space-y-6">
+      {/* Measuring method and height information */}
+      {(state.measuringMethod || state.heightMeasurement) && (
+        <div className="rounded-lg border">
+          <div className="border-b bg-muted/40 px-4 py-3">
+            <h3 className="text-sm font-semibold">Measurement details</h3>
+          </div>
+          <div className="divide-y">
+            {state.measuringMethod && (
+              <div className="px-4 py-3 text-sm">
+                <div className="flex items-baseline justify-between gap-4">
+                  <span className="text-muted-foreground">Measured with</span>
+                  <span className="font-medium">
+                    {state.measuringMethod === 'laser' ? 'Laser measure' : 'Tape measure'}
+                  </span>
+                </div>
+              </div>
+            )}
+            {state.heightMeasurement && (
+              <>
+                <div className="px-4 py-3 text-sm">
+                  <div className="flex items-baseline justify-between gap-4">
+                    <span className="text-muted-foreground">Height reference</span>
+                    <span className="font-medium capitalize">
+                      {state.heightMeasurement.reference.replace('-', ' ')}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-baseline justify-between gap-4 text-xs text-muted-foreground">
+                    <span>Height to reference</span>
+                    <span className="font-mono">{state.heightMeasurement.heightToReferenceMm}mm</span>
+                  </div>
+                </div>
+                <div className="px-4 py-3 text-sm">
+                  <div className="flex items-baseline justify-between gap-4">
+                    <span className="text-muted-foreground">Shower head height</span>
+                    <span className="font-mono">{state.heightMeasurement.showerHeadHeightMm}mm from tray</span>
+                  </div>
+                  {state.heightMeasurement.headClearanceWarning && (
+                    <div className="mt-2 flex gap-2 rounded bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                      <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                      <span>{state.heightMeasurement.headClearanceWarning}</span>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Panel schedule. */}
       <div className="rounded-lg border">
         <div className="border-b bg-muted/40 px-4 py-3">

@@ -1,376 +1,206 @@
 /**
  * Guided measuring wizard — one measurement per screen with illustrations.
+ * Data-driven from measurementPlans.ts.
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { ArrowLeft, ArrowRight, Ruler, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { ConfiguratorState, MeasuringMethod } from './types';
+import { calculateRake, type LaserGapMeasurements } from './rakeCalculations';
+import {
+  getMeasurementPlan,
+  getStepsForMethod,
+  DEFAULT_GLASS_HEIGHT_MM,
+  MIN_HEAD_CLEARANCE_MM,
+  type HeightReference,
+} from './measurementPlans';
+import type { MeasuringMethod } from './types';
+import { WizardIllustrations } from './WizardIllustrations';
 
-interface LaserGaps {
-  gapTopMm: number;
-  gapMiddleMm?: number;
-  gapBottomMm: number;
-  heightMm: number;
-}
-
-interface MeasuringResult {
+export interface MeasuringResult {
   measuringMethod: MeasuringMethod;
-  showerType: 'alcove' | 'corner' | 'walk-in' | 'over-bath';
-  openingWidthMm: number;
-  depthMm?: number;
-  heightMm: number;
-  floorType: 'tray' | 'wet-room' | 'over-bath';
-  outOfPlumb: boolean;
-  obstacles: string[];
-  notSure: string[];
+  configurationId: string;
+  measurements: Record<string, string | number>;
+  heightReference: HeightReference;
+  heightToReferenceMm: number;
+  showerHeadHeightMm: number;
+  headClearanceWarning?: string;
+  floorType?: 'tray' | 'wet-room' | 'over-bath';
+  obstacles?: string[];
   laserGaps?: {
-    leftWall?: LaserGaps;
-    rightWall?: LaserGaps;
-    backWall?: LaserGaps;
+    leftWall?: LaserGapMeasurements & { description: string; warningMessage?: string };
+    rightWall?: LaserGapMeasurements & { description: string; warningMessage?: string };
+    backWall?: LaserGapMeasurements & { description: string; warningMessage?: string };
   };
+  notSure: string[];
 }
 
 interface MeasuringWizardProps {
+  configurationId: string;
   onComplete: (result: MeasuringResult) => void;
   onBack: () => void;
 }
 
-type StepId =
-  | 'measuring-method'
-  | 'shower-type'
-  | 'opening-width'
-  | 'depth'
-  | 'height'
-  | 'floor-type'
-  | 'plumb-check'
-  | 'laser-left-wall'
-  | 'laser-right-wall'
-  | 'laser-back-wall'
-  | 'obstacles';
+export function MeasuringWizard({ configurationId, onComplete, onBack }: MeasuringWizardProps) {
+  const plan = getMeasurementPlan(configurationId);
 
-interface WizardStep {
-  id: StepId;
-  title: string;
-  description: string;
-  illustration: (method?: MeasuringMethod) => JSX.Element;
-  tip: (method?: MeasuringMethod) => string;
-  canSkip?: boolean;
-}
-
-const STEPS: WizardStep[] = [
-  {
-    id: 'measuring-method',
-    title: 'How will you measure?',
-    description: 'Choose your measuring tool',
-    illustration: () => (
-      <svg viewBox="0 0 200 150" className="h-auto w-full" aria-hidden="true">
-        <g transform="translate(50, 40)">
-          <rect x="0" y="0" width="40" height="8" rx="2" fill="currentColor" className="text-primary/20" />
-          <rect x="0" y="0" width="10" height="8" fill="currentColor" className="text-primary" />
-          <rect x="12" y="0" width="10" height="8" fill="currentColor" className="text-primary" />
-          <line x1="5" y1="8" x2="5" y2="15" stroke="currentColor" strokeWidth="1" className="text-primary" />
-          <line x1="17" y1="8" x2="17" y2="15" stroke="currentColor" strokeWidth="1" className="text-primary" />
-          <text x="20" y="30" textAnchor="middle" className="fill-muted-foreground text-xs">Tape</text>
-        </g>
-        <g transform="translate(110, 40)">
-          <rect x="0" y="0" width="35" height="10" rx="2" fill="currentColor" className="text-primary" />
-          <rect x="2" y="2" width="8" height="6" rx="1" fill="currentColor" className="text-background" />
-          <line x1="35" y1="5" x2="50" y2="5" stroke="currentColor" strokeWidth="2" strokeDasharray="3 2" className="text-destructive" />
-          <circle cx="50" cy="5" r="2" fill="currentColor" className="text-destructive" />
-          <text x="17" y="30" textAnchor="middle" className="fill-muted-foreground text-xs">Laser</text>
-        </g>
-      </svg>
-    ),
-    tip: () => 'Both work — laser measures are faster but need a spirit level to check if walls are plumb.',
-  },
-  {
-    id: 'shower-type',
-    title: 'What type of space is this?',
-    description: 'This helps us understand the layout',
-    illustration: () => (
-      <svg viewBox="0 0 200 150" className="h-auto w-full" aria-hidden="true">
-        <rect x="20" y="30" width="160" height="90" stroke="currentColor" strokeWidth="2" fill="none" className="text-muted-foreground" />
-        <line x1="20" y1="30" x2="20" y2="120" stroke="currentColor" strokeWidth="3" className="text-primary" />
-        <line x1="180" y1="30" x2="180" y2="120" stroke="currentColor" strokeWidth="3" className="text-primary" />
-        <text x="100" y="140" textAnchor="middle" className="fill-muted-foreground text-xs">Alcove (between two walls)</text>
-      </svg>
-    ),
-    tip: () => 'Choose the option that best matches your bathroom layout.',
-  },
-  {
-    id: 'opening-width',
-    title: 'How wide is the opening?',
-    description: 'Measure at the top, middle and bottom',
-    illustration: (method) => {
-      if (method === 'laser') {
-        return (
-          <svg viewBox="0 0 200 150" className="h-auto w-full" aria-hidden="true">
-            <line x1="40" y1="30" x2="40" y2="120" stroke="currentColor" strokeWidth="2" className="text-muted-foreground" />
-            <line x1="160" y1="30" x2="160" y2="120" stroke="currentColor" strokeWidth="2" className="text-muted-foreground" />
-            <rect x="35" y="38" width="15" height="8" rx="2" fill="currentColor" className="text-primary" />
-            <line x1="50" y1="42" x2="160" y2="42" stroke="currentColor" strokeWidth="2" strokeDasharray="3 2" className="text-destructive" />
-            <circle cx="160" cy="42" r="2" fill="currentColor" className="text-destructive" />
-            <rect x="35" y="73" width="15" height="8" rx="2" fill="currentColor" className="text-primary" />
-            <line x1="50" y1="77" x2="160" y2="77" stroke="currentColor" strokeWidth="2" strokeDasharray="3 2" className="text-destructive" />
-            <circle cx="160" cy="77" r="2" fill="currentColor" className="text-destructive" />
-            <rect x="35" y="108" width="15" height="8" rx="2" fill="currentColor" className="text-primary" />
-            <line x1="50" y1="112" x2="160" y2="112" stroke="currentColor" strokeWidth="2" strokeDasharray="3 2" className="text-destructive" />
-            <circle cx="160" cy="112" r="2" fill="currentColor" className="text-destructive" />
-            <text x="100" y="140" textAnchor="middle" className="fill-muted-foreground text-xs">Laser at top, middle & bottom</text>
-          </svg>
-        );
-      }
-      return (
-        <svg viewBox="0 0 200 150" className="h-auto w-full" aria-hidden="true">
-          <line x1="40" y1="30" x2="40" y2="120" stroke="currentColor" strokeWidth="2" className="text-muted-foreground" />
-          <line x1="160" y1="30" x2="160" y2="120" stroke="currentColor" strokeWidth="2" className="text-muted-foreground" />
-          <line x1="40" y1="40" x2="160" y2="40" stroke="currentColor" strokeWidth="2" strokeDasharray="4 2" className="text-primary" />
-          <line x1="40" y1="75" x2="160" y2="75" stroke="currentColor" strokeWidth="2" strokeDasharray="4 2" className="text-primary" />
-          <line x1="40" y1="110" x2="160" y2="110" stroke="currentColor" strokeWidth="2" strokeDasharray="4 2" className="text-primary" />
-          <path d="M 40 40 L 35 45 M 40 40 L 45 45" stroke="currentColor" strokeWidth="2" className="text-primary" />
-          <path d="M 160 40 L 155 45 M 160 40 L 165 45" stroke="currentColor" strokeWidth="2" className="text-primary" />
-          <text x="100" y="140" textAnchor="middle" className="fill-muted-foreground text-xs">Measure top, middle & bottom</text>
-        </svg>
-      );
-    },
-    tip: (method) =>
-      method === 'laser'
-        ? 'Hold the laser flat against the wall or tile and aim square at the opposite wall. Measure at three heights — we will use the smallest.'
-        : 'Walls are rarely perfectly straight. Measure at three heights and we will use the smallest — glass will not fit if we use the widest.',
-  },
-  {
-    id: 'depth',
-    title: 'How deep is the space?',
-    description: 'Wall to wall (for corner enclosures)',
-    illustration: () => (
-      <svg viewBox="0 0 200 150" className="h-auto w-full" aria-hidden="true">
-        <line x1="30" y1="30" x2="170" y2="30" stroke="currentColor" strokeWidth="2" className="text-muted-foreground" />
-        <line x1="30" y1="30" x2="30" y2="120" stroke="currentColor" strokeWidth="2" className="text-muted-foreground" />
-        <line x1="30" y1="120" x2="170" y2="120" stroke="currentColor" strokeWidth="2" strokeDasharray="4 2" className="text-primary" />
-        <path d="M 30 120 L 35 115 M 30 120 L 35 125" stroke="currentColor" strokeWidth="2" className="text-primary" />
-        <path d="M 170 120 L 165 115 M 170 120 L 165 125" stroke="currentColor" strokeWidth="2" className="text-primary" />
-        <text x="100" y="145" textAnchor="middle" className="fill-muted-foreground text-xs">Back wall to front edge</text>
-      </svg>
-    ),
-    tip: 'Only needed for corner enclosures. Skip this if you have an alcove or walk-in.',
-    canSkip: true,
-  },
-  {
-    id: 'height',
-    title: 'How tall should the glass be?',
-    description: 'From the tray or floor upwards',
-    illustration: () => (
-      <svg viewBox="0 0 200 150" className="h-auto w-full" aria-hidden="true">
-        <rect x="70" y="110" width="60" height="3" fill="currentColor" className="text-muted-foreground" />
-        <line x1="90" y1="110" x2="90" y2="30" stroke="currentColor" strokeWidth="2" className="text-muted-foreground" />
-        <line x1="110" y1="110" x2="110" y2="30" stroke="currentColor" strokeWidth="2" className="text-muted-foreground" />
-        <line x1="85" y1="110" x2="85" y2="30" stroke="currentColor" strokeWidth="2" strokeDasharray="4 2" className="text-primary" />
-        <path d="M 85 30 L 80 35 M 85 30 L 90 35" stroke="currentColor" strokeWidth="2" className="text-primary" />
-        <path d="M 85 110 L 80 105 M 85 110 L 90 105" stroke="currentColor" strokeWidth="2" className="text-primary" />
-        <text x="100" y="140" textAnchor="middle" className="fill-muted-foreground text-xs">Tray/floor to top of glass</text>
-      </svg>
-    ),
-    tip: 'Measure up to a grout line above the shower head. Most are 2000–2100mm. Bath screens are usually 1500mm.',
-  },
-  {
-    id: 'floor-type',
-    title: 'What type of floor or base?',
-    description: 'This affects how the glass is sealed',
-    illustration: () => (
-      <svg viewBox="0 0 200 150" className="h-auto w-full" aria-hidden="true">
-        <rect x="50" y="90" width="100" height="8" fill="currentColor" className="text-primary/20" />
-        <rect x="50" y="98" width="100" height="20" fill="currentColor" className="text-muted-foreground/30" />
-        <line x1="80" y1="70" x2="80" y2="90" stroke="currentColor" strokeWidth="2" className="text-muted-foreground" />
-        <line x1="120" y1="70" x2="120" y2="90" stroke="currentColor" strokeWidth="2" className="text-muted-foreground" />
-        <text x="100" y="140" textAnchor="middle" className="fill-muted-foreground text-xs">Tray, wet room, or over bath</text>
-      </svg>
-    ),
-    tip: 'Choose the surface the glass will sit on.',
-  },
-  {
-    id: 'plumb-check',
-    title: 'Are the walls straight and vertical?',
-    description: 'Optional — check with a spirit level',
-    illustration: () => (
-      <svg viewBox="0 0 200 150" className="h-auto w-full" aria-hidden="true">
-        <line x1="60" y1="30" x2="60" y2="120" stroke="currentColor" strokeWidth="2" className="text-muted-foreground" />
-        <line x1="65" y1="40" x2="65" y2="120" stroke="currentColor" strokeWidth="2" strokeDasharray="4 2" className="text-primary" />
-        <rect x="50" y="65" width="30" height="10" rx="2" fill="currentColor" className="text-primary/40" stroke="currentColor" strokeWidth="1" />
-        <circle cx="65" cy="70" r="2" fill="currentColor" className="text-primary" />
-        <text x="100" y="140" textAnchor="middle" className="fill-muted-foreground text-xs">Hold a level against the wall</text>
-      </svg>
-    ),
-    tip: 'If walls lean or the floor slopes, we will cut the glass to fit. Skip this and we will check on survey.',
-    canSkip: true,
-  },
-  {
-    id: 'laser-left-wall',
-    title: 'Left wall: laser line to wall',
-    description: 'Project a vertical laser line parallel to the wall',
-    illustration: () => (
-      <svg viewBox="0 0 200 150" className="h-auto w-full" aria-hidden="true">
-        <line x1="40" y1="30" x2="40" y2="120" stroke="currentColor" strokeWidth="3" className="text-muted-foreground" />
-        <line x1="60" y1="30" x2="60" y2="120" stroke="currentColor" strokeWidth="2" strokeDasharray="4 2" className="text-destructive" />
-        <line x1="60" y1="40" x2="40" y2="40" stroke="currentColor" strokeWidth="1" className="text-primary" />
-        <text x="50" y="38" textAnchor="middle" className="fill-primary text-xs font-semibold">Top</text>
-        <line x1="60" y1="75" x2="40" y2="75" stroke="currentColor" strokeWidth="1" className="text-primary" />
-        <text x="50" y="73" textAnchor="middle" className="fill-primary text-xs font-semibold">Mid</text>
-        <line x1="60" y1="110" x2="40" y2="110" stroke="currentColor" strokeWidth="1" className="text-primary" />
-        <text x="50" y="108" textAnchor="middle" className="fill-primary text-xs font-semibold">Bot</text>
-        <text x="100" y="140" textAnchor="middle" className="fill-muted-foreground text-xs">Laser line (red) parallel to wall, tape gaps</text>
-      </svg>
-    ),
-    tip: () => 'Project a vertical laser line parallel to the wall. Measure the gap from the laser line to the wall at the top, middle (optional) and bottom with a tape.',
-    canSkip: false,
-  },
-  {
-    id: 'laser-right-wall',
-    title: 'Right wall: laser line to wall',
-    description: 'Project a vertical laser line parallel to the wall',
-    illustration: () => (
-      <svg viewBox="0 0 200 150" className="h-auto w-full" aria-hidden="true">
-        <line x1="160" y1="30" x2="160" y2="120" stroke="currentColor" strokeWidth="3" className="text-muted-foreground" />
-        <line x1="140" y1="30" x2="140" y2="120" stroke="currentColor" strokeWidth="2" strokeDasharray="4 2" className="text-destructive" />
-        <line x1="140" y1="40" x2="160" y2="40" stroke="currentColor" strokeWidth="1" className="text-primary" />
-        <text x="150" y="38" textAnchor="middle" className="fill-primary text-xs font-semibold">Top</text>
-        <line x1="140" y1="75" x2="160" y2="75" stroke="currentColor" strokeWidth="1" className="text-primary" />
-        <text x="150" y="73" textAnchor="middle" className="fill-primary text-xs font-semibold">Mid</text>
-        <line x1="140" y1="110" x2="160" y2="110" stroke="currentColor" strokeWidth="1" className="text-primary" />
-        <text x="150" y="108" textAnchor="middle" className="fill-primary text-xs font-semibold">Bot</text>
-        <text x="100" y="140" textAnchor="middle" className="fill-muted-foreground text-xs">Laser line (red) parallel to wall, tape gaps</text>
-      </svg>
-    ),
-    tip: () => 'Project a vertical laser line parallel to the wall. Measure the gap from the laser line to the wall at the top, middle (optional) and bottom with a tape.',
-    canSkip: false,
-  },
-  {
-    id: 'laser-back-wall',
-    title: 'Back wall: laser line to wall',
-    description: 'For corner/walk-in enclosures',
-    illustration: () => (
-      <svg viewBox="0 0 200 150" className="h-auto w-full" aria-hidden="true">
-        <line x1="30" y1="40" x2="170" y2="40" stroke="currentColor" strokeWidth="3" className="text-muted-foreground" />
-        <line x1="30" y1="60" x2="170" y2="60" stroke="currentColor" strokeWidth="2" strokeDasharray="4 2" className="text-destructive" />
-        <line x1="50" y1="60" x2="50" y2="40" stroke="currentColor" strokeWidth="1" className="text-primary" />
-        <line x1="100" y1="60" x2="100" y2="40" stroke="currentColor" strokeWidth="1" className="text-primary" />
-        <line x1="150" y1="60" x2="150" y2="40" stroke="currentColor" strokeWidth="1" className="text-primary" />
-        <text x="100" y="140" textAnchor="middle" className="fill-muted-foreground text-xs">Laser line (red) parallel to wall, tape gaps</text>
-      </svg>
-    ),
-    tip: () => 'Project a vertical laser line parallel to the back wall. Measure gaps at top, middle (optional) and bottom.',
-    canSkip: false,
-  },
-  {
-    id: 'obstacles',
-    title: 'Any obstacles in the way?',
-    description: 'Windows, radiators, sloped ceiling, etc.',
-    illustration: () => (
-      <svg viewBox="0 0 200 150" className="h-auto w-full" aria-hidden="true">
-        <rect x="40" y="40" width="40" height="30" stroke="currentColor" strokeWidth="2" fill="currentColor" className="text-muted-foreground/20" />
-        <line x1="60" y1="40" x2="60" y2="70" stroke="currentColor" strokeWidth="1" className="text-muted-foreground" />
-        <line x1="40" y1="55" x2="80" y2="55" stroke="currentColor" strokeWidth="1" className="text-muted-foreground" />
-        <rect x="120" y="90" width="40" height="30" rx="2" fill="currentColor" className="text-muted-foreground/20" stroke="currentColor" strokeWidth="2" />
-        <line x1="125" y1="95" x2="155" y2="115" stroke="currentColor" strokeWidth="1" className="text-destructive" />
-        <line x1="155" y1="95" x2="125" y2="115" stroke="currentColor" strokeWidth="1" className="text-destructive" />
-        <text x="100" y="140" textAnchor="middle" className="fill-muted-foreground text-xs">Windows, radiators, slopes</text>
-      </svg>
-    ),
-    tip: 'Anything that would get in the way of the glass or affect how it fits.',
-    canSkip: true,
-  },
-];
-
-export function MeasuringWizard({ onComplete, onBack }: MeasuringWizardProps) {
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [measuringMethod, setMeasuringMethod] = useState<MeasuringMethod>('tape');
-  const [showerType, setShowerType] = useState<'alcove' | 'corner' | 'walk-in' | 'over-bath'>('alcove');
-  const [openingWidthTop, setOpeningWidthTop] = useState('');
-  const [openingWidthMiddle, setOpeningWidthMiddle] = useState('');
-  const [openingWidthBottom, setOpeningWidthBottom] = useState('');
-  const [widthNotSure, setWidthNotSure] = useState(false);
-  const [depthMm, setDepthMm] = useState('');
-  const [depthNotSure, setDepthNotSure] = useState(false);
-  const [heightMm, setHeightMm] = useState('2000');
-  const [heightNotSure, setHeightNotSure] = useState(false);
+  const [currentStepIndex, setCurrentStepIndex] = useState(-1); // -1 = method choice
+  const [measurements, setMeasurements] = useState<Record<string, string>>({});
+  const [notSure, setNotSure] = useState<Set<string>>(new Set());
   const [floorType, setFloorType] = useState<'tray' | 'wet-room' | 'over-bath'>('tray');
-  const [outOfPlumb, setOutOfPlumb] = useState(false);
-  const [plumbSkipped, setPlumbSkipped] = useState(false);
   const [obstacles, setObstacles] = useState<string[]>([]);
-  const [obstaclesSkipped, setObstaclesSkipped] = useState(false);
-  
-  const [laserLeftGapTop, setLaserLeftGapTop] = useState('');
-  const [laserLeftGapMiddle, setLaserLeftGapMiddle] = useState('');
-  const [laserLeftGapBottom, setLaserLeftGapBottom] = useState('');
-  const [laserRightGapTop, setLaserRightGapTop] = useState('');
-  const [laserRightGapMiddle, setLaserRightGapMiddle] = useState('');
-  const [laserRightGapBottom, setLaserRightGapBottom] = useState('');
-  const [laserBackGapTop, setLaserBackGapTop] = useState('');
-  const [laserBackGapMiddle, setLaserBackGapMiddle] = useState('');
-  const [laserBackGapBottom, setLaserBackGapBottom] = useState('');
+  const [heightReference, setHeightReference] = useState<HeightReference>('grout-line');
+  const [heightToReference, setHeightToReference] = useState('');
+  const [showerHeadHeight, setShowerHeadHeight] = useState('');
 
-  const currentStep = STEPS[currentStepIndex];
-  const isLast = currentStepIndex === STEPS.length - 1;
+  const steps = currentStepIndex === -1 ? [] : getStepsForMethod(plan, measuringMethod);
+  const currentStep = currentStepIndex >= 0 ? steps[currentStepIndex] : null;
+  const isLast = currentStepIndex === steps.length - 1;
 
-  const canProceed = () => {
-    switch (currentStep.id) {
-      case 'shower-type':
-        return true;
-      case 'opening-width':
-        return (
-          widthNotSure ||
-          (openingWidthTop.trim() !== '' &&
-            openingWidthMiddle.trim() !== '' &&
-            openingWidthBottom.trim() !== '')
-        );
-      case 'depth':
-        return depthNotSure || depthMm.trim() !== '' || currentStep.canSkip;
-      case 'height':
-        return heightNotSure || heightMm.trim() !== '';
-      case 'floor-type':
-        return true;
-      case 'plumb-check':
-        return true;
-      case 'obstacles':
-        return true;
-      default:
-        return false;
+  const getValue = (key: string) => measurements[key] || '';
+  const setValue = (key: string, value: string) => {
+    setMeasurements((m) => ({ ...m, [key]: value }));
+    notSure.delete(key);
+    setNotSure(new Set(notSure));
+  };
+
+  const toggleNotSure = (key: string, defaultValue: string) => {
+    if (notSure.has(key)) {
+      notSure.delete(key);
+      setNotSure(new Set(notSure));
+    } else {
+      setValue(key, defaultValue);
+      setNotSure(new Set(notSure.add(key)));
     }
   };
 
+  const canProceed = useCallback(() => {
+    if (currentStepIndex === -1) return true; // Method choice
+
+    if (!currentStep) return false;
+
+    const stepId = currentStep.id;
+
+    // Check if this step has required inputs
+    if (stepId.includes('width') || stepId.includes('depth') || stepId.includes('panel')) {
+      const value = getValue(stepId);
+      return notSure.has(stepId) || (value.trim() !== '' && parseInt(value, 10) > 0);
+    }
+
+    if (stepId === 'height-reference') {
+      return true; // Always can proceed with a reference selected
+    }
+
+    if (stepId === 'height-measurement') {
+      return notSure.has('height') || (heightToReference.trim() !== '' && parseInt(heightToReference, 10) > 0);
+    }
+
+    if (stepId === 'shower-head-height') {
+      return showerHeadHeight.trim() !== '' && parseInt(showerHeadHeight, 10) > 0;
+    }
+
+    if (stepId.startsWith('laser-')) {
+      const wallKey = stepId.replace('laser-', '');
+      const top = getValue(`${wallKey}-gap-top`);
+      const bottom = getValue(`${wallKey}-gap-bottom`);
+      return top.trim() !== '' && bottom.trim() !== '' && parseInt(top, 10) >= 0 && parseInt(bottom, 10) >= 0;
+    }
+
+    if (stepId === 'floor-type') {
+      return true;
+    }
+
+    if (stepId === 'plumb-check' || stepId === 'obstacles') {
+      return true; // Optional steps
+    }
+
+    return true;
+  }, [currentStepIndex, currentStep, measurements, notSure, heightToReference, showerHeadHeight, getValue]);
+
   const handleNext = () => {
-    if (currentStep.id === 'opening-width' && showerType !== 'corner') {
-      const depthStepIndex = STEPS.findIndex((s) => s.id === 'depth');
-      setCurrentStepIndex(depthStepIndex + 1);
+    if (currentStepIndex === -1) {
+      // Move from method choice to first step
+      setCurrentStepIndex(0);
       return;
     }
 
     if (isLast) {
-      const openingWidthMm = widthNotSure
-        ? 900
-        : Math.min(
-            parseInt(openingWidthTop, 10) || 0,
-            parseInt(openingWidthMiddle, 10) || 0,
-            parseInt(openingWidthBottom, 10) || 0
-          );
+      // Build result
+      const heightMm = notSure.has('height')
+        ? DEFAULT_GLASS_HEIGHT_MM
+        : parseInt(heightToReference, 10);
+
+      const showerHeadMm = parseInt(showerHeadHeight, 10);
+      let headClearanceWarning: string | undefined;
+
+      if (showerHeadMm > 0) {
+        const clearance = heightMm - showerHeadMm;
+        if (clearance < 0) {
+          headClearanceWarning = `Glass top (${heightMm}mm) is BELOW the shower head (${showerHeadMm}mm)`;
+        } else if (clearance < MIN_HEAD_CLEARANCE_MM) {
+          headClearanceWarning = `Glass top is only ${clearance}mm above the shower head (minimum ${MIN_HEAD_CLEARANCE_MM}mm recommended)`;
+        }
+      }
+
+      const laserGaps: MeasuringResult['laserGaps'] = {};
+
+      if (measuringMethod === 'laser') {
+        const processWall = (wallKey: string, wallName: string) => {
+          const top = parseInt(getValue(`${wallKey}-gap-top`), 10);
+          const bottom = parseInt(getValue(`${wallKey}-gap-bottom`), 10);
+          const middle = getValue(`${wallKey}-gap-middle`);
+          const middleMm = middle ? parseInt(middle, 10) : undefined;
+
+          if (!isNaN(top) && !isNaN(bottom)) {
+            const gaps: LaserGapMeasurements = {
+              gapTopMm: top,
+              gapBottomMm: bottom,
+              gapMiddleMm: !isNaN(middleMm!) ? middleMm : undefined,
+              heightMm,
+            };
+            const rake = calculateRake(gaps, wallName);
+            return {
+              ...gaps,
+              description: rake.description,
+              warningMessage: rake.warningMessage,
+            };
+          }
+          return undefined;
+        };
+
+        if (steps.some((s) => s.id === 'laser-left-wall')) {
+          const left = processWall('left-wall', 'Left wall');
+          if (left) laserGaps.leftWall = left;
+        }
+        if (steps.some((s) => s.id === 'laser-right-wall')) {
+          const right = processWall('right-wall', 'Right wall');
+          if (right) laserGaps.rightWall = right;
+        }
+        if (steps.some((s) => s.id === 'laser-back-wall' || s.id === 'laser-anchor-wall' || s.id === 'laser-return-wall' || s.id === 'laser-side-wall')) {
+          const back = processWall('back-wall', 'Back wall');
+          if (back) laserGaps.backWall = back;
+        }
+      }
 
       const result: MeasuringResult = {
-        showerType,
-        openingWidthMm,
-        depthMm: depthNotSure || !depthMm ? undefined : parseInt(depthMm, 10),
-        heightMm: heightNotSure ? 2000 : parseInt(heightMm, 10),
-        floorType,
-        outOfPlumb: outOfPlumb || plumbSkipped,
-        obstacles: obstaclesSkipped ? [] : obstacles,
-        notSure: [
-          widthNotSure ? 'opening width' : '',
-          depthNotSure ? 'depth' : '',
-          heightNotSure ? 'height' : '',
-        ].filter(Boolean),
+        measuringMethod,
+        configurationId,
+        measurements: Object.fromEntries(
+          Object.entries(measurements).map(([k, v]) => [k, parseInt(v, 10) || v])
+        ),
+        heightReference,
+        heightToReferenceMm: heightMm,
+        showerHeadHeightMm: showerHeadMm,
+        headClearanceWarning,
+        floorType: steps.some((s) => s.id === 'floor-type') ? floorType : undefined,
+        obstacles: steps.some((s) => s.id === 'obstacles') ? obstacles : undefined,
+        laserGaps: Object.keys(laserGaps).length > 0 ? laserGaps : undefined,
+        notSure: Array.from(notSure),
       };
 
       onComplete(result);
@@ -381,45 +211,97 @@ export function MeasuringWizard({ onComplete, onBack }: MeasuringWizardProps) {
 
   const handleBack = () => {
     if (currentStepIndex === 0) {
+      setCurrentStepIndex(-1);
+    } else if (currentStepIndex === -1) {
       onBack();
     } else {
-      if (currentStep.id === 'height' && showerType !== 'corner') {
-        const depthStepIndex = STEPS.findIndex((s) => s.id === 'depth');
-        setCurrentStepIndex(depthStepIndex);
-        return;
-      }
       setCurrentStepIndex(currentStepIndex - 1);
     }
   };
 
-  const handleSkip = () => {
-    if (currentStep.id === 'depth') {
-      setDepthNotSure(true);
-    } else if (currentStep.id === 'plumb-check') {
-      setPlumbSkipped(true);
-    } else if (currentStep.id === 'obstacles') {
-      setObstaclesSkipped(true);
-    }
-    handleNext();
-  };
+  // Method choice screen
+  if (currentStepIndex === -1) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-6 px-4 py-8 sm:px-6">
+        <div>
+          <Button variant="ghost" onClick={onBack} className="mb-4">
+            ← Back
+          </Button>
+          <h2 className="text-2xl font-bold">How will you measure?</h2>
+          <p className="mt-2 text-muted-foreground">
+            Choose your measuring tool. Both work — laser is faster but needs a spirit level to check
+            if walls are plumb.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <button
+            type="button"
+            onClick={() => setMeasuringMethod('tape')}
+            className={`flex w-full items-start gap-4 rounded-lg border p-4 text-left transition-colors hover:border-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-foreground focus:ring-offset-2 ${
+              measuringMethod === 'tape' ? 'border-foreground bg-muted' : ''
+            }`}
+            style={{ minHeight: '44px' }}
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <Ruler className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold">Tape measure</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Traditional method. Measure openings and optionally check walls with a spirit level.
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMeasuringMethod('laser')}
+            className={`flex w-full items-start gap-4 rounded-lg border p-4 text-left transition-colors hover:border-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-foreground focus:ring-offset-2 ${
+              measuringMethod === 'laser' ? 'border-foreground bg-muted' : ''
+            }`}
+            style={{ minHeight: '44px' }}
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <Zap className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold">Laser measure</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Project a vertical laser line parallel to each wall, then measure gaps with a tape to
+                check if the wall is plumb.
+              </p>
+            </div>
+          </button>
+        </div>
+
+        <div className="flex justify-end border-t pt-6">
+          <Button onClick={handleNext} style={{ minHeight: '44px' }}>
+            Continue
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentStep) return null;
+
+  const stepId = currentStep.id;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-8 sm:px-6">
       <div className="mb-6">
         <div className="mb-4 flex items-center justify-between">
           <span className="text-sm font-medium text-muted-foreground">
-            Step {currentStepIndex + 1} of {STEPS.length}
+            Step {currentStepIndex + 1} of {steps.length}
           </span>
           <div className="flex gap-1">
-            {STEPS.map((_, i) => (
+            {steps.map((_, i) => (
               <div
                 key={i}
                 className={`h-1.5 w-8 rounded-full transition-colors ${
-                  i === currentStepIndex
-                    ? 'bg-primary'
-                    : i < currentStepIndex
-                      ? 'bg-primary/40'
-                      : 'bg-muted'
+                  i === currentStepIndex ? 'bg-primary' : i < currentStepIndex ? 'bg-primary/40' : 'bg-muted'
                 }`}
                 aria-hidden="true"
               />
@@ -431,7 +313,7 @@ export function MeasuringWizard({ onComplete, onBack }: MeasuringWizardProps) {
       </div>
 
       <div className="overflow-hidden rounded-lg border bg-muted p-6">
-        {currentStep.illustration()}
+        <WizardIllustrations illustrationId={currentStep.illustrationId} />
       </div>
 
       <div
@@ -444,120 +326,76 @@ export function MeasuringWizard({ onComplete, onBack }: MeasuringWizardProps) {
       </div>
 
       <div className="space-y-4">
-        {currentStep.id === 'shower-type' && (
-          <RadioGroup value={showerType} onValueChange={(v) => setShowerType(v as typeof showerType)}>
+        {/* Width/depth/panel measurements */}
+        {(stepId.includes('width') || stepId.includes('depth') || stepId.includes('panel')) && (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor={stepId}>Measurement (mm)</Label>
+              <Input
+                id={stepId}
+                type="number"
+                value={getValue(stepId)}
+                onChange={(e) => setValue(stepId, e.target.value)}
+                disabled={notSure.has(stepId)}
+                placeholder="e.g. 900"
+                className="text-base"
+                style={{ minHeight: '44px' }}
+              />
+            </div>
+            {!currentStep.required && (
+              <label className="flex cursor-pointer items-center gap-3 rounded-lg border bg-card p-3">
+                <Checkbox
+                  checked={notSure.has(stepId)}
+                  onCheckedChange={() => toggleNotSure(stepId, '900')}
+                />
+                <span className="flex-1 text-sm">
+                  I'm not sure — use a typical size and confirm on survey
+                </span>
+              </label>
+            )}
+          </>
+        )}
+
+        {/* Height reference */}
+        {stepId === 'height-reference' && (
+          <RadioGroup value={heightReference} onValueChange={(v) => setHeightReference(v as HeightReference)}>
             <div className="space-y-2">
               {[
-                { value: 'alcove', label: 'Alcove (between two walls)' },
-                { value: 'corner', label: 'Corner enclosure' },
-                { value: 'walk-in', label: 'Walk-in (no door)' },
-                { value: 'over-bath', label: 'Over a bath' },
+                { value: 'grout-line', label: 'Grout or tile line', desc: 'A horizontal grout line above the shower head' },
+                { value: 'door-frame', label: 'Door frame or architrave top', desc: 'Top of a door frame or architrave' },
+                { value: 'ceiling', label: 'Ceiling', desc: 'Floor to ceiling installation' },
+                { value: 'standard', label: 'Standard height', desc: `${DEFAULT_GLASS_HEIGHT_MM}mm (typical for most enclosures)` },
               ].map((option) => (
                 <label
                   key={option.value}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-muted has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                  className="flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors hover:bg-muted has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                  style={{ minHeight: '44px' }}
                 >
-                  <RadioGroupItem value={option.value} id={option.value} />
-                  <span className="flex-1 text-sm font-medium">{option.label}</span>
+                  <RadioGroupItem value={option.value} id={option.value} className="mt-1" />
+                  <div className="flex-1">
+                    <span className="block font-medium">{option.label}</span>
+                    <span className="mt-1 block text-sm text-muted-foreground">{option.desc}</span>
+                  </div>
                 </label>
               ))}
             </div>
           </RadioGroup>
         )}
 
-        {currentStep.id === 'opening-width' && (
-          <div className="space-y-4">
+        {/* Height measurement */}
+        {stepId === 'height-measurement' && (
+          <>
             <div className="space-y-2">
-              <Label htmlFor="width-top">Top measurement (mm)</Label>
+              <Label htmlFor="height-to-ref">Height from tray to {heightReference.replace('-', ' ')} (mm)</Label>
               <Input
-                id="width-top"
+                id="height-to-ref"
                 type="number"
-                value={openingWidthTop}
-                onChange={(e) => setOpeningWidthTop(e.target.value)}
-                disabled={widthNotSure}
-                placeholder="e.g. 900"
-                className="text-base"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="width-middle">Middle measurement (mm)</Label>
-              <Input
-                id="width-middle"
-                type="number"
-                value={openingWidthMiddle}
-                onChange={(e) => setOpeningWidthMiddle(e.target.value)}
-                disabled={widthNotSure}
-                placeholder="e.g. 895"
-                className="text-base"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="width-bottom">Bottom measurement (mm)</Label>
-              <Input
-                id="width-bottom"
-                type="number"
-                value={openingWidthBottom}
-                onChange={(e) => setOpeningWidthBottom(e.target.value)}
-                disabled={widthNotSure}
-                placeholder="e.g. 898"
-                className="text-base"
-              />
-            </div>
-            <label className="flex cursor-pointer items-center gap-3 rounded-lg border bg-card p-3">
-              <Checkbox
-                checked={widthNotSure}
-                onCheckedChange={(v) => setWidthNotSure(v === true)}
-              />
-              <span className="flex-1 text-sm">
-                I'm not sure — use a typical size and we'll confirm on survey
-              </span>
-            </label>
-            {widthNotSure && (
-              <p className="text-sm text-muted-foreground">
-                We'll use 900mm as a typical alcove width. You can adjust it on the next screen.
-              </p>
-            )}
-          </div>
-        )}
-
-        {currentStep.id === 'depth' && showerType === 'corner' && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="depth">Depth from back wall to front edge (mm)</Label>
-              <Input
-                id="depth"
-                type="number"
-                value={depthMm}
-                onChange={(e) => setDepthMm(e.target.value)}
-                disabled={depthNotSure}
-                placeholder="e.g. 800"
-                className="text-base"
-              />
-            </div>
-            <label className="flex cursor-pointer items-center gap-3 rounded-lg border bg-card p-3">
-              <Checkbox
-                checked={depthNotSure}
-                onCheckedChange={(v) => setDepthNotSure(v === true)}
-              />
-              <span className="flex-1 text-sm">
-                I'm not sure — we'll confirm this measurement on survey
-              </span>
-            </label>
-          </div>
-        )}
-
-        {currentStep.id === 'height' && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="height">Height (mm)</Label>
-              <Input
-                id="height"
-                type="number"
-                value={heightMm}
-                onChange={(e) => setHeightMm(e.target.value)}
-                disabled={heightNotSure}
+                value={heightToReference}
+                onChange={(e) => setHeightToReference(e.target.value)}
+                disabled={notSure.has('height')}
                 placeholder="e.g. 2000"
                 className="text-base"
+                style={{ minHeight: '44px' }}
               />
             </div>
             <div className="flex flex-wrap gap-2">
@@ -565,9 +403,10 @@ export function MeasuringWizard({ onComplete, onBack }: MeasuringWizardProps) {
                 <Button
                   key={h}
                   size="sm"
-                  variant={heightMm === String(h) ? 'default' : 'outline'}
-                  onClick={() => setHeightMm(String(h))}
-                  disabled={heightNotSure}
+                  variant={heightToReference === String(h) ? 'default' : 'outline'}
+                  onClick={() => setHeightToReference(String(h))}
+                  disabled={notSure.has('height')}
+                  style={{ minHeight: '44px' }}
                 >
                   {h}
                 </Button>
@@ -575,17 +414,85 @@ export function MeasuringWizard({ onComplete, onBack }: MeasuringWizardProps) {
             </div>
             <label className="flex cursor-pointer items-center gap-3 rounded-lg border bg-card p-3">
               <Checkbox
-                checked={heightNotSure}
-                onCheckedChange={(v) => setHeightNotSure(v === true)}
+                checked={notSure.has('height')}
+                onCheckedChange={() => toggleNotSure('height', String(DEFAULT_GLASS_HEIGHT_MM))}
               />
               <span className="flex-1 text-sm">
-                I'm not sure — use 2000mm and we'll confirm on survey
+                I'm not sure — use {DEFAULT_GLASS_HEIGHT_MM}mm and confirm on survey
               </span>
             </label>
+          </>
+        )}
+
+        {/* Shower head height */}
+        {stepId === 'shower-head-height' && (
+          <div className="space-y-2">
+            <Label htmlFor="head-height">Shower head height from tray (mm)</Label>
+            <Input
+              id="head-height"
+              type="number"
+              value={showerHeadHeight}
+              onChange={(e) => setShowerHeadHeight(e.target.value)}
+              placeholder="e.g. 1850"
+              className="text-base"
+              style={{ minHeight: '44px' }}
+            />
+            <p className="text-xs text-muted-foreground">
+              Measure to the fixed head outlet or the top of the rail for a slider. The glass must clear
+              the head by at least {MIN_HEAD_CLEARANCE_MM}mm.
+            </p>
           </div>
         )}
 
-        {currentStep.id === 'floor-type' && (
+        {/* Laser wall gaps */}
+        {stepId.startsWith('laser-') && (
+          <>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor={`${stepId}-bottom`}>Gap at bottom (mm)</Label>
+                <Input
+                  id={`${stepId}-bottom`}
+                  type="number"
+                  value={getValue(`${stepId.replace('laser-', '')}-gap-bottom`)}
+                  onChange={(e) => setValue(`${stepId.replace('laser-', '')}-gap-bottom`, e.target.value)}
+                  placeholder="e.g. 48"
+                  className="text-base"
+                  style={{ minHeight: '44px' }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`${stepId}-middle`}>Gap at middle (mm) — optional</Label>
+                <Input
+                  id={`${stepId}-middle`}
+                  type="number"
+                  value={getValue(`${stepId.replace('laser-', '')}-gap-middle`)}
+                  onChange={(e) => setValue(`${stepId.replace('laser-', '')}-gap-middle`, e.target.value)}
+                  placeholder="e.g. 49"
+                  className="text-base"
+                  style={{ minHeight: '44px' }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`${stepId}-top`}>Gap at top (mm)</Label>
+                <Input
+                  id={`${stepId}-top`}
+                  type="number"
+                  value={getValue(`${stepId.replace('laser-', '')}-gap-top`)}
+                  onChange={(e) => setValue(`${stepId.replace('laser-', '')}-gap-top`, e.target.value)}
+                  placeholder="e.g. 50"
+                  className="text-base"
+                  style={{ minHeight: '44px' }}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Measure the gap from the laser line to the wall. We calculate rake automatically (positive = leans out at top, negative = leans in).
+            </p>
+          </>
+        )}
+
+        {/* Floor type */}
+        {stepId === 'floor-type' && (
           <RadioGroup value={floorType} onValueChange={(v) => setFloorType(v as typeof floorType)}>
             <div className="space-y-2">
               {[
@@ -596,37 +503,27 @@ export function MeasuringWizard({ onComplete, onBack }: MeasuringWizardProps) {
                 <label
                   key={option.value}
                   className="flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-muted has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                  style={{ minHeight: '44px' }}
                 >
                   <RadioGroupItem value={option.value} id={option.value} />
-                  <span className="flex-1 text-sm font-medium">{option.label}</span>
+                  <span className="flex-1 font-medium">{option.label}</span>
                 </label>
               ))}
             </div>
           </RadioGroup>
         )}
 
-        {currentStep.id === 'plumb-check' && (
-          <div className="space-y-4">
-            <label className="flex cursor-pointer items-center gap-3 rounded-lg border bg-card p-4">
-              <Checkbox
-                checked={outOfPlumb}
-                onCheckedChange={(v) => setOutOfPlumb(v === true)}
-              />
-              <span className="flex-1">
-                <span className="block font-medium">Walls lean or floor slopes</span>
-                <span className="mt-1 block text-sm text-muted-foreground">
-                  The spirit level shows they're not perfectly straight or level
-                </span>
-              </span>
-            </label>
+        {/* Plumb check */}
+        {stepId === 'plumb-check' && (
+          <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              If you're not sure, skip this — we check everything on survey before cutting any
-              glass.
+              Hold a spirit level vertically against each wall. If any walls lean, note it below. If you're not sure, skip this — we check on survey.
             </p>
           </div>
         )}
 
-        {currentStep.id === 'obstacles' && (
+        {/* Obstacles */}
+        {stepId === 'obstacles' && (
           <div className="space-y-2">
             {[
               { value: 'window', label: 'Window in the way' },
@@ -657,27 +554,20 @@ export function MeasuringWizard({ onComplete, onBack }: MeasuringWizardProps) {
       </div>
 
       <div className="flex items-center justify-between gap-3 border-t pt-6">
-        <Button variant="outline" onClick={handleBack}>
+        <Button variant="outline" onClick={handleBack} style={{ minHeight: '44px' }}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
 
-        <div className="flex gap-2">
-          {currentStep.canSkip && (
-            <Button variant="ghost" onClick={handleSkip}>
-              Skip
-            </Button>
-          )}
-          <Button onClick={handleNext} disabled={!canProceed()}>
-            {isLast ? 'Complete' : 'Next'}
-            {!isLast && <ArrowRight className="ml-2 h-4 w-4" />}
-          </Button>
-        </div>
+        <Button onClick={handleNext} disabled={!canProceed()} style={{ minHeight: '44px' }}>
+          {isLast ? 'Complete' : 'Next'}
+          {!isLast && <ArrowRight className="ml-2 h-4 w-4" />}
+        </Button>
       </div>
 
       <p className="text-center text-xs text-muted-foreground">
-        All sizes are confirmed before any glass is cut — these measurements help us prepare an
-        accurate quote.
+        All sizes are confirmed before any glass is cut — these measurements help us prepare an accurate
+        quote.
       </p>
     </div>
   );

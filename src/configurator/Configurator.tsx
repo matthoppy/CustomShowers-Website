@@ -222,7 +222,16 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
   }
 
   const handleStartTemplate = () => {
+    // Use the currently selected template or default
     setMode('wizard');
+  };
+
+  const getConfigurationId = () => {
+    if (templateId) return templateId;
+    if (state.panels.length === 1 && state.panels[0].kind === 'door') return 'alcove-door';
+    if (state.panels.length === 2 && state.panels[0].kind === 'fixed' && state.panels[1].kind === 'door') return 'alcove-panel-door';
+    if (state.panels.length === 1 && state.panels[0].kind === 'fixed' && !state.rightWall) return 'walk-in';
+    return 'custom';
   };
 
   const handleStartPhoto = () => {
@@ -263,30 +272,58 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
   };
 
   const handleWizardComplete = (result: {
-    showerType: string;
-    openingWidthMm: number;
-    heightMm: number;
+    configurationId: string;
+    measurements: Record<string, string | number>;
+    heightReference: string;
+    heightToReferenceMm: number;
+    showerHeadHeightMm: number;
+    headClearanceWarning?: string;
+    measuringMethod: string;
   }) => {
-    const fresh = createInitialState(tenant.glassThicknessMm);
-    const template =
-      result.showerType === 'alcove'
-        ? TEMPLATES.find((t) => t.id === 'alcove-door')
-        : result.showerType === 'corner'
-          ? TEMPLATES.find((t) => t.id === 'corner-door-return')
-          : result.showerType === 'walk-in'
-            ? TEMPLATES.find((t) => t.id === 'walk-in')
-            : TEMPLATES.find((t) => t.id === 'over-bath');
+    const configId = result.configurationId || 'alcove-door';
+    const template = TEMPLATES.find((t) => t.id === configId) || TEMPLATES[0];
+    
+    const newState = applyTemplate(state, template);
+    newState.heightMm = result.heightToReferenceMm;
+    newState.measuringMethod = result.measuringMethod;
+    newState.heightMeasurement = {
+      reference: result.heightReference,
+      heightToReferenceMm: result.heightToReferenceMm,
+      showerHeadHeightMm: result.showerHeadHeightMm,
+      headClearanceWarning: result.headClearanceWarning,
+    };
 
-    if (template) {
-      const newState = applyTemplate(fresh, template);
-      newState.heightMm = result.heightMm;
-      if (newState.panels[0]) {
-        newState.panels[0].width_mm = result.openingWidthMm;
+    // Apply width measurements to panels
+    const measurements = result.measurements;
+    if (measurements['opening-width-bottom'] || measurements['opening-width-top']) {
+      const widths = [
+        measurements['opening-width-bottom'],
+        measurements['opening-width-middle'],
+        measurements['opening-width-top'],
+      ].filter((w) => w > 0);
+      
+      const minWidth = widths.length > 0 ? Math.min(...widths) : 900;
+      
+      if (newState.panels.length === 1) {
+        newState.panels[0].width_mm = minWidth;
+      } else if (newState.panels.length > 1) {
+        // For multi-panel, distribute width or use measurements if available
+        const totalWidth = minWidth;
+        newState.panels.forEach((panel, i) => {
+          if (measurements[`panel-${i}-width-bottom`]) {
+            panel.width_mm = Math.min(
+              measurements[`panel-${i}-width-bottom`] || 900,
+              measurements[`panel-${i}-width-top`] || 900
+            );
+          } else {
+            panel.width_mm = Math.floor(totalWidth / newState.panels.length);
+          }
+        });
       }
-      setState(newState);
-      setActivePanelId(newState.panels[0]?.id ?? null);
     }
 
+    setState(newState);
+    setActivePanelId(newState.panels[0]?.id ?? null);
     setMode('steps');
     setStepId('sizes');
   };
@@ -357,7 +394,11 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     return (
       <div className="flex min-h-full flex-col bg-background">
         <div ref={topRef} className="scroll-mt-24" aria-hidden="true" />
-        <MeasuringWizard onComplete={handleWizardComplete} onBack={() => setMode('start')} />
+        <MeasuringWizard
+          configurationId={getConfigurationId()}
+          onComplete={handleWizardComplete}
+          onBack={() => setMode('start')}
+        />
       </div>
     );
   }
