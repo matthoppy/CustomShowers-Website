@@ -57,6 +57,20 @@ export interface Rakes {
   rightWall: { amount_mm: number; direction: WallRakeDirection };
 }
 
+export type MeasuringMethod = 'tape' | 'laser';
+export type HeightReference = 'grout-line' | 'door-frame' | 'ceiling' | 'standard';
+
+export interface HeightMeasurement {
+  /** The visual reference point the customer measured to. */
+  reference: HeightReference;
+  /** Height from tray/floor to the reference point (mm). */
+  heightToReferenceMm: number;
+  /** Height of the shower head outlet or rail top from tray (mm). */
+  showerHeadHeightMm: number;
+  /** Whether the glass top is too close to or below the head (warning condition). */
+  headClearanceWarning?: string;
+}
+
 export interface ConfiguratorState {
   panels: ConfiguratorPanel[];
   junctions: ConfiguratorJunction[];
@@ -73,6 +87,10 @@ export interface ConfiguratorState {
   finishId: string;
   handleId: string;
   rakes: Rakes;
+  /** How the customer measured (optional for backward compatibility). */
+  measuringMethod?: MeasuringMethod;
+  /** Height measurement details (optional for backward compatibility). */
+  heightMeasurement?: HeightMeasurement;
 }
 
 export interface CustomerDetails {

@@ -25,6 +25,12 @@ import {
   svgToPngBase64,
   type EnquiryAttachment,
 } from './submit';
+import { StartScreen } from './StartScreen';
+import { PhotoUpload } from './PhotoUpload';
+import { PhotoMarking } from './PhotoMarking';
+import { SuggestionPicker } from './SuggestionPicker';
+import { MeasuringWizard } from './MeasuringWizard';
+import { getSuggestions, type Suggestion } from './suggestions';
 
 const EMPTY_CUSTOMER: CustomerDetails = {
   name: '',
@@ -60,6 +66,14 @@ interface ConfiguratorProps {
 }
 
 export function Configurator({ tenant = getTenant(), embedded = false }: ConfiguratorProps) {
+  const [mode, setMode] = useState<'start' | 'template-flow' | 'photo-flow' | 'wizard' | 'steps'>('start');
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  const [photoStep, setPhotoStep] = useState<'upload' | 'marking' | 'suggestions'>('upload');
+  const [photoCorners, setPhotoCorners] = useState<Array<{ x: number; y: number }>>([]);
+  const [photoKnownWidth, setPhotoKnownWidth] = useState(0);
+  const [suggestions, setSuggestions] = useState<Array<any>>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
   const [stepId, setStepId] = useState<StepId>('shape');
   const [templateId, setTemplateId] = useState<string | null>(TEMPLATES[0].id);
   const [state, setState] = useState<ConfiguratorState>(() =>
@@ -186,6 +200,14 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
 
   function reset() {
     const fresh = applyTemplate(createInitialState(tenant.glassThicknessMm), TEMPLATES[0]);
+    setMode('start');
+    setPhotoDataUrl(null);
+    setPhotoStep('upload');
+    setPhotoCorners([]);
+    setPhotoKnownWidth(0);
+    setSuggestions([]);
+    setSuggestionsLoading(false);
+    setSuggestionsError(null);
     setTemplateId(TEMPLATES[0].id);
     setState(fresh);
     setCustomerState(EMPTY_CUSTOMER);
@@ -198,6 +220,72 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     setHoneypot('');
     startedAtRef.current = Date.now();
   }
+
+  const handleStartTemplate = () => {
+    setMode('wizard');
+  };
+
+  const handleStartPhoto = () => {
+    setMode('photo-flow');
+    setPhotoStep('upload');
+  };
+
+  const handlePhotoSelected = (dataUrl: string) => {
+    setPhotoDataUrl(dataUrl);
+    setPhotoStep('marking');
+  };
+
+  const handlePhotoMarkingComplete = async (corners: Array<{ x: number; y: number }>, knownWidthMm: number) => {
+    setPhotoCorners(corners);
+    setPhotoKnownWidth(knownWidthMm);
+    setPhotoStep('suggestions');
+    setSuggestionsLoading(true);
+    setSuggestionsError(null);
+
+    try {
+      const result = await getSuggestions({ corners, knownWidthMm });
+      setSuggestions(result);
+    } catch (err) {
+      setSuggestionsError(err instanceof Error ? err.message : 'Failed to get suggestions');
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  };
+
+  const handleSuggestionSelected = (suggestion: Suggestion) => {
+    setState((s) => ({
+      ...s,
+      ...suggestion.state,
+    }));
+    setActivePanelId(suggestion.state.panels?.[0]?.id ?? null);
+    setMode('steps');
+    setStepId('sizes');
+  };
+
+  const handleWizardComplete = (result: any) => {
+    const fresh = createInitialState(tenant.glassThicknessMm);
+    const template =
+      result.showerType === 'alcove'
+        ? TEMPLATES.find((t) => t.id === 'alcove-door')
+        : result.showerType === 'corner'
+          ? TEMPLATES.find((t) => t.id === 'corner-door-return')
+          : result.showerType === 'walk-in'
+            ? TEMPLATES.find((t) => t.id === 'walk-in')
+            : TEMPLATES.find((t) => t.id === 'over-bath');
+
+    if (template) {
+      const newState = applyTemplate(fresh, template);
+      newState.heightMm = result.heightMm;
+      if (newState.panels[0]) {
+        newState.panels[0].width_mm = result.openingWidthMm;
+      }
+      setState(newState);
+      setActivePanelId(newState.panels[0]?.id ?? null);
+    }
+
+    setMode('steps');
+    setStepId('sizes');
+  };
 
   if (submitted) {
     return (
@@ -216,6 +304,56 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
             Design another
           </Button>
         </div>
+      </div>
+    );
+  }
+
+  if (mode === 'start') {
+    return (
+      <div className="flex min-h-full flex-col bg-background">
+        <div ref={topRef} className="scroll-mt-24" aria-hidden="true" />
+        <StartScreen
+          tenant={tenant}
+          onSelectTemplate={handleStartTemplate}
+          onSelectPhoto={handleStartPhoto}
+        />
+      </div>
+    );
+  }
+
+  if (mode === 'photo-flow') {
+    return (
+      <div className="flex min-h-full flex-col bg-background">
+        <div ref={topRef} className="scroll-mt-24" aria-hidden="true" />
+        {photoStep === 'upload' && (
+          <PhotoUpload onPhotoSelected={handlePhotoSelected} onBack={() => setMode('start')} />
+        )}
+        {photoStep === 'marking' && photoDataUrl && (
+          <PhotoMarking
+            photoDataUrl={photoDataUrl}
+            onComplete={handlePhotoMarkingComplete}
+            onBack={() => setPhotoStep('upload')}
+          />
+        )}
+        {photoStep === 'suggestions' && (
+          <SuggestionPicker
+            suggestions={suggestions}
+            loading={suggestionsLoading}
+            error={suggestionsError}
+            tenant={tenant}
+            onSelectSuggestion={handleSuggestionSelected}
+            onBack={() => setPhotoStep('marking')}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (mode === 'wizard') {
+    return (
+      <div className="flex min-h-full flex-col bg-background">
+        <div ref={topRef} className="scroll-mt-24" aria-hidden="true" />
+        <MeasuringWizard onComplete={handleWizardComplete} onBack={() => setMode('start')} />
       </div>
     );
   }
