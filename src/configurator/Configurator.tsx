@@ -22,6 +22,7 @@ import { TEMPLATES, type ShowerTemplate } from './templates';
 import {
   buildEnquiryPayload,
   submitEnquiry,
+  submitQuote,
   svgToPngBase64,
   type EnquiryAttachment,
 } from './submit';
@@ -31,6 +32,7 @@ import { PhotoMarking } from './PhotoMarking';
 import { SuggestionPicker } from './SuggestionPicker';
 import { MeasuringWizard, type MeasuringResult } from './MeasuringWizard';
 import { applyMeasuredWidths } from './applyMeasurements';
+import { suggestPrice } from './pricing';
 import { formatMeasuringRecord, photoFilename, textToBase64 } from './measuringRecord';
 import { getSuggestions, type Suggestion } from './suggestions';
 
@@ -199,7 +201,13 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
       honeypot,
       elapsedMs: Date.now() - startedAtRef.current,
     });
-    const result = await submitEnquiry(tenant.enquiryEndpoint, payload);
+    const result = tenant.quotesApi
+      ? await submitQuote(tenant.quotesApi, payload, {
+          state,
+          siteRecord: measuring ? formatMeasuringRecord(measuring) : null,
+          suggestedPrice: suggestPrice(state, payload.spec),
+        })
+      : await submitEnquiry(tenant.enquiryEndpoint, payload);
 
     setSubmitting(false);
     if (result.ok) {
@@ -321,7 +329,10 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
           <h2 className="text-2xl font-bold">Design sent</h2>
           <p className="mt-2 text-muted-foreground">
             Thanks {customer.name.split(' ')[0] || 'very much'} — your measurements are with{' '}
-            {tenant.brand.name}. We will be in touch to confirm sizes before anything is cut.
+            {tenant.brand.name}.{' '}
+            {tenant.quotesApi
+              ? 'We’ll check everything and email your price, usually within one working day. You’ll confirm your sizes before anything is made.'
+              : 'We will be in touch to confirm sizes before anything is cut.'}
           </p>
           <Button variant="outline" onClick={reset} className="mt-6">
             <RotateCcw className="mr-2 h-4 w-4" />

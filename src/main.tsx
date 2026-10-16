@@ -8,6 +8,8 @@ import SupplyOnly from "./pages/SupplyOnly";
 import Blog from "./pages/Blog";
 import BlogArticle from "./pages/BlogArticle";
 import NotFound from "./pages/NotFound";
+import QuotePage from "./pages/QuotePage";
+import QuoteReviewPage from "./pages/QuoteReviewPage";
 import "./index.css";
 
 const App = () => {
@@ -22,6 +24,8 @@ const App = () => {
         <Route path="/balustrades" element={<Navigate to="/" replace />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:slug" element={<BlogArticle />} />
+        <Route path="/quote/:id" element={<QuotePage />} />
+        <Route path="/quote/:id/review" element={<QuoteReviewPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
