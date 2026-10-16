@@ -230,17 +230,18 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
 
       {/* Progress. */}
       <div className="border-b bg-background">
-        <div className="mx-auto flex max-w-6xl items-center gap-1 px-6 py-4 sm:gap-2">
+        <div className="mx-auto flex max-w-6xl items-center gap-1 px-4 py-3 sm:gap-2 sm:px-6 sm:py-4 overflow-x-auto">
           {STEPS.map((s, i) => (
             <button
               key={s.id}
               type="button"
               onClick={() => i < stepIndex && setStepId(s.id)}
               disabled={i > stepIndex}
-              className="flex items-center gap-2 disabled:cursor-default"
+              className="flex items-center gap-1.5 disabled:cursor-default shrink-0 sm:gap-2"
+              aria-label={`${s.label}${i === stepIndex ? ' (current step)' : i < stepIndex ? ' (completed)' : ''}`}
             >
               <span
-                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
+                className={`flex h-6 w-6 sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
                   i < stepIndex
                     ? 'bg-foreground text-background'
                     : i === stepIndex
@@ -248,16 +249,16 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                       : 'bg-muted text-muted-foreground'
                 }`}
               >
-                {i < stepIndex ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                {i < stepIndex ? <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> : i + 1}
               </span>
               <span
-                className={`hidden text-sm sm:inline ${
+                className={`hidden text-xs sm:text-sm md:inline ${
                   i === stepIndex ? 'font-semibold' : 'text-muted-foreground'
                 }`}
               >
                 {s.label}
               </span>
-              {i < STEPS.length - 1 && <span className="mx-1 h-px w-4 bg-border sm:w-8" />}
+              {i < STEPS.length - 1 && <span className="mx-0.5 h-px w-2 bg-border sm:mx-1 sm:w-4 md:w-8" />}
             </button>
           ))}
         </div>
@@ -265,14 +266,14 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
 
       {/* Body. */}
       <div className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-6xl px-6 py-8">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold sm:text-3xl">{step.heading}</h2>
-            <p className="mt-1 text-muted-foreground">{step.blurb}</p>
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+          <div className="mb-4 sm:mb-6">
+            <h2 className="text-xl font-bold sm:text-2xl md:text-3xl">{step.heading}</h2>
+            <p className="mt-1 text-sm sm:text-base text-muted-foreground">{step.blurb}</p>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-            <div>
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-8">
+            <div className="min-w-0">
               {stepId === 'shape' && (
                 <ShapeStep
                   {...stepProps}
@@ -306,11 +307,12 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
             </div>
 
             {/* Drawings. Kept mounted on every step so the review step can
-                rasterise them without a re-render race on submit. */}
-            <div className="lg:sticky lg:top-6 lg:self-start">
-              <div ref={drawingRef} className="space-y-4">
+                rasterise them without a re-render race on submit.
+                On mobile (sizes step), make it sticky and collapsible. */}
+            <div className="lg:sticky lg:top-6 lg:self-start min-w-0">
+              <div ref={drawingRef} className="space-y-3 sm:space-y-4">
                 <figure className="overflow-hidden rounded-lg border bg-card">
-                  <figcaption className="border-b px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <figcaption className="border-b px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground sm:px-4">
                     Plan
                   </figcaption>
                   <div className="flex justify-center overflow-x-auto p-2">
@@ -319,7 +321,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                       junctions={state.junctions}
                       leftWall={state.leftWall}
                       rightWall={state.rightWall}
-                      width={560}
+                      width={Math.min(560, typeof window !== 'undefined' ? window.innerWidth - 80 : 560)}
                       height={stepId === 'shape' ? 420 : 300}
                       activePanelId={activePanelId}
                       onPanelClick={setActivePanelId}
@@ -336,7 +338,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                 </figure>
 
                 <figure className="overflow-hidden rounded-lg border bg-card">
-                  <figcaption className="border-b px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <figcaption className="border-b px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground sm:px-4">
                     Elevation
                   </figcaption>
                   <div className="flex justify-center overflow-x-auto p-2">
@@ -345,7 +347,9 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                       junctions={state.junctions}
                       heightMm={state.heightMm}
                       handleId={state.handleId}
-                      width={560}
+                      mounting={state.mounting}
+                      finishColor={tenant.finishes.find(f => f.id === state.finishId)?.swatch ?? '#d4d8db'}
+                      width={Math.min(560, typeof window !== 'undefined' ? window.innerWidth - 80 : 560)}
                       height={stepId === 'shape' ? 260 : 380}
                       activePanelId={activePanelId}
                       onPanelClick={setActivePanelId}
@@ -354,7 +358,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                   </div>
                 </figure>
               </div>
-              <p className="mt-3 text-center text-xs text-muted-foreground">
+              <p className="mt-2 text-center text-xs text-muted-foreground sm:mt-3">
                 Drawings are to scale but indicative. Sizes are confirmed before cutting.
               </p>
             </div>
@@ -364,36 +368,45 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
 
       {/* Nav. */}
       <div className="sticky bottom-0 border-t bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
           <Button
             variant="outline"
+            size="sm"
             onClick={() => setStepId(STEPS[Math.max(0, stepIndex - 1)].id)}
             disabled={stepIndex === 0 || submitting}
+            className="sm:size-default"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            <ArrowLeft className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+            <span className="text-xs sm:text-sm">Back</span>
           </Button>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="flex-1 text-xs text-destructive sm:text-sm">{error}</p>}
 
           {isLast ? (
-            <Button onClick={handleSubmit} disabled={!canProceed || submitting}>
+            <Button 
+              size="sm"
+              onClick={handleSubmit} 
+              disabled={!canProceed || submitting}
+              className="sm:size-default"
+            >
               {submitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+                  <span className="text-xs sm:text-sm">Sending</span>
                 </>
               ) : (
-                <>Send my design</>
+                <span className="text-xs sm:text-sm">Send my design</span>
               )}
             </Button>
           ) : (
             <Button
+              size="sm"
               onClick={() => setStepId(STEPS[stepIndex + 1].id)}
               disabled={!canProceed}
+              className="sm:size-default"
             >
-              Next
-              <ArrowRight className="ml-2 h-4 w-4" />
+              <span className="text-xs sm:text-sm">Next</span>
+              <ArrowRight className="ml-1.5 h-3.5 w-3.5 sm:ml-2 sm:h-4 sm:w-4" />
             </Button>
           )}
         </div>

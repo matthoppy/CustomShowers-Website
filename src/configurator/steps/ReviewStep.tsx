@@ -125,11 +125,16 @@ export function ReviewStep({
       {/* Run summary. */}
       <dl className="grid overflow-hidden rounded-lg border sm:grid-cols-2">
         {[
-          ['Overall run', `${spec.totalRunWidthMm}mm`],
+          ...(spec.wallRuns.length > 0 
+            ? spec.wallRuns.map(wr => [wr.wall, `${wr.widthMm}mm`] as [string, string])
+            : [['Overall run', `${spec.totalRunWidthMm}mm`] as [string, string]]
+          ),
           ['Corners', `${spec.cornerCount}`],
           ['Height', `${spec.heightMm}mm${spec.isFloorToCeiling ? ' (floor to ceiling)' : ''}`],
-          ['Channel required', `${spec.totalChannelLengthMm}mm`],
-          ['Glass', `${spec.glassThicknessMm}mm toughened`],
+          ...(state.mounting === 'channel' ? [['Channel required', `${spec.totalChannelLengthMm}mm`]] : []),
+          ['Glass type', state.glassType.charAt(0).toUpperCase() + state.glassType.slice(1).replace('-', ' ')],
+          ['Glass thickness', `${spec.glassThicknessMm}mm toughened`],
+          ['Coating', state.glassCoating === 'easy-clean' ? 'Easy-clean' : 'None'],
           ['Total weight', `${spec.totalGlassWeightKg}kg`],
           ['Fixing', state.mounting === 'channel' ? 'U-channel' : 'Glass clamps'],
           ['Finish', finishLabel(tenant, state.finishId)],

@@ -20,6 +20,10 @@ export type DoorSwing = 'out' | 'both';
 
 export type Mounting = 'channel' | 'clamps';
 
+export type GlassType = 'clear' | 'low-iron' | 'satin' | 'bronze' | 'grey';
+
+export type GlassCoating = 'none' | 'easy-clean';
+
 export interface PanelNotch {
   bottom_left: boolean;
   bottom_right: boolean;
@@ -63,6 +67,8 @@ export interface ConfiguratorState {
   isFloorToCeiling: boolean;
   mounting: Mounting;
   glassThicknessMm: GlassThickness;
+  glassType: GlassType;
+  glassCoating: GlassCoating;
   /** Keys into the tenant's hardware catalog. */
   finishId: string;
   handleId: string;
@@ -102,6 +108,8 @@ export function createInitialState(glassThicknessMm: GlassThickness = 10): Confi
     isFloorToCeiling: false,
     mounting: 'channel',
     glassThicknessMm,
+    glassType: 'clear',
+    glassCoating: 'none',
     finishId: 'chrome',
     handleId: 'pull',
     rakes: structuredClone(DEFAULT_RAKES),

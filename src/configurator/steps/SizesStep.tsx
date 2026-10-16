@@ -116,6 +116,19 @@ export function SizesStep({ state, update }: StepProps) {
           Measure from the tray or floor up to a tile grout line above the shower head. Most
           enclosures are 2000–2100mm; a screen over a bath is usually around 1500mm.
         </p>
+        
+        <label className="flex cursor-pointer items-center gap-3 rounded-lg border p-3">
+          <Checkbox
+            checked={state.isFloorToCeiling}
+            onCheckedChange={(v) => update({ isFloorToCeiling: v === true })}
+          />
+          <div className="flex-1">
+            <div className="text-sm font-medium">To ceiling</div>
+            <div className="text-xs text-muted-foreground">
+              Glass extends from floor to ceiling
+            </div>
+          </div>
+        </label>
       </div>
 
       {/* Widths. */}
@@ -125,8 +138,8 @@ export function SizesStep({ state, update }: StepProps) {
         </Label>
         <div className="space-y-2">
           {state.panels.map((panel, i) => (
-            <div key={panel.id} className="flex items-center gap-3 rounded-lg border p-3">
-              <span className="min-w-0 flex-1 text-sm font-medium">{labels[i]}</span>
+            <div key={panel.id} className="flex items-center gap-2 rounded-lg border p-2.5 sm:gap-3 sm:p-3">
+              <span className="min-w-0 flex-1 text-xs font-medium sm:text-sm">{labels[i]}</span>
               <Input
                 type="number"
                 aria-label={`${labels[i]} width in millimetres`}
@@ -135,7 +148,7 @@ export function SizesStep({ state, update }: StepProps) {
                   const v = parseInt(e.target.value, 10);
                   patchPanel(panel.id, { width_mm: Number.isNaN(v) ? 0 : v });
                 }}
-                className="w-28"
+                className="w-20 text-sm sm:w-28"
               />
               {state.panels.length > 1 && (
                 <Button
@@ -143,8 +156,9 @@ export function SizesStep({ state, update }: StepProps) {
                   variant="ghost"
                   onClick={() => removePanel(panel.id)}
                   aria-label={`Remove ${labels[i]}`}
+                  className="h-8 w-8 p-0 sm:h-9 sm:w-9"
                 >
-                  <Trash2 className="h-4 w-4 text-destructive" />
+                  <Trash2 className="h-3.5 w-3.5 text-destructive sm:h-4 sm:w-4" />
                 </Button>
               )}
             </div>
@@ -227,22 +241,35 @@ export function SizesStep({ state, update }: StepProps) {
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Where the panels meet</Label>
                 {state.junctions.map((j, i) => (
-                  <div key={i} className="flex items-center justify-between gap-3">
-                    <span className="text-sm text-muted-foreground">
+                  <div key={i} className="space-y-2">
+                    <span className="text-sm font-medium">
                       {labels[i]} to {labels[i + 1]}
                     </span>
-                    <Button
-                      size="sm"
-                      variant={j.angle_deg === 90 ? 'default' : 'outline'}
-                      onClick={() => {
-                        const junctions = [...state.junctions];
-                        junctions[i] = { angle_deg: j.angle_deg === 90 ? 180 : 90 };
-                        update({ junctions });
-                      }}
-                    >
-                      <CornerUpRight className="mr-1.5 h-3.5 w-3.5" />
-                      {j.angle_deg === 90 ? 'Turns a corner' : 'In line'}
-                    </Button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        size="sm"
+                        variant={j.angle_deg === 180 ? 'default' : 'outline'}
+                        onClick={() => {
+                          const junctions = [...state.junctions];
+                          junctions[i] = { angle_deg: 180 };
+                          update({ junctions });
+                        }}
+                      >
+                        180° (In line)
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={j.angle_deg === 90 ? 'default' : 'outline'}
+                        onClick={() => {
+                          const junctions = [...state.junctions];
+                          junctions[i] = { angle_deg: 90 };
+                          update({ junctions });
+                        }}
+                      >
+                        <CornerUpRight className="mr-1.5 h-3.5 w-3.5" />
+                        90° (Corner)
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>

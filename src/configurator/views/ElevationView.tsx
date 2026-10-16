@@ -24,6 +24,8 @@ interface ElevationViewProps {
   junctions: ConfiguratorJunction[];
   heightMm: number;
   handleId: string;
+  mounting?: 'channel' | 'clamps';
+  finishColor?: string;
   width?: number;
   height?: number;
   activePanelId?: string | null;
@@ -39,6 +41,8 @@ export function ElevationView({
   junctions,
   heightMm,
   handleId,
+  mounting = 'channel',
+  finishColor = '#d4d8db',
   width = 620,
   height = 520,
   activePanelId,
@@ -133,7 +137,7 @@ export function ElevationView({
                   width={8}
                   height={Math.max(4, HINGE_CUTOUT_HEIGHT_MM * scale)}
                   rx={1.5}
-                  fill={accent}
+                  fill={finishColor}
                 />
               ))}
 
@@ -144,7 +148,7 @@ export function ElevationView({
                   cx={hingeOnLeft ? x + wPx - 22 : x + 22}
                   cy={baselineY - 950 * scale}
                   r={5}
-                  fill="#64748b"
+                  fill={finishColor}
                 />
               ) : (
                 <rect
@@ -153,7 +157,7 @@ export function ElevationView({
                   width={5}
                   height={Math.max(6, 203 * scale)}
                   rx={2.5}
-                  fill="#64748b"
+                  fill={finishColor}
                 />
               ))}
 
@@ -176,6 +180,52 @@ export function ElevationView({
               {isDoor ? 'DOOR' : 'FIXED'}
               {plane === 'return_left' || plane === 'return_right' ? ' · RETURN' : ''}
             </text>
+
+            {/* Mounting indicator at bottom */}
+            {mounting === 'channel' ? (
+              // U-channel shown as a line with small vertical edges
+              <g>
+                <line
+                  x1={x}
+                  y1={baselineY + 2}
+                  x2={x}
+                  y2={baselineY + 6}
+                  stroke={finishColor}
+                  strokeWidth={1.5}
+                />
+                <line
+                  x1={x}
+                  y1={baselineY + 6}
+                  x2={x + wPx}
+                  y2={baselineY + 6}
+                  stroke={finishColor}
+                  strokeWidth={1.5}
+                />
+                <line
+                  x1={x + wPx}
+                  y1={baselineY + 6}
+                  x2={x + wPx}
+                  y2={baselineY + 2}
+                  stroke={finishColor}
+                  strokeWidth={1.5}
+                />
+              </g>
+            ) : (
+              // Glass clamps shown as small rectangles at intervals
+              <>
+                {[0.15, 0.85].map((pos, idx) => (
+                  <rect
+                    key={idx}
+                    x={x + wPx * pos - 3}
+                    y={baselineY - 4}
+                    width={6}
+                    height={8}
+                    rx={1}
+                    fill={finishColor}
+                  />
+                ))}
+              </>
+            )}
           </g>
         );
       })}
