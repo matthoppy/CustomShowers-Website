@@ -56,6 +56,9 @@ export function ReviewStep({
     afterInteractiveFired: false,
     renderAttempts: 0,
     renderError: null as string | null,
+    renderSuccess: false,
+    successFired: false,
+    tokenReceived: false,
   });
   const debugMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1';
 
@@ -104,7 +107,11 @@ export function ReviewStep({
               setChallenge('ready');
               onTurnstileToken(token);
               if (debugMode) {
-                setDebugInfo(prev => ({ ...prev, widgetId: currentWidgetId }));
+                setDebugInfo(prev => ({ 
+                  ...prev, 
+                  successFired: true,
+                  tokenReceived: true 
+                }));
               }
             }
           },
@@ -144,10 +151,16 @@ export function ReviewStep({
         });
         
         setWidgetId(currentWidgetId);
-        if (debugMode) {
-          setDebugInfo(prev => ({ ...prev, widgetId: currentWidgetId }));
-        }
         console.log('Turnstile rendered, widget ID:', currentWidgetId);
+        
+        // Immediately update debug panel with the returned widget ID
+        if (debugMode) {
+          setDebugInfo(prev => ({ 
+            ...prev, 
+            widgetId: currentWidgetId,
+            renderSuccess: true 
+          }));
+        }
       } catch (err) {
         console.error('Turnstile render error:', err);
         if (debugMode) {
@@ -218,14 +231,25 @@ export function ReviewStep({
   // Timeout fallback if widget never loads
   useEffect(() => {
     if (!tenant.turnstileSiteKey || challenge !== 'loading') return;
+    
     const timer = setTimeout(() => {
-      console.warn('Turnstile widget timed out after 20 seconds');
-      setChallenge('failed');
-      if (debugMode) {
-        setDebugInfo(prev => ({ ...prev, timeoutFired: true }));
+      // Only set timeout if still in loading state (success might have cleared it)
+      if (challenge === 'loading') {
+        console.warn('Turnstile widget timed out after 20 seconds');
+        setChallenge('failed');
+        if (debugMode) {
+          setDebugInfo(prev => ({ ...prev, timeoutFired: true }));
+        }
       }
     }, 20000);
-    return () => clearTimeout(timer);
+    
+    return () => {
+      clearTimeout(timer);
+      // Timeout was cleared by state change (success or error), not by timeout
+      if (debugMode && challenge !== 'loading') {
+        console.log('Timeout cleared due to challenge state change:', challenge);
+      }
+    };
   }, [tenant.turnstileSiteKey, challenge, debugMode]);
 
   useEffect(() => {
@@ -507,8 +531,17 @@ export function ReviewStep({
                 <div className={debugInfo.containerInDOM ? 'text-green-600' : 'text-red-600'}>
                   {debugInfo.containerInDOM ? '✓' : '✗'} Container in DOM
                 </div>
+                <div className={debugInfo.renderSuccess ? 'text-green-600' : 'text-gray-500'}>
+                  {debugInfo.renderSuccess ? '✓' : '○'} Render succeeded
+                </div>
+                <div className="col-span-2">
+                  <span className="font-semibold">Widget ID:</span>{' '}
+                  <span className={debugInfo.widgetId ? 'text-green-600' : 'text-gray-500'}>
+                    {debugInfo.widgetId || 'none'}
+                  </span>
+                </div>
                 <div>
-                  Widget ID: {debugInfo.widgetId || 'none'}
+                  Attempts: {debugInfo.renderAttempts}
                 </div>
               </div>
             </div>
@@ -516,29 +549,23 @@ export function ReviewStep({
             <div className="mt-2 border-t border-purple-300 pt-2 dark:border-purple-700">
               <div className="mb-1 font-semibold">Callbacks:</div>
               <div className="grid grid-cols-2 gap-1">
+                <div className={debugInfo.successFired ? 'text-green-600 font-semibold' : 'text-gray-500'}>
+                  {debugInfo.successFired ? '✓ Success' : '○ Success'}
+                </div>
+                <div className={debugInfo.tokenReceived ? 'text-green-600 font-semibold' : 'text-gray-500'}>
+                  {debugInfo.tokenReceived ? '✓ Token received' : '○ Token received'}
+                </div>
                 <div className={debugInfo.beforeInteractiveFired ? 'text-green-600' : 'text-gray-500'}>
                   {debugInfo.beforeInteractiveFired ? '✓' : '○'} Before interactive
                 </div>
                 <div className={debugInfo.afterInteractiveFired ? 'text-green-600' : 'text-gray-500'}>
                   {debugInfo.afterInteractiveFired ? '✓' : '○'} After interactive
                 </div>
-                <div className={debugInfo.timeoutFired ? 'text-red-600' : 'text-gray-500'}>
-                  {debugInfo.timeoutFired ? '✗' : '○'} Timeout (20s)
-                </div>
                 <div className={debugInfo.expiredFired ? 'text-yellow-600' : 'text-gray-500'}>
                   {debugInfo.expiredFired ? '⚠' : '○'} Expired
                 </div>
-              </div>
-            </div>
-            
-            <div className="mt-2 border-t border-purple-300 pt-2 dark:border-purple-700">
-              <div className="mb-1 font-semibold">Render Attempts:</div>
-              <div className="grid grid-cols-2 gap-1">
-                <div>
-                  Attempts: {debugInfo.renderAttempts}
-                </div>
-                <div className={hasToken ? 'text-green-600' : 'text-gray-500'}>
-                  {hasToken ? '✓' : '○'} Has token
+                <div className={debugInfo.timeoutFired ? 'text-red-600' : 'text-gray-500'}>
+                  {debugInfo.timeoutFired ? '✗' : '○'} Timeout (20s)
                 </div>
               </div>
             </div>
