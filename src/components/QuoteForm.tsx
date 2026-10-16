@@ -75,7 +75,7 @@ const QuoteForm = () => {
       toast({
         variant: "destructive",
         title: "Something went wrong",
-        description: "Failed to send your message. Please try again or call us directly.",
+        description: "Failed to send your message. Please try again or email us directly.",
       });
     } finally {
       setIsSubmitting(false);

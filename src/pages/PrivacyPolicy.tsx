@@ -39,7 +39,7 @@ const PrivacyPolicy = () => {
               <li>Request a quote</li>
               <li>Place an order</li>
               <li>Arrange delivery</li>
-              <li>Contact us by phone or email</li>
+              <li>Contact us by email</li>
             </ul>
           </section>
 

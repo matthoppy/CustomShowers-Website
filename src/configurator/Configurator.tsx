@@ -179,7 +179,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     } else {
       setError(
         result.error ??
-          'We could not send that. Please try again, or call us and quote your measurements.'
+          'We could not send that. Please try again, or email us and quote your measurements.'
       );
     }
   }
