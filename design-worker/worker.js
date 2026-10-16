@@ -16,7 +16,7 @@
  */
 
 /** Bump when the code changes, so a browser visit shows which paste is live. */
-const WORKER_VERSION = "v6";
+const WORKER_VERSION = "v7";
 
 /**
  * CORS configuration. Allow production domain and Cloudflare Pages preview origins.
@@ -177,6 +177,7 @@ export default {
         }
       }
 
+      const challengeSkipped = false;
       const tooFast =
         typeof antispam?.elapsedMs === "number" && antispam.elapsedMs < SUSPICIOUS_ELAPSED_MS;
       if (tooFast) {
