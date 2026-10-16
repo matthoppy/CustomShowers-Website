@@ -58,6 +58,7 @@ export interface ConfiguratorSpec {
   panels: PanelSpec[];
   cornerCount: number;
   totalRunWidthMm: number;
+  wallRuns: { wall: string; widthMm: number }[];
   totalChannelLengthMm: number;
   heightMm: number;
   isFloorToCeiling: boolean;
@@ -232,10 +233,43 @@ export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
     warnings.push('No door in this run — quoted as fixed panels only.');
   }
 
+  // Calculate per-wall runs for corner units
+  const wallRuns: { wall: string; widthMm: number }[] = [];
+  const cornerCount = state.junctions.filter((j) => j.angle_deg === 90).length;
+  
+  if (cornerCount > 0) {
+    // Group panels by wall based on corners
+    let currentWallIndex = 0;
+    let currentWallWidth = 0;
+    
+    state.panels.forEach((panel, i) => {
+      currentWallWidth += panel.width_mm;
+      
+      // If there's a corner after this panel, save the wall and start a new one
+      if (i < state.junctions.length && state.junctions[i].angle_deg === 90) {
+        wallRuns.push({ 
+          wall: `Wall ${currentWallIndex + 1}`, 
+          widthMm: currentWallWidth 
+        });
+        currentWallIndex++;
+        currentWallWidth = 0;
+      }
+    });
+    
+    // Add the final wall
+    if (currentWallWidth > 0 || wallRuns.length === 0) {
+      wallRuns.push({ 
+        wall: `Wall ${currentWallIndex + 1}`, 
+        widthMm: currentWallWidth 
+      });
+    }
+  }
+
   return {
     panels,
-    cornerCount: state.junctions.filter((j) => j.angle_deg === 90).length,
+    cornerCount,
     totalRunWidthMm: totalRunWidthMm(state.panels),
+    wallRuns,
     totalChannelLengthMm: totalRunWidthMm(state.panels) + notchAllowance,
     heightMm: state.heightMm,
     isFloorToCeiling: state.isFloorToCeiling,

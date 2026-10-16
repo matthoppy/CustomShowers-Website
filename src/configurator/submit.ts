@@ -35,6 +35,8 @@ export interface EnquiryPayload {
     finish: string;
     handle: string;
     glass: string;
+    glassType: string;
+    glassCoating: string;
   };
   spec: ConfiguratorSpec;
   disclaimer: string;
@@ -128,6 +130,8 @@ export function buildEnquiryPayload(
       finish: finishLabel(tenant, state.finishId),
       handle: handleLabel(tenant, state.handleId),
       glass: `${state.glassThicknessMm}mm toughened`,
+      glassType: state.glassType.charAt(0).toUpperCase() + state.glassType.slice(1).replace('-', ' '),
+      glassCoating: state.glassCoating === 'easy-clean' ? 'Easy-clean' : 'None',
     },
     spec,
     disclaimer: tenant.measurementDisclaimer,

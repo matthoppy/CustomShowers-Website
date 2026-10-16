@@ -47,96 +47,61 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
   };
 
   return (
-    <>
-      {/* Full-width header — desktop only, shown when NOT scrolled */}
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 hidden lg:block transition-all duration-500 ease-in-out ${
-          isScrolled ? "opacity-0 pointer-events-none -translate-y-2" : "opacity-100"
-        }`}
-      >
-        <div className="bg-transparent">
-          <div className="container mx-auto px-6">
-            <div className="flex items-center justify-between h-24">
-              {/* Logo */}
-              <Link to="/" className="flex items-center">
-                <img src={logo} alt="Custom Showers" className="h-20 w-auto" />
-              </Link>
-
-              {/* Desktop Navigation */}
-              <nav className="hidden lg:flex items-center gap-8">
-                {menuItems.map((item) =>
-                  renderLink(item, "text-white hover:text-white/70 transition-colors duration-300 font-medium drop-shadow")
-                )}
-              </nav>
-
-              {/* Get Quote Button */}
-              <div className="hidden md:flex items-center gap-4">
-                <Button variant="outline" onClick={onOpenQuote} className="border-white text-white hover:bg-white hover:text-primary bg-transparent">
+    <header className="fixed top-0 left-0 right-0 z-50">
+      {/* Desktop header - hidden on mobile */}
+      <div className="hidden lg:block">
+        {/* Transparent header when not scrolled */}
+        {!isScrolled && (
+          <div className="bg-transparent transition-opacity duration-500">
+            <div className="container mx-auto px-6">
+              <div className="flex items-center justify-between h-24">
+                <Link to="/" className="flex items-center">
+                  <img src={logo} alt="Custom Showers" className="h-20 w-auto" />
+                </Link>
+                <nav className="flex items-center gap-8">
+                  {menuItems.map((item) =>
+                    renderLink(item, "text-white hover:text-white/70 transition-colors duration-300 font-medium drop-shadow")
+                  )}
+                </nav>
+                <div className="flex items-center gap-4">
+                  <Button variant="outline" onClick={onOpenQuote} className="border-white text-white hover:bg-white hover:text-primary bg-transparent">
+                    Get A Free Quote
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* White header when scrolled */}
+        {isScrolled && (
+          <div className="bg-white shadow-sm transition-opacity duration-500">
+            <div className="container mx-auto px-6">
+              <div className="flex items-center justify-between h-16">
+                <Link to="/" className="flex items-center">
+                  <img src={logo} alt="Custom Showers" className="h-10 w-auto" />
+                </Link>
+                <nav className="flex items-center gap-8">
+                  {menuItems.map((item) =>
+                    renderLink(item, "text-sm text-foreground hover:text-primary transition-colors duration-200 font-medium")
+                  )}
+                </nav>
+                <Button variant="default" onClick={onOpenQuote}>
                   Get A Free Quote
                 </Button>
               </div>
-
-              {/* Mobile Menu Button */}
-              <button
-                className="lg:hidden p-2"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                aria-label="Toggle menu"
-              >
-                {isMobileMenuOpen ? (
-                  <X className="w-6 h-6 text-white" />
-                ) : (
-                  <Menu className="w-6 h-6 text-white" />
-                )}
-              </button>
             </div>
-
-            {/* Mobile Menu */}
-            {isMobileMenuOpen && (
-              <nav className="lg:hidden py-6 border-t border-white/20 bg-black/60 backdrop-blur-sm">
-                {menuItems.map((item) =>
-                  renderLink(
-                    item,
-                    "block py-3 text-white hover:text-white/70 transition-colors duration-300 font-medium",
-                    () => setIsMobileMenuOpen(false)
-                  )
-                )}
-              </nav>
-            )}
           </div>
-        </div>
-      </header>
+        )}
+      </div>
 
-      {/* Scrolled state — full-width white bar, desktop only */}
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 hidden lg:block bg-white shadow-sm transition-all duration-500 ease-in-out ${
-          isScrolled ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-2 pointer-events-none"
-        }`}
-      >
-        <div className="container mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center">
-              <img src={logo} alt="Custom Showers" className="h-10 w-auto" />
-            </Link>
-            <nav className="flex items-center gap-8">
-              {menuItems.map((item) =>
-                renderLink(item, "text-sm text-foreground hover:text-primary transition-colors duration-200 font-medium")
-              )}
-            </nav>
-            <Button variant="default" onClick={onOpenQuote}>
-              Get A Free Quote
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Mobile sticky header (always shown on mobile) */}
-      <header className="fixed top-0 left-0 right-0 z-50 lg:hidden bg-background/95 backdrop-blur-sm shadow-sm">
+      {/* Mobile header */}
+      <div className="lg:hidden bg-background/95 backdrop-blur-sm shadow-sm">
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center">
               <img src={logo} alt="Custom Showers" className="h-12 w-auto" />
             </Link>
-
             <button
               className="p-2"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -149,7 +114,6 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
               )}
             </button>
           </div>
-
           {isMobileMenuOpen && (
             <nav className="py-6 border-t border-border">
               {menuItems.map((item) =>
@@ -165,8 +129,8 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
             </nav>
           )}
         </div>
-      </header>
-    </>
+      </div>
+    </header>
   );
 };
 

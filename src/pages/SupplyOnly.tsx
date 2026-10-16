@@ -40,7 +40,7 @@ const steps = [
     number: "06",
     title: "Your Installer Fits",
     description:
-      "Hand the panels and hardware over to your bathroom fitter or tiler. You'll receive custom installation instructions prepared specifically for your shower, including detailed diagrams and measurements. Our frameless systems are designed to be straightforward to install for any competent tradesperson. We're available by phone or email if your installer has questions.",
+      "Hand the panels and hardware over to your bathroom fitter or tiler. You'll receive custom installation instructions prepared specifically for your shower, including detailed diagrams and measurements. Our frameless systems are designed to be straightforward to install for any competent tradesperson. We're available by email if your installer has questions.",
   },
 ];
 

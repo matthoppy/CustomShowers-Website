@@ -6,8 +6,7 @@
  * the workshop is trustworthy.
  */
 
-import { useEffect, useMemo, useState } from 'react';
-import { Turnstile } from '@marsidev/react-turnstile';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,15 +39,225 @@ export function ReviewStep({
 }: ReviewStepProps) {
   const spec = useMemo(() => buildSpec(state), [state]);
   const [challenge, setChallenge] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const challengeRef = useRef<'loading' | 'ready' | 'failed'>('loading');
+  const [widgetId, setWidgetId] = useState<string | null>(null);
+  const [hasToken, setHasToken] = useState(false);
+  
+  // Keep ref in sync with state
+  useEffect(() => {
+    challengeRef.current = challenge;
+  }, [challenge]);
+  
+  // Debug mode diagnostics (only shown with ?debug=1)
+  const [debugInfo, setDebugInfo] = useState({
+    scriptTagPresent: false,
+    windowTurnstileExists: false,
+    onloadFired: false,
+    containerInDOM: false,
+    widgetId: null as string | null,
+    errorCode: null as string | null,
+    timeoutFired: false,
+    expiredFired: false,
+    beforeInteractiveFired: false,
+    afterInteractiveFired: false,
+    renderAttempts: 0,
+    renderError: null as string | null,
+    renderSuccess: false,
+    successFired: false,
+    tokenReceived: false,
+  });
+  const debugMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1';
 
-  // onError does not fire when the Cloudflare script is blocked outright — the
-  // widget simply never appears. Treat a long silence as a failure so the
-  // customer is told why they cannot send, rather than staring at a dead button.
+  // Manual Turnstile rendering with proper lifecycle management
+  useEffect(() => {
+    if (!tenant.turnstileSiteKey) return;
+    
+    const container = document.getElementById('turnstile-widget');
+    if (!container) return;
+    
+    let mounted = true;
+    let currentWidgetId: string | null = null;
+    
+    const tryRender = () => {
+      if (!mounted || !container || currentWidgetId) return;
+      
+      try {
+        if (typeof window === 'undefined' || !window.turnstile) {
+          if (debugMode) {
+            setDebugInfo(prev => ({ 
+              ...prev, 
+              renderError: 'window.turnstile not available',
+              renderAttempts: prev.renderAttempts + 1 
+            }));
+          }
+          return;
+        }
+        
+        if (debugMode) {
+          setDebugInfo(prev => ({ 
+            ...prev, 
+            renderAttempts: prev.renderAttempts + 1,
+            renderError: null 
+          }));
+        }
+        
+        currentWidgetId = window.turnstile.render(container, {
+          sitekey: tenant.turnstileSiteKey,
+          appearance: 'interaction-only',
+          theme: 'light',
+          size: 'normal',
+          callback: (token: string) => {
+            console.log('Turnstile success, token length:', token?.length);
+            if (mounted && token) {
+              setHasToken(true);
+              setChallenge('ready');
+              onTurnstileToken(token);
+              if (debugMode) {
+                setDebugInfo(prev => ({ 
+                  ...prev, 
+                  successFired: true,
+                  tokenReceived: true 
+                }));
+              }
+            }
+          },
+          'expired-callback': () => {
+            console.log('Turnstile expired');
+            if (mounted) {
+              setHasToken(false);
+              setChallenge('loading');
+              onTurnstileToken(null);
+              if (debugMode) {
+                setDebugInfo(prev => ({ ...prev, expiredFired: true }));
+              }
+            }
+          },
+          'error-callback': (error: string) => {
+            console.error('Turnstile error:', error);
+            if (mounted) {
+              setChallenge('failed');
+              onTurnstileToken(null);
+              if (debugMode) {
+                setDebugInfo(prev => ({ ...prev, errorCode: String(error) }));
+              }
+            }
+          },
+          'before-interactive-callback': () => {
+            console.log('Turnstile before interactive');
+            if (debugMode) {
+              setDebugInfo(prev => ({ ...prev, beforeInteractiveFired: true }));
+            }
+          },
+          'after-interactive-callback': () => {
+            console.log('Turnstile after interactive');
+            if (debugMode) {
+              setDebugInfo(prev => ({ ...prev, afterInteractiveFired: true }));
+            }
+          },
+        });
+        
+        setWidgetId(currentWidgetId);
+        console.log('Turnstile rendered, widget ID:', currentWidgetId);
+        
+        // Immediately update debug panel with the returned widget ID
+        if (debugMode) {
+          setDebugInfo(prev => ({ 
+            ...prev, 
+            widgetId: currentWidgetId,
+            renderSuccess: true 
+          }));
+        }
+      } catch (err) {
+        console.error('Turnstile render error:', err);
+        if (debugMode) {
+          setDebugInfo(prev => ({ 
+            ...prev, 
+            renderError: err instanceof Error ? err.message : String(err) 
+          }));
+        }
+        if (mounted) {
+          setChallenge('failed');
+        }
+      }
+    };
+    
+    // Try render immediately if turnstile already loaded
+    if (window.turnstile) {
+      tryRender();
+    }
+    
+    // Also try on script load event
+    const script = document.querySelector('script[src*="challenges.cloudflare.com"]');
+    if (script) {
+      script.addEventListener('load', () => {
+        if (debugMode) {
+          setDebugInfo(prev => ({ ...prev, onloadFired: true }));
+        }
+        tryRender();
+      });
+    }
+    
+    // Fallback: retry after short delay
+    const retryTimer = setTimeout(tryRender, 1500);
+    
+    // Cleanup on unmount
+    return () => {
+      mounted = false;
+      clearTimeout(retryTimer);
+      if (currentWidgetId && window.turnstile?.remove) {
+        try {
+          window.turnstile.remove(currentWidgetId);
+          console.log('Turnstile widget removed');
+        } catch (err) {
+          console.warn('Turnstile remove error:', err);
+        }
+      }
+    };
+  }, [tenant.turnstileSiteKey, onTurnstileToken, debugMode]);
+  
+  // Update debug info periodically
+  useEffect(() => {
+    if (!debugMode || !tenant.turnstileSiteKey) return;
+    
+    const updateDebug = () => {
+      const container = document.getElementById('turnstile-widget');
+      setDebugInfo(prev => ({
+        ...prev,
+        scriptTagPresent: !!document.querySelector('script[src*="challenges.cloudflare.com"]'),
+        windowTurnstileExists: typeof window !== 'undefined' && !!window.turnstile,
+        containerInDOM: !!container,
+      }));
+    };
+    
+    updateDebug();
+    const interval = setInterval(updateDebug, 1000);
+    return () => clearInterval(interval);
+  }, [debugMode, tenant.turnstileSiteKey]);
+
+  // Timeout fallback if widget never loads
   useEffect(() => {
     if (!tenant.turnstileSiteKey || challenge !== 'loading') return;
-    const timer = setTimeout(() => setChallenge('failed'), 12000);
-    return () => clearTimeout(timer);
-  }, [tenant.turnstileSiteKey, challenge]);
+    
+    const timer = setTimeout(() => {
+      // Use ref to check current state (avoids stale closure)
+      if (challengeRef.current === 'loading') {
+        console.warn('Turnstile widget timed out after 20 seconds');
+        setChallenge('failed');
+        if (debugMode) {
+          setDebugInfo(prev => ({ ...prev, timeoutFired: true }));
+        }
+      } else {
+        console.log('Timeout fired but challenge already resolved:', challengeRef.current);
+      }
+    }, 20000);
+    
+    return () => {
+      clearTimeout(timer);
+      if (debugMode && challengeRef.current !== 'loading') {
+        console.log('Timeout cleared due to challenge state change:', challengeRef.current);
+      }
+    };
+  }, [tenant.turnstileSiteKey, challenge, debugMode]);
 
   useEffect(() => {
     onChallengeState(challenge);
@@ -125,11 +334,16 @@ export function ReviewStep({
       {/* Run summary. */}
       <dl className="grid overflow-hidden rounded-lg border sm:grid-cols-2">
         {[
-          ['Overall run', `${spec.totalRunWidthMm}mm`],
+          ...(spec.wallRuns.length > 0 
+            ? spec.wallRuns.map(wr => [wr.wall, `${wr.widthMm}mm`] as [string, string])
+            : [['Overall run', `${spec.totalRunWidthMm}mm`] as [string, string]]
+          ),
           ['Corners', `${spec.cornerCount}`],
           ['Height', `${spec.heightMm}mm${spec.isFloorToCeiling ? ' (floor to ceiling)' : ''}`],
-          ['Channel required', `${spec.totalChannelLengthMm}mm`],
-          ['Glass', `${spec.glassThicknessMm}mm toughened`],
+          ...(state.mounting === 'channel' ? [['Channel required', `${spec.totalChannelLengthMm}mm`]] : []),
+          ['Glass type', state.glassType.charAt(0).toUpperCase() + state.glassType.slice(1).replace('-', ' ')],
+          ['Glass thickness', `${spec.glassThicknessMm}mm toughened`],
+          ['Coating', state.glassCoating === 'easy-clean' ? 'Easy-clean' : 'None'],
           ['Total weight', `${spec.totalGlassWeightKg}kg`],
           ['Fixing', state.mounting === 'channel' ? 'U-channel' : 'Glass clamps'],
           ['Finish', finishLabel(tenant, state.finishId)],
@@ -261,28 +475,8 @@ export function ReviewStep({
 
       {tenant.turnstileSiteKey && (
         <div className="space-y-3">
-          <div className="flex justify-center">
-            <Turnstile
-              siteKey={tenant.turnstileSiteKey}
-              // Solve silently. The widget only draws itself if Cloudflare
-              // decides this visitor needs to interact, so the overwhelming
-              // majority of customers never see a checkbox. Verification still
-              // happens server-side either way.
-              options={{ appearance: 'interaction-only' }}
-              onSuccess={(token) => {
-                setChallenge('ready');
-                onTurnstileToken(token);
-              }}
-              onExpire={() => {
-                setChallenge('loading');
-                onTurnstileToken(null);
-              }}
-              onError={() => {
-                setChallenge('failed');
-                onTurnstileToken(null);
-              }}
-            />
-          </div>
+          {/* Manual Turnstile widget container - rendered via window.turnstile.render() */}
+          <div id="turnstile-widget" className="flex justify-center" />
 
           {/* Without this, a blocked or slow challenge leaves the send button
               disabled with nothing on screen to explain why. */}
@@ -290,16 +484,124 @@ export function ReviewStep({
             <div className="flex gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-4">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
               <div className="text-sm">
-                <div className="font-semibold">The security check could not load</div>
-                <p className="mt-1 text-muted-foreground">
-                  Usually an ad blocker or a privacy extension. You can still send your design —
-                  we will just take an extra look at it before replying. To clear it, allow{' '}
-                  <code className="rounded bg-muted px-1">challenges.cloudflare.com</code> and
-                  refresh.
+                <div className="font-semibold">Security check required</div>
+                <p className="mt-1 text-foreground">
+                  The security check must load before you can send your design. This is usually 
+                  caused by an ad blocker or privacy extension.
                 </p>
+                <p className="mt-2 font-medium">To fix:</p>
+                <ul className="mt-1 list-disc space-y-1 pl-5">
+                  <li>Allow <code className="rounded bg-muted px-1 font-mono text-xs">challenges.cloudflare.com</code></li>
+                  <li>Disable ad blockers for this site</li>
+                  <li>Refresh the page</li>
+                </ul>
               </div>
             </div>
           )}
+        </div>
+      )}
+      
+      {/* Debug diagnostics panel - only shown with ?debug=1 */}
+      {debugMode && tenant.turnstileSiteKey && (
+        <div className="rounded-lg border-2 border-purple-500 bg-purple-50 p-4 dark:bg-purple-950/20">
+          <h3 className="mb-3 text-sm font-bold text-purple-900 dark:text-purple-100">
+            🔧 Turnstile Debug Panel (visible with ?debug=1)
+          </h3>
+          <div className="space-y-2 text-xs font-mono">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <span className="font-semibold">Hostname:</span> {typeof window !== 'undefined' ? window.location.hostname : 'N/A'}
+              </div>
+              <div>
+                <span className="font-semibold">Sitekey:</span> {tenant.turnstileSiteKey}
+              </div>
+            </div>
+            
+            <div className="mt-3 border-t border-purple-300 pt-2 dark:border-purple-700">
+              <div className="mb-1 font-semibold">Script Load State:</div>
+              <div className="grid grid-cols-2 gap-1">
+                <div className={debugInfo.scriptTagPresent ? 'text-green-600' : 'text-red-600'}>
+                  {debugInfo.scriptTagPresent ? '✓' : '✗'} Script tag present
+                </div>
+                <div className={debugInfo.windowTurnstileExists ? 'text-green-600' : 'text-red-600'}>
+                  {debugInfo.windowTurnstileExists ? '✓' : '✗'} window.turnstile
+                </div>
+                <div className={debugInfo.onloadFired ? 'text-green-600' : 'text-red-600'}>
+                  {debugInfo.onloadFired ? '✓' : '✗'} Onload fired
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-2 border-t border-purple-300 pt-2 dark:border-purple-700">
+              <div className="mb-1 font-semibold">Render State:</div>
+              <div className="grid grid-cols-2 gap-1">
+                <div className={debugInfo.containerInDOM ? 'text-green-600' : 'text-red-600'}>
+                  {debugInfo.containerInDOM ? '✓' : '✗'} Container in DOM
+                </div>
+                <div className={debugInfo.renderSuccess ? 'text-green-600' : 'text-gray-500'}>
+                  {debugInfo.renderSuccess ? '✓' : '○'} Render succeeded
+                </div>
+                <div className="col-span-2">
+                  <span className="font-semibold">Widget ID:</span>{' '}
+                  <span className={debugInfo.widgetId ? 'text-green-600' : 'text-gray-500'}>
+                    {debugInfo.widgetId || 'none'}
+                  </span>
+                </div>
+                <div>
+                  Attempts: {debugInfo.renderAttempts}
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-2 border-t border-purple-300 pt-2 dark:border-purple-700">
+              <div className="mb-1 font-semibold">Callbacks:</div>
+              <div className="grid grid-cols-2 gap-1">
+                <div className={debugInfo.successFired ? 'text-green-600 font-semibold' : 'text-gray-500'}>
+                  {debugInfo.successFired ? '✓ Success' : '○ Success'}
+                </div>
+                <div className={debugInfo.tokenReceived ? 'text-green-600 font-semibold' : 'text-gray-500'}>
+                  {debugInfo.tokenReceived ? '✓ Token received' : '○ Token received'}
+                </div>
+                <div className={debugInfo.beforeInteractiveFired ? 'text-green-600' : 'text-gray-500'}>
+                  {debugInfo.beforeInteractiveFired ? '✓' : '○'} Before interactive
+                </div>
+                <div className={debugInfo.afterInteractiveFired ? 'text-green-600' : 'text-gray-500'}>
+                  {debugInfo.afterInteractiveFired ? '✓' : '○'} After interactive
+                </div>
+                <div className={debugInfo.expiredFired ? 'text-yellow-600' : 'text-gray-500'}>
+                  {debugInfo.expiredFired ? '⚠' : '○'} Expired
+                </div>
+                <div className={debugInfo.timeoutFired ? 'text-red-600' : 'text-gray-500'}>
+                  {debugInfo.timeoutFired ? '✗' : '○'} Timeout (20s)
+                </div>
+              </div>
+            </div>
+            
+            {debugInfo.errorCode && (
+              <div className="mt-2 rounded border border-red-300 bg-red-50 p-2 text-red-900 dark:bg-red-950/40">
+                <span className="font-semibold">Error callback:</span> {debugInfo.errorCode}
+              </div>
+            )}
+            
+            {debugInfo.renderError && (
+              <div className="mt-2 rounded border border-red-300 bg-red-50 p-2 text-red-900 dark:bg-red-950/40">
+                <span className="font-semibold">Render error:</span> {debugInfo.renderError}
+              </div>
+            )}
+            
+            <div className="mt-2 border-t border-purple-300 pt-2 dark:border-purple-700">
+              <div className="mb-1 font-semibold">Challenge State:</div>
+              <div className={
+                challenge === 'ready' ? 'text-green-600' :
+                challenge === 'failed' ? 'text-red-600' :
+                'text-yellow-600'
+              }>
+                {challenge === 'ready' ? '✓ Ready' :
+                 challenge === 'failed' ? '✗ Failed' :
+                 '⏳ Loading'}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
