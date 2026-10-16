@@ -40,15 +40,27 @@ export function ReviewStep({
 }: ReviewStepProps) {
   const spec = useMemo(() => buildSpec(state), [state]);
   const [challenge, setChallenge] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const [hasAttemptedRender, setHasAttemptedRender] = useState(false);
 
-  // onError does not fire when the Cloudflare script is blocked outright — the
-  // widget simply never appears. Treat a long silence as a failure so the
-  // customer is told why they cannot send, rather than staring at a dead button.
+  // Track when Turnstile begins rendering to avoid premature timeout
   useEffect(() => {
-    if (!tenant.turnstileSiteKey || challenge !== 'loading') return;
-    const timer = setTimeout(() => setChallenge('failed'), 12000);
+    if (tenant.turnstileSiteKey && !hasAttemptedRender) {
+      // Give a moment for the component to mount and Turnstile script to load
+      const initTimer = setTimeout(() => setHasAttemptedRender(true), 1000);
+      return () => clearTimeout(initTimer);
+    }
+  }, [tenant.turnstileSiteKey, hasAttemptedRender]);
+
+  // Only fail after a reasonable time if the widget truly hasn't loaded
+  useEffect(() => {
+    if (!tenant.turnstileSiteKey || !hasAttemptedRender || challenge !== 'loading') return;
+    // Increased timeout to 20 seconds to account for slow connections
+    const timer = setTimeout(() => {
+      console.warn('Turnstile widget timed out after 20 seconds');
+      setChallenge('failed');
+    }, 20000);
     return () => clearTimeout(timer);
-  }, [tenant.turnstileSiteKey, challenge]);
+  }, [tenant.turnstileSiteKey, hasAttemptedRender, challenge]);
 
   useEffect(() => {
     onChallengeState(challenge);
@@ -273,18 +285,31 @@ export function ReviewStep({
               // decides this visitor needs to interact, so the overwhelming
               // majority of customers never see a checkbox. Verification still
               // happens server-side either way.
-              options={{ appearance: 'interaction-only' }}
+              options={{ 
+                appearance: 'interaction-only',
+                theme: 'light',
+                size: 'normal'
+              }}
               onSuccess={(token) => {
+                console.log('Turnstile success');
                 setChallenge('ready');
                 onTurnstileToken(token);
               }}
               onExpire={() => {
+                console.log('Turnstile expired');
                 setChallenge('loading');
                 onTurnstileToken(null);
               }}
-              onError={() => {
+              onError={(error) => {
+                console.error('Turnstile error:', error);
                 setChallenge('failed');
                 onTurnstileToken(null);
+              }}
+              onBeforeInteractive={() => {
+                console.log('Turnstile before interactive');
+              }}
+              onAfterInteractive={() => {
+                console.log('Turnstile after interactive');
               }}
             />
           </div>

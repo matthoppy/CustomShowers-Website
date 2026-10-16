@@ -114,7 +114,8 @@ export const CUSTOM_SHOWERS: TenantConfig = {
   // Cloudflare Pages environment variables. Rotating a Turnstile widget then
   // needs no code change — the last swap took a deploy and a debugging round
   // purely because this was hardcoded.
-  turnstileSiteKey: import.meta.env.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAACmVMi3ZDLDzTYwv',
+  // TEMPORARY: Using Cloudflare test key for debugging
+  turnstileSiteKey: import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA',
 };
 
 export const TENANTS: Record<string, TenantConfig> = {
