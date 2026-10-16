@@ -50,7 +50,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
     <>
       {/* Full-width header — desktop only, shown when NOT scrolled */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${
+        className={`fixed top-0 left-0 right-0 z-50 hidden lg:block transition-all duration-500 ease-in-out ${
           isScrolled ? "opacity-0 pointer-events-none -translate-y-2" : "opacity-100"
         }`}
       >
