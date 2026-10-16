@@ -29,7 +29,7 @@ import { StartScreen } from './StartScreen';
 import { PhotoUpload } from './PhotoUpload';
 import { PhotoMarking } from './PhotoMarking';
 import { SuggestionPicker } from './SuggestionPicker';
-import { MeasuringWizard } from './MeasuringWizard';
+import { MeasuringWizard, type MeasuringResult } from './MeasuringWizard';
 import { getSuggestions, type Suggestion } from './suggestions';
 
 const EMPTY_CUSTOMER: CustomerDetails = {
@@ -271,15 +271,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     setStepId('sizes');
   };
 
-  const handleWizardComplete = (result: {
-    configurationId: string;
-    measurements: Record<string, string | number>;
-    heightReference: string;
-    heightToReferenceMm: number;
-    showerHeadHeightMm: number;
-    headClearanceWarning?: string;
-    measuringMethod: string;
-  }) => {
+  const handleWizardComplete = (result: MeasuringResult) => {
     const configId = result.configurationId || 'alcove-door';
     const template = TEMPLATES.find((t) => t.id === configId) || TEMPLATES[0];
     
@@ -294,7 +286,13 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     };
 
     // Apply width measurements to panels
-    const measurements = result.measurements;
+    // Wizard inputs can arrive as strings; treat anything non-numeric as missing.
+    const raw = result.measurements;
+    const mm = (key: string): number => {
+      const n = Number(raw[key]);
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    };
+    const measurements = Object.fromEntries(Object.keys(raw).map((k) => [k, mm(k)])) as Record<string, number>;
     if (measurements['opening-width-bottom'] || measurements['opening-width-top']) {
       const widths = [
         measurements['opening-width-bottom'],
