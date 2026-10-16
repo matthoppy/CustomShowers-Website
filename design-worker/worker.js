@@ -16,13 +16,46 @@
  */
 
 /** Bump when the code changes, so a browser visit shows which paste is live. */
-const WORKER_VERSION = "v5";
+const WORKER_VERSION = "v6";
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
+/**
+ * CORS configuration. Allow production domain and Cloudflare Pages preview origins.
+ * Preview origins follow the pattern: *.customshowers-website-bfs.pages.dev
+ */
+const ALLOWED_ORIGINS = [
+  "https://customshowers.uk",
+  "https://www.customshowers.uk",
+  // Cloudflare Pages preview branches (regex pattern)
+  /^https:\/\/[a-z0-9-]+\.customshowers-website-bfs\.pages\.dev$/,
+];
+
+function getCorsHeaders(request) {
+  const origin = request.headers.get("Origin");
+  const allowedOrigin = isOriginAllowed(origin) ? origin : "https://customshowers.uk";
+  
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Credentials": "true",
+  };
+}
+
+function isOriginAllowed(origin) {
+  if (!origin) return false;
+  
+  // Check exact matches
+  if (ALLOWED_ORIGINS.some(allowed => typeof allowed === 'string' && allowed === origin)) {
+    return true;
+  }
+  
+  // Check regex patterns
+  if (ALLOWED_ORIGINS.some(allowed => allowed instanceof RegExp && allowed.test(origin))) {
+    return true;
+  }
+  
+  return false;
+}
 
 /**
  * Destinations are allow-listed per tenant rather than taken from the request.
@@ -52,8 +85,10 @@ const SUSPICIOUS_ELAPSED_MS = 10000;
 
 export default {
   async fetch(request, env) {
+    const corsHeaders = getCorsHeaders(request);
+    
     if (request.method === "OPTIONS") {
-      return new Response(null, { headers: CORS_HEADERS });
+      return new Response(null, { headers: corsHeaders });
     }
     // A browser GET lands here. Return the version so opening the URL in a tab
     // confirms which paste is actually live — otherwise "did the deploy take?"
@@ -61,7 +96,7 @@ export default {
     if (request.method !== "POST") {
       return new Response(
         `customshowers-design ${WORKER_VERSION} — this endpoint only accepts POST from the configurator.`,
-        { status: 405, headers: { "Content-Type": "text/plain", ...CORS_HEADERS } }
+        { status: 405, headers: { "Content-Type": "text/plain", ...corsHeaders } }
       );
     }
 
@@ -71,7 +106,7 @@ export default {
         body || {};
 
       if (!customer?.name || !customer?.email) {
-        return json({ error: "Name and email are required." }, 400);
+        return json({ error: "Name and email are required." }, 400, corsHeaders);
       }
 
       // The honeypot is the one signal certain enough to drop on: the field is
@@ -79,14 +114,15 @@ export default {
       // Returning success avoids telling a bot which check it tripped.
       if (antispam?.honeypot) {
         console.warn("Dropped: honeypot filled", { ip: clientIp(request), tenantId });
-        return json({ success: true });
+        return json({ success: true }, 200, corsHeaders);
       }
 
       if (rateLimited(`ip:${clientIp(request)}`, MAX_PER_IP)) {
         console.warn("Rate limited", { ip: clientIp(request), tenantId });
         return json(
           { error: "Too many designs sent from here just now. Please try again shortly." },
-          429
+          429,
+          corsHeaders
         );
       }
 
@@ -100,7 +136,8 @@ export default {
             {
               error: "Security check required. Please allow challenges.cloudflare.com, disable ad blockers, and refresh the page.",
             },
-            403
+            403,
+            corsHeaders
           );
         }
         
@@ -134,7 +171,8 @@ export default {
               error: `Security check failed. ${hint}`.trim(),
               detail: codes.join(", ") || null,
             },
-            400
+            400,
+            corsHeaders
           );
         }
       }
@@ -186,7 +224,7 @@ export default {
         });
       }
 
-      return json({ success: true });
+      return json({ success: true }, 200, corsHeaders);
     } catch (err) {
       console.error("design-worker error:", err);
 
@@ -202,20 +240,20 @@ export default {
               : err.status === 0
                 ? "No RESEND_API_KEY is set on this worker."
                 : "The email provider rejected the message.";
-        return json({ error: `Could not send the email. ${hint}`, detail: err.detail }, 502);
+        return json({ error: `Could not send the email. ${hint}`, detail: err.detail }, 502, corsHeaders);
       }
 
-      return json({ error: "Internal server error" }, 500);
+      return json({ error: "Internal server error" }, 500, corsHeaders);
     }
   },
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function json(data, status = 200) {
+function json(data, status = 200, corsHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    headers: { "Content-Type": "application/json", ...corsHeaders },
   });
 }
 

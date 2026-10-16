@@ -133,10 +133,10 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
           customer.name.trim().length > 1 &&
           EMAIL_PATTERN.test(customer.email) &&
           customer.measurementsAcknowledged &&
-          // Either no Turnstile configured, or a valid token exists. Failed
-          // challenges now block submission - the user must allow the widget
-          // to load before they can send.
-          (!tenant.turnstileSiteKey || (!!turnstileToken && challengeState === 'ready'))
+          // Turnstile required: must have BOTH a valid token AND ready state.
+          // State can only become 'ready' after onSuccess callback with token.
+          // This ensures the button stays disabled until a real token exists.
+          (!tenant.turnstileSiteKey || (challengeState === 'ready' && !!turnstileToken && turnstileToken.length > 20))
         );
       default:
         return false;

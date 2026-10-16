@@ -7,7 +7,6 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { Turnstile } from '@marsidev/react-turnstile';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,7 +39,8 @@ export function ReviewStep({
 }: ReviewStepProps) {
   const spec = useMemo(() => buildSpec(state), [state]);
   const [challenge, setChallenge] = useState<'loading' | 'ready' | 'failed'>('loading');
-  const [hasAttemptedRender, setHasAttemptedRender] = useState(false);
+  const [widgetId, setWidgetId] = useState<string | null>(null);
+  const [hasToken, setHasToken] = useState(false);
   
   // Debug mode diagnostics (only shown with ?debug=1)
   const [debugInfo, setDebugInfo] = useState({
@@ -54,18 +54,157 @@ export function ReviewStep({
     expiredFired: false,
     beforeInteractiveFired: false,
     afterInteractiveFired: false,
+    renderAttempts: 0,
+    renderError: null as string | null,
   });
   const debugMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1';
 
+  // Manual Turnstile rendering with proper lifecycle management
+  useEffect(() => {
+    if (!tenant.turnstileSiteKey) return;
+    
+    const container = document.getElementById('turnstile-widget');
+    if (!container) return;
+    
+    let mounted = true;
+    let currentWidgetId: string | null = null;
+    
+    const tryRender = () => {
+      if (!mounted || !container || currentWidgetId) return;
+      
+      try {
+        if (typeof window === 'undefined' || !window.turnstile) {
+          if (debugMode) {
+            setDebugInfo(prev => ({ 
+              ...prev, 
+              renderError: 'window.turnstile not available',
+              renderAttempts: prev.renderAttempts + 1 
+            }));
+          }
+          return;
+        }
+        
+        if (debugMode) {
+          setDebugInfo(prev => ({ 
+            ...prev, 
+            renderAttempts: prev.renderAttempts + 1,
+            renderError: null 
+          }));
+        }
+        
+        currentWidgetId = window.turnstile.render(container, {
+          sitekey: tenant.turnstileSiteKey,
+          appearance: 'interaction-only',
+          theme: 'light',
+          size: 'normal',
+          callback: (token: string) => {
+            console.log('Turnstile success, token length:', token?.length);
+            if (mounted && token) {
+              setHasToken(true);
+              setChallenge('ready');
+              onTurnstileToken(token);
+              if (debugMode) {
+                setDebugInfo(prev => ({ ...prev, widgetId: currentWidgetId }));
+              }
+            }
+          },
+          'expired-callback': () => {
+            console.log('Turnstile expired');
+            if (mounted) {
+              setHasToken(false);
+              setChallenge('loading');
+              onTurnstileToken(null);
+              if (debugMode) {
+                setDebugInfo(prev => ({ ...prev, expiredFired: true }));
+              }
+            }
+          },
+          'error-callback': (error: string) => {
+            console.error('Turnstile error:', error);
+            if (mounted) {
+              setChallenge('failed');
+              onTurnstileToken(null);
+              if (debugMode) {
+                setDebugInfo(prev => ({ ...prev, errorCode: String(error) }));
+              }
+            }
+          },
+          'before-interactive-callback': () => {
+            console.log('Turnstile before interactive');
+            if (debugMode) {
+              setDebugInfo(prev => ({ ...prev, beforeInteractiveFired: true }));
+            }
+          },
+          'after-interactive-callback': () => {
+            console.log('Turnstile after interactive');
+            if (debugMode) {
+              setDebugInfo(prev => ({ ...prev, afterInteractiveFired: true }));
+            }
+          },
+        });
+        
+        setWidgetId(currentWidgetId);
+        if (debugMode) {
+          setDebugInfo(prev => ({ ...prev, widgetId: currentWidgetId }));
+        }
+        console.log('Turnstile rendered, widget ID:', currentWidgetId);
+      } catch (err) {
+        console.error('Turnstile render error:', err);
+        if (debugMode) {
+          setDebugInfo(prev => ({ 
+            ...prev, 
+            renderError: err instanceof Error ? err.message : String(err) 
+          }));
+        }
+        if (mounted) {
+          setChallenge('failed');
+        }
+      }
+    };
+    
+    // Try render immediately if turnstile already loaded
+    if (window.turnstile) {
+      tryRender();
+    }
+    
+    // Also try on script load event
+    const script = document.querySelector('script[src*="challenges.cloudflare.com"]');
+    if (script) {
+      script.addEventListener('load', () => {
+        if (debugMode) {
+          setDebugInfo(prev => ({ ...prev, onloadFired: true }));
+        }
+        tryRender();
+      });
+    }
+    
+    // Fallback: retry after short delay
+    const retryTimer = setTimeout(tryRender, 1500);
+    
+    // Cleanup on unmount
+    return () => {
+      mounted = false;
+      clearTimeout(retryTimer);
+      if (currentWidgetId && window.turnstile?.remove) {
+        try {
+          window.turnstile.remove(currentWidgetId);
+          console.log('Turnstile widget removed');
+        } catch (err) {
+          console.warn('Turnstile remove error:', err);
+        }
+      }
+    };
+  }, [tenant.turnstileSiteKey, onTurnstileToken, debugMode]);
+  
   // Update debug info periodically
   useEffect(() => {
     if (!debugMode || !tenant.turnstileSiteKey) return;
     
     const updateDebug = () => {
-      const container = document.getElementById('turnstile-container');
+      const container = document.getElementById('turnstile-widget');
       setDebugInfo(prev => ({
         ...prev,
-        scriptTagPresent: !!document.getElementById('cf-turnstile-script'),
+        scriptTagPresent: !!document.querySelector('script[src*="challenges.cloudflare.com"]'),
         windowTurnstileExists: typeof window !== 'undefined' && !!window.turnstile,
         containerInDOM: !!container,
       }));
@@ -75,25 +214,10 @@ export function ReviewStep({
     const interval = setInterval(updateDebug, 1000);
     return () => clearInterval(interval);
   }, [debugMode, tenant.turnstileSiteKey]);
-  
-  // Track when Turnstile begins rendering to avoid premature timeout
-  useEffect(() => {
-    if (tenant.turnstileSiteKey && !hasAttemptedRender) {
-      // Give a moment for the component to mount and Turnstile script to load
-      const initTimer = setTimeout(() => {
-        setHasAttemptedRender(true);
-        if (debugMode) {
-          setDebugInfo(prev => ({ ...prev, onloadFired: true }));
-        }
-      }, 1000);
-      return () => clearTimeout(initTimer);
-    }
-  }, [tenant.turnstileSiteKey, hasAttemptedRender, debugMode]);
 
-  // Only fail after a reasonable time if the widget truly hasn't loaded
+  // Timeout fallback if widget never loads
   useEffect(() => {
-    if (!tenant.turnstileSiteKey || !hasAttemptedRender || challenge !== 'loading') return;
-    // Increased timeout to 20 seconds to account for slow connections
+    if (!tenant.turnstileSiteKey || challenge !== 'loading') return;
     const timer = setTimeout(() => {
       console.warn('Turnstile widget timed out after 20 seconds');
       setChallenge('failed');
@@ -102,7 +226,7 @@ export function ReviewStep({
       }
     }, 20000);
     return () => clearTimeout(timer);
-  }, [tenant.turnstileSiteKey, hasAttemptedRender, challenge, debugMode]);
+  }, [tenant.turnstileSiteKey, challenge, debugMode]);
 
   useEffect(() => {
     onChallengeState(challenge);
@@ -320,53 +444,8 @@ export function ReviewStep({
 
       {tenant.turnstileSiteKey && (
         <div className="space-y-3">
-          <div id="turnstile-container" className="flex justify-center">
-            <Turnstile
-              siteKey={tenant.turnstileSiteKey}
-              // Solve silently. The widget only draws itself if Cloudflare
-              // decides this visitor needs to interact, so the overwhelming
-              // majority of customers never see a checkbox. Verification still
-              // happens server-side either way.
-              options={{ 
-                appearance: 'interaction-only',
-                theme: 'light',
-                size: 'normal'
-              }}
-              onSuccess={(token) => {
-                console.log('Turnstile success');
-                setChallenge('ready');
-                onTurnstileToken(token);
-              }}
-              onExpire={() => {
-                console.log('Turnstile expired');
-                setChallenge('loading');
-                onTurnstileToken(null);
-                if (debugMode) {
-                  setDebugInfo(prev => ({ ...prev, expiredFired: true }));
-                }
-              }}
-              onError={(error) => {
-                console.error('Turnstile error:', error);
-                setChallenge('failed');
-                onTurnstileToken(null);
-                if (debugMode) {
-                  setDebugInfo(prev => ({ ...prev, errorCode: String(error) }));
-                }
-              }}
-              onBeforeInteractive={() => {
-                console.log('Turnstile before interactive');
-                if (debugMode) {
-                  setDebugInfo(prev => ({ ...prev, beforeInteractiveFired: true }));
-                }
-              }}
-              onAfterInteractive={() => {
-                console.log('Turnstile after interactive');
-                if (debugMode) {
-                  setDebugInfo(prev => ({ ...prev, afterInteractiveFired: true }));
-                }
-              }}
-            />
-          </div>
+          {/* Manual Turnstile widget container - rendered via window.turnstile.render() */}
+          <div id="turnstile-widget" className="flex justify-center" />
 
           {/* Without this, a blocked or slow challenge leaves the send button
               disabled with nothing on screen to explain why. */}
@@ -452,9 +531,27 @@ export function ReviewStep({
               </div>
             </div>
             
+            <div className="mt-2 border-t border-purple-300 pt-2 dark:border-purple-700">
+              <div className="mb-1 font-semibold">Render Attempts:</div>
+              <div className="grid grid-cols-2 gap-1">
+                <div>
+                  Attempts: {debugInfo.renderAttempts}
+                </div>
+                <div className={hasToken ? 'text-green-600' : 'text-gray-500'}>
+                  {hasToken ? '✓' : '○'} Has token
+                </div>
+              </div>
+            </div>
+            
             {debugInfo.errorCode && (
               <div className="mt-2 rounded border border-red-300 bg-red-50 p-2 text-red-900 dark:bg-red-950/40">
-                <span className="font-semibold">Error:</span> {debugInfo.errorCode}
+                <span className="font-semibold">Error callback:</span> {debugInfo.errorCode}
+              </div>
+            )}
+            
+            {debugInfo.renderError && (
+              <div className="mt-2 rounded border border-red-300 bg-red-50 p-2 text-red-900 dark:bg-red-950/40">
+                <span className="font-semibold">Render error:</span> {debugInfo.renderError}
               </div>
             )}
             
