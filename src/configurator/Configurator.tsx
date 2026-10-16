@@ -411,37 +411,39 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
 
       {/* Progress. */}
       <div className="border-b bg-background">
-        <div className="mx-auto flex max-w-6xl items-center gap-1 px-4 py-3 sm:gap-2 sm:px-6 sm:py-4 overflow-x-auto">
-          {STEPS.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => i < stepIndex && setStepId(s.id)}
-              disabled={i > stepIndex}
-              className="flex items-center gap-1.5 disabled:cursor-default shrink-0 sm:gap-2"
-              aria-label={`${s.label}${i === stepIndex ? ' (current step)' : i < stepIndex ? ' (completed)' : ''}`}
-            >
-              <span
-                className={`flex h-6 w-6 sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
-                  i < stepIndex
-                    ? 'bg-foreground text-background'
-                    : i === stepIndex
-                      ? 'bg-foreground text-background ring-2 ring-foreground ring-offset-2'
-                      : 'bg-muted text-muted-foreground'
-                }`}
+        <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
+          <div className="flex items-center gap-1 overflow-x-auto sm:gap-2">
+            {STEPS.map((s, i) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => i < stepIndex && setStepId(s.id)}
+                disabled={i > stepIndex}
+                className="flex items-center gap-1.5 disabled:cursor-default shrink-0 sm:gap-2"
+                aria-label={`${s.label}${i === stepIndex ? ' (current step)' : i < stepIndex ? ' (completed)' : ''}`}
               >
-                {i < stepIndex ? <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> : i + 1}
-              </span>
-              <span
-                className={`hidden text-xs sm:text-sm md:inline ${
-                  i === stepIndex ? 'font-semibold' : 'text-muted-foreground'
-                }`}
-              >
-                {s.label}
-              </span>
-              {i < STEPS.length - 1 && <span className="mx-0.5 h-px w-2 bg-border sm:mx-1 sm:w-4 md:w-8" />}
-            </button>
-          ))}
+                <span
+                  className={`flex h-6 w-6 sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
+                    i < stepIndex
+                      ? 'bg-foreground text-background'
+                      : i === stepIndex
+                        ? 'bg-foreground text-background ring-2 ring-foreground ring-offset-2'
+                        : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {i < stepIndex ? <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> : i + 1}
+                </span>
+                <span
+                  className={`text-xs sm:text-sm ${
+                    i === stepIndex ? 'font-semibold md:inline' : 'hidden md:inline text-muted-foreground'
+                  }`}
+                >
+                  {s.label}
+                </span>
+                {i < STEPS.length - 1 && <span className="mx-0.5 h-px w-2 bg-border sm:mx-1 sm:w-4 md:w-8" />}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -486,8 +488,8 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                     setHoneypot={setHoneypot}
                   />
                   
-                  {/* Mobile nav buttons - shown inline on mobile, hidden on desktop */}
-                  <div className="mt-6 flex items-center justify-between gap-3 lg:hidden">
+                  {/* Review nav buttons - shown inline on all screen sizes for review step */}
+                  <div className="mt-6 flex items-center justify-between gap-3">
                     <Button
                       variant="outline"
                       size="sm"
@@ -579,8 +581,8 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
         </div>
       </div>
 
-      {/* Nav. Hidden on mobile for review step (buttons shown inline instead) */}
-      <div className={`sticky bottom-0 border-t bg-background/95 backdrop-blur ${stepId === 'review' ? 'hidden lg:flex' : 'flex'}`}>
+      {/* Nav. Hidden completely for review step (buttons shown inline in ReviewStep instead) */}
+      <div className={`sticky bottom-0 border-t bg-background/95 backdrop-blur ${stepId === 'review' ? 'hidden' : 'flex'}`}>
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
           <Button
             variant="outline"

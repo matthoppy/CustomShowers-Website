@@ -89,6 +89,9 @@ export function SizesStep({ state, update }: StepProps) {
     patch: Partial<{ amount_mm: number; direction: string }>
   ) => update({ rakes: { ...state.rakes, [key]: { ...state.rakes[key], ...patch } } });
 
+  const heightValid = state.heightMm >= 500 && state.heightMm <= 3000;
+  const panelsValid = state.panels.every((p) => p.width_mm > 0);
+
   return (
     <div className="space-y-6">
       {/* Height. */}
@@ -99,7 +102,13 @@ export function SizesStep({ state, update }: StepProps) {
           type="number"
           value={state.heightMm}
           onChange={(e) => update({ heightMm: parseInt(e.target.value, 10) || 0 })}
+          className={!heightValid && state.heightMm > 0 ? 'border-destructive' : ''}
         />
+        {!heightValid && state.heightMm > 0 && (
+          <p className="text-xs text-destructive">
+            Glass height must be between 500mm and 3000mm. {state.heightMm < 500 ? 'Enter a taller height.' : 'Enter a shorter height.'}
+          </p>
+        )}
         <div className="flex flex-wrap gap-2">
           {HEIGHT_PRESETS.map((h) => (
             <Button
@@ -148,7 +157,7 @@ export function SizesStep({ state, update }: StepProps) {
                   const v = parseInt(e.target.value, 10);
                   patchPanel(panel.id, { width_mm: Number.isNaN(v) ? 0 : v });
                 }}
-                className="w-20 text-sm sm:w-28"
+                className={`w-20 text-sm sm:w-28 ${panel.width_mm <= 0 ? 'border-destructive' : ''}`}
               />
               {state.panels.length > 1 && (
                 <Button
@@ -164,6 +173,11 @@ export function SizesStep({ state, update }: StepProps) {
             </div>
           ))}
         </div>
+        {!panelsValid && (
+          <p className="text-xs text-destructive">
+            All panel widths must be greater than 0mm. Enter a width for each panel to continue.
+          </p>
+        )}
         <p className="text-xs text-muted-foreground">
           Measure the full opening. We take off the allowances for channels and seals ourselves.
         </p>
