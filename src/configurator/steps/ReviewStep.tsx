@@ -41,15 +41,54 @@ export function ReviewStep({
   const spec = useMemo(() => buildSpec(state), [state]);
   const [challenge, setChallenge] = useState<'loading' | 'ready' | 'failed'>('loading');
   const [hasAttemptedRender, setHasAttemptedRender] = useState(false);
+  
+  // Debug mode diagnostics (only shown with ?debug=1)
+  const [debugInfo, setDebugInfo] = useState({
+    scriptTagPresent: false,
+    windowTurnstileExists: false,
+    onloadFired: false,
+    containerInDOM: false,
+    widgetId: null as string | null,
+    errorCode: null as string | null,
+    timeoutFired: false,
+    expiredFired: false,
+    beforeInteractiveFired: false,
+    afterInteractiveFired: false,
+  });
+  const debugMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1';
 
+  // Update debug info periodically
+  useEffect(() => {
+    if (!debugMode || !tenant.turnstileSiteKey) return;
+    
+    const updateDebug = () => {
+      const container = document.getElementById('turnstile-container');
+      setDebugInfo(prev => ({
+        ...prev,
+        scriptTagPresent: !!document.getElementById('cf-turnstile-script'),
+        windowTurnstileExists: typeof window !== 'undefined' && !!window.turnstile,
+        containerInDOM: !!container,
+      }));
+    };
+    
+    updateDebug();
+    const interval = setInterval(updateDebug, 1000);
+    return () => clearInterval(interval);
+  }, [debugMode, tenant.turnstileSiteKey]);
+  
   // Track when Turnstile begins rendering to avoid premature timeout
   useEffect(() => {
     if (tenant.turnstileSiteKey && !hasAttemptedRender) {
       // Give a moment for the component to mount and Turnstile script to load
-      const initTimer = setTimeout(() => setHasAttemptedRender(true), 1000);
+      const initTimer = setTimeout(() => {
+        setHasAttemptedRender(true);
+        if (debugMode) {
+          setDebugInfo(prev => ({ ...prev, onloadFired: true }));
+        }
+      }, 1000);
       return () => clearTimeout(initTimer);
     }
-  }, [tenant.turnstileSiteKey, hasAttemptedRender]);
+  }, [tenant.turnstileSiteKey, hasAttemptedRender, debugMode]);
 
   // Only fail after a reasonable time if the widget truly hasn't loaded
   useEffect(() => {
@@ -58,9 +97,12 @@ export function ReviewStep({
     const timer = setTimeout(() => {
       console.warn('Turnstile widget timed out after 20 seconds');
       setChallenge('failed');
+      if (debugMode) {
+        setDebugInfo(prev => ({ ...prev, timeoutFired: true }));
+      }
     }, 20000);
     return () => clearTimeout(timer);
-  }, [tenant.turnstileSiteKey, hasAttemptedRender, challenge]);
+  }, [tenant.turnstileSiteKey, hasAttemptedRender, challenge, debugMode]);
 
   useEffect(() => {
     onChallengeState(challenge);
@@ -278,7 +320,7 @@ export function ReviewStep({
 
       {tenant.turnstileSiteKey && (
         <div className="space-y-3">
-          <div className="flex justify-center">
+          <div id="turnstile-container" className="flex justify-center">
             <Turnstile
               siteKey={tenant.turnstileSiteKey}
               // Solve silently. The widget only draws itself if Cloudflare
@@ -299,17 +341,29 @@ export function ReviewStep({
                 console.log('Turnstile expired');
                 setChallenge('loading');
                 onTurnstileToken(null);
+                if (debugMode) {
+                  setDebugInfo(prev => ({ ...prev, expiredFired: true }));
+                }
               }}
               onError={(error) => {
                 console.error('Turnstile error:', error);
                 setChallenge('failed');
                 onTurnstileToken(null);
+                if (debugMode) {
+                  setDebugInfo(prev => ({ ...prev, errorCode: String(error) }));
+                }
               }}
               onBeforeInteractive={() => {
                 console.log('Turnstile before interactive');
+                if (debugMode) {
+                  setDebugInfo(prev => ({ ...prev, beforeInteractiveFired: true }));
+                }
               }}
               onAfterInteractive={() => {
                 console.log('Turnstile after interactive');
+                if (debugMode) {
+                  setDebugInfo(prev => ({ ...prev, afterInteractiveFired: true }));
+                }
               }}
             />
           </div>
@@ -334,6 +388,89 @@ export function ReviewStep({
               </div>
             </div>
           )}
+        </div>
+      )}
+      
+      {/* Debug diagnostics panel - only shown with ?debug=1 */}
+      {debugMode && tenant.turnstileSiteKey && (
+        <div className="rounded-lg border-2 border-purple-500 bg-purple-50 p-4 dark:bg-purple-950/20">
+          <h3 className="mb-3 text-sm font-bold text-purple-900 dark:text-purple-100">
+            🔧 Turnstile Debug Panel (visible with ?debug=1)
+          </h3>
+          <div className="space-y-2 text-xs font-mono">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <span className="font-semibold">Hostname:</span> {typeof window !== 'undefined' ? window.location.hostname : 'N/A'}
+              </div>
+              <div>
+                <span className="font-semibold">Sitekey:</span> {tenant.turnstileSiteKey}
+              </div>
+            </div>
+            
+            <div className="mt-3 border-t border-purple-300 pt-2 dark:border-purple-700">
+              <div className="mb-1 font-semibold">Script Load State:</div>
+              <div className="grid grid-cols-2 gap-1">
+                <div className={debugInfo.scriptTagPresent ? 'text-green-600' : 'text-red-600'}>
+                  {debugInfo.scriptTagPresent ? '✓' : '✗'} Script tag present
+                </div>
+                <div className={debugInfo.windowTurnstileExists ? 'text-green-600' : 'text-red-600'}>
+                  {debugInfo.windowTurnstileExists ? '✓' : '✗'} window.turnstile
+                </div>
+                <div className={debugInfo.onloadFired ? 'text-green-600' : 'text-red-600'}>
+                  {debugInfo.onloadFired ? '✓' : '✗'} Onload fired
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-2 border-t border-purple-300 pt-2 dark:border-purple-700">
+              <div className="mb-1 font-semibold">Render State:</div>
+              <div className="grid grid-cols-2 gap-1">
+                <div className={debugInfo.containerInDOM ? 'text-green-600' : 'text-red-600'}>
+                  {debugInfo.containerInDOM ? '✓' : '✗'} Container in DOM
+                </div>
+                <div>
+                  Widget ID: {debugInfo.widgetId || 'none'}
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-2 border-t border-purple-300 pt-2 dark:border-purple-700">
+              <div className="mb-1 font-semibold">Callbacks:</div>
+              <div className="grid grid-cols-2 gap-1">
+                <div className={debugInfo.beforeInteractiveFired ? 'text-green-600' : 'text-gray-500'}>
+                  {debugInfo.beforeInteractiveFired ? '✓' : '○'} Before interactive
+                </div>
+                <div className={debugInfo.afterInteractiveFired ? 'text-green-600' : 'text-gray-500'}>
+                  {debugInfo.afterInteractiveFired ? '✓' : '○'} After interactive
+                </div>
+                <div className={debugInfo.timeoutFired ? 'text-red-600' : 'text-gray-500'}>
+                  {debugInfo.timeoutFired ? '✗' : '○'} Timeout (20s)
+                </div>
+                <div className={debugInfo.expiredFired ? 'text-yellow-600' : 'text-gray-500'}>
+                  {debugInfo.expiredFired ? '⚠' : '○'} Expired
+                </div>
+              </div>
+            </div>
+            
+            {debugInfo.errorCode && (
+              <div className="mt-2 rounded border border-red-300 bg-red-50 p-2 text-red-900 dark:bg-red-950/40">
+                <span className="font-semibold">Error:</span> {debugInfo.errorCode}
+              </div>
+            )}
+            
+            <div className="mt-2 border-t border-purple-300 pt-2 dark:border-purple-700">
+              <div className="mb-1 font-semibold">Challenge State:</div>
+              <div className={
+                challenge === 'ready' ? 'text-green-600' :
+                challenge === 'failed' ? 'text-red-600' :
+                'text-yellow-600'
+              }>
+                {challenge === 'ready' ? '✓ Ready' :
+                 challenge === 'failed' ? '✗ Failed' :
+                 '⏳ Loading'}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
