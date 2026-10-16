@@ -90,23 +90,27 @@ export default {
         );
       }
 
-      // A token is verified strictly whenever one is present. A *missing*
-      // token means the widget never loaded for that visitor — an ad blocker,
-      // a rotated widget, a Cloudflare outage — none of which is the
-      // customer's doing. Rejecting there loses a real job silently, so it is
-      // flagged instead, exactly like a suspiciously fast completion.
-      const challengeSkipped = env.TURNSTILE_SECRET_KEY && !turnstileToken;
-      if (challengeSkipped) {
-        console.warn("Flagged: no challenge token", { ip: clientIp(request), tenantId });
-      }
-
-      if (env.TURNSTILE_SECRET_KEY && turnstileToken) {
+      // Verify Turnstile token when the secret key is configured. Unlike the
+      // previous lenient approach, missing tokens are now rejected to prevent
+      // spam while ensuring legitimate users can complete the security check.
+      if (env.TURNSTILE_SECRET_KEY) {
+        if (!turnstileToken) {
+          console.warn("Rejected: no challenge token", { ip: clientIp(request), tenantId });
+          return json(
+            {
+              error: "Security check required. Please allow challenges.cloudflare.com, disable ad blockers, and refresh the page.",
+            },
+            403
+          );
+        }
+        
+        // Verify the token server-side
         const verifyRes = await fetch(
           "https://challenges.cloudflare.com/turnstile/v0/siteverify",
           {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: `secret=${env.TURNSTILE_SECRET_KEY}&response=${turnstileToken || ""}`,
+            body: `secret=${env.TURNSTILE_SECRET_KEY}&response=${turnstileToken}`,
           }
         );
         const verify = await verifyRes.json();

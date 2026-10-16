@@ -133,12 +133,10 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
           customer.name.trim().length > 1 &&
           EMAIL_PATTERN.test(customer.email) &&
           customer.measurementsAcknowledged &&
-          // A solved challenge, no challenge configured, or a challenge that
-          // could not load. Blocking on the last case dead-ends the customer
-          // over something outside their control — an ad blocker, or a widget
-          // rotated in the dashboard — and a lost enquiry leaves no trace.
-          // The worker flags tokenless submissions instead of trusting them.
-          (!tenant.turnstileSiteKey || !!turnstileToken || challengeState === 'failed')
+          // Either no Turnstile configured, or a valid token exists. Failed
+          // challenges now block submission - the user must allow the widget
+          // to load before they can send.
+          (!tenant.turnstileSiteKey || (!!turnstileToken && challengeState === 'ready'))
         );
       default:
         return false;
@@ -294,15 +292,47 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
               {stepId === 'sizes' && <SizesStep {...stepProps} />}
               {stepId === 'hardware' && <HardwareStep {...stepProps} />}
               {stepId === 'review' && (
-                <ReviewStep
-                  {...stepProps}
-                  customer={customer}
-                  setCustomer={setCustomer}
-                  onTurnstileToken={setTurnstileToken}
-                  onChallengeState={setChallengeState}
-                  honeypot={honeypot}
-                  setHoneypot={setHoneypot}
-                />
+                <>
+                  <ReviewStep
+                    {...stepProps}
+                    customer={customer}
+                    setCustomer={setCustomer}
+                    onTurnstileToken={setTurnstileToken}
+                    onChallengeState={setChallengeState}
+                    honeypot={honeypot}
+                    setHoneypot={setHoneypot}
+                  />
+                  
+                  {/* Mobile nav buttons - shown inline on mobile, hidden on desktop */}
+                  <div className="mt-6 flex items-center justify-between gap-3 lg:hidden">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setStepId(STEPS[Math.max(0, stepIndex - 1)].id)}
+                      disabled={stepIndex === 0 || submitting}
+                    >
+                      <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
+                      <span className="text-xs">Back</span>
+                    </Button>
+
+                    {error && <p className="flex-1 text-xs text-destructive">{error}</p>}
+
+                    <Button 
+                      size="sm"
+                      onClick={handleSubmit} 
+                      disabled={!canProceed || submitting}
+                    >
+                      {submitting ? (
+                        <>
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                          <span className="text-xs">Sending</span>
+                        </>
+                      ) : (
+                        <span className="text-xs">Send my design</span>
+                      )}
+                    </Button>
+                  </div>
+                </>
               )}
             </div>
 
@@ -366,8 +396,8 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
         </div>
       </div>
 
-      {/* Nav. */}
-      <div className="sticky bottom-0 border-t bg-background/95 backdrop-blur">
+      {/* Nav. Hidden on mobile for review step (buttons shown inline instead) */}
+      <div className={`sticky bottom-0 border-t bg-background/95 backdrop-blur ${stepId === 'review' ? 'hidden lg:flex' : 'flex'}`}>
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
           <Button
             variant="outline"
