@@ -22,9 +22,19 @@ import { TEMPLATES, type ShowerTemplate } from './templates';
 import {
   buildEnquiryPayload,
   submitEnquiry,
+  submitQuote,
   svgToPngBase64,
   type EnquiryAttachment,
 } from './submit';
+import { StartScreen } from './StartScreen';
+import { PhotoUpload } from './PhotoUpload';
+import { PhotoMarking } from './PhotoMarking';
+import { SuggestionPicker } from './SuggestionPicker';
+import { MeasuringWizard, type MeasuringResult } from './MeasuringWizard';
+import { applyMeasuredWidths } from './applyMeasurements';
+import { suggestPrice } from './pricing';
+import { formatMeasuringRecord, photoFilename, textToBase64 } from './measuringRecord';
+import { getSuggestions, type Suggestion } from './suggestions';
 
 const EMPTY_CUSTOMER: CustomerDetails = {
   name: '',
@@ -60,6 +70,16 @@ interface ConfiguratorProps {
 }
 
 export function Configurator({ tenant = getTenant(), embedded = false }: ConfiguratorProps) {
+  const [mode, setMode] = useState<'start' | 'template-flow' | 'photo-flow' | 'wizard' | 'steps'>('start');
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  const [photoStep, setPhotoStep] = useState<'upload' | 'marking' | 'suggestions'>('upload');
+  const [photoCorners, setPhotoCorners] = useState<Array<{ x: number; y: number }>>([]);
+  const [photoKnownWidth, setPhotoKnownWidth] = useState(0);
+  /** What the customer measured on site, kept so it reaches the workshop as well as the drawing. */
+  const [measuring, setMeasuring] = useState<MeasuringResult | null>(null);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
   const [stepId, setStepId] = useState<StepId>('shape');
   const [templateId, setTemplateId] = useState<string | null>(TEMPLATES[0].id);
   const [state, setState] = useState<ConfiguratorState>(() =>
@@ -158,6 +178,10 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     setError(null);
 
     const attachments: EnquiryAttachment[] = [];
+    // The site record first: if anything gets dropped on the way, it shouldn't be this.
+    if (measuring) {
+      attachments.push({ filename: 'site-measurements.txt', content: textToBase64(formatMeasuringRecord(measuring)) });
+    }
     const svgs = drawingRef.current?.querySelectorAll('svg') ?? [];
     const names = ['plan-view.png', 'elevation-view.png'];
     let i = 0;
@@ -166,12 +190,24 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
       if (png) attachments.push({ filename: names[i] ?? `drawing-${i + 1}.png`, content: png });
       i++;
     }
+    if (measuring) {
+      for (const [stepId, dataUrl] of Object.entries(measuring.photos).slice(0, 6)) {
+        const content = dataUrl.split(',')[1];
+        if (content) attachments.push({ filename: photoFilename(stepId), content });
+      }
+    }
 
     const payload = buildEnquiryPayload(tenant, state, customer, attachments, turnstileToken, {
       honeypot,
       elapsedMs: Date.now() - startedAtRef.current,
     });
-    const result = await submitEnquiry(tenant.enquiryEndpoint, payload);
+    const result = tenant.quotesApi
+      ? await submitQuote(tenant.quotesApi, payload, {
+          state,
+          siteRecord: measuring ? formatMeasuringRecord(measuring) : null,
+          suggestedPrice: suggestPrice(state, payload.spec),
+        })
+      : await submitEnquiry(tenant.enquiryEndpoint, payload);
 
     setSubmitting(false);
     if (result.ok) {
@@ -186,6 +222,15 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
 
   function reset() {
     const fresh = applyTemplate(createInitialState(tenant.glassThicknessMm), TEMPLATES[0]);
+    setMode('start');
+    setPhotoDataUrl(null);
+    setPhotoStep('upload');
+    setPhotoCorners([]);
+    setPhotoKnownWidth(0);
+    setMeasuring(null);
+    setSuggestions([]);
+    setSuggestionsLoading(false);
+    setSuggestionsError(null);
     setTemplateId(TEMPLATES[0].id);
     setState(fresh);
     setCustomerState(EMPTY_CUSTOMER);
@@ -199,6 +244,81 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     startedAtRef.current = Date.now();
   }
 
+  // Pick the layout first: the measuring steps depend on it, and a corner
+  // shower measured as an alcove gives the workshop the wrong numbers.
+  const handleStartTemplate = () => {
+    setMode('template-flow');
+  };
+
+  // "Something else" has no plan of its own, so it gets the general one.
+  const getConfigurationId = () => templateId ?? 'custom';
+
+  const handleStartPhoto = () => {
+    setMode('photo-flow');
+    setPhotoStep('upload');
+  };
+
+  const handlePhotoSelected = (dataUrl: string) => {
+    setPhotoDataUrl(dataUrl);
+    setPhotoStep('marking');
+  };
+
+  const handlePhotoMarkingComplete = async (corners: Array<{ x: number; y: number }>, knownWidthMm: number) => {
+    setPhotoCorners(corners);
+    setPhotoKnownWidth(knownWidthMm);
+    setPhotoStep('suggestions');
+    setSuggestionsLoading(true);
+    setSuggestionsError(null);
+
+    try {
+      const result = await getSuggestions({ corners, knownWidthMm });
+      setSuggestions(result);
+    } catch (err) {
+      setSuggestionsError(err instanceof Error ? err.message : 'Failed to get suggestions');
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  };
+
+  const handleSuggestionSelected = (suggestion: Suggestion) => {
+    setState((s) => ({
+      ...s,
+      ...suggestion.state,
+    }));
+    setActivePanelId(suggestion.state.panels?.[0]?.id ?? null);
+    setMode('steps');
+    setStepId('sizes');
+  };
+
+  const handleWizardComplete = (result: MeasuringResult) => {
+    setMeasuring(result);
+    // The layout was chosen before measuring; "something else" keeps the
+    // customer's own starting shape rather than snapping to a template.
+    const template = templateId ? TEMPLATES.find((t) => t.id === templateId) : undefined;
+    const newState = template ? applyTemplate(state, template) : { ...state, panels: state.panels.map((p) => ({ ...p })) };
+    newState.heightMm = result.heightToReferenceMm;
+    newState.measuringMethod = result.measuringMethod;
+    newState.heightMeasurement = {
+      reference: result.heightReference,
+      heightToReferenceMm: result.heightToReferenceMm,
+      showerHeadHeightMm: result.showerHeadHeightMm,
+      headClearanceWarning: result.headClearanceWarning,
+    };
+
+    // Wizard inputs can arrive as strings; treat anything non-numeric as missing.
+    const measurements: Record<string, number> = {};
+    for (const [k, v] of Object.entries(result.measurements)) {
+      const n = Number(v);
+      if (Number.isFinite(n) && n > 0) measurements[k] = n;
+    }
+    newState.panels = applyMeasuredWidths(templateId ?? 'custom', newState.panels, measurements);
+
+    setState(newState);
+    setActivePanelId(newState.panels[0]?.id ?? null);
+    setMode('steps');
+    setStepId('sizes');
+  };
+
   if (submitted) {
     return (
       <div className={embedded ? 'p-8' : 'mx-auto max-w-2xl px-6 py-24'}>
@@ -209,13 +329,107 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
           <h2 className="text-2xl font-bold">Design sent</h2>
           <p className="mt-2 text-muted-foreground">
             Thanks {customer.name.split(' ')[0] || 'very much'} — your measurements are with{' '}
-            {tenant.brand.name}. We will be in touch to confirm sizes before anything is cut.
+            {tenant.brand.name}.{' '}
+            {tenant.quotesApi
+              ? 'We’ll check everything and email your price, usually within one working day. You’ll confirm your sizes before anything is made.'
+              : 'We will be in touch to confirm sizes before anything is cut.'}
           </p>
           <Button variant="outline" onClick={reset} className="mt-6">
             <RotateCcw className="mr-2 h-4 w-4" />
             Design another
           </Button>
         </div>
+      </div>
+    );
+  }
+
+  if (mode === 'start') {
+    return (
+      <div className="flex min-h-full flex-col bg-background">
+        <div ref={topRef} className="scroll-mt-24" aria-hidden="true" />
+        <StartScreen
+          tenant={tenant}
+          onSelectTemplate={handleStartTemplate}
+          onSelectPhoto={handleStartPhoto}
+        />
+      </div>
+    );
+  }
+
+  if (mode === 'photo-flow') {
+    return (
+      <div className="flex min-h-full flex-col bg-background">
+        <div ref={topRef} className="scroll-mt-24" aria-hidden="true" />
+        {photoStep === 'upload' && (
+          <PhotoUpload onPhotoSelected={handlePhotoSelected} onBack={() => setMode('start')} />
+        )}
+        {photoStep === 'marking' && photoDataUrl && (
+          <PhotoMarking
+            photoDataUrl={photoDataUrl}
+            onComplete={handlePhotoMarkingComplete}
+            onBack={() => setPhotoStep('upload')}
+          />
+        )}
+        {photoStep === 'suggestions' && (
+          <SuggestionPicker
+            suggestions={suggestions}
+            loading={suggestionsLoading}
+            error={suggestionsError}
+            tenant={tenant}
+            onSelectSuggestion={handleSuggestionSelected}
+            onBack={() => setPhotoStep('marking')}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (mode === 'template-flow') {
+    return (
+      <div className="flex min-h-full flex-col bg-background">
+        <div ref={topRef} className="scroll-mt-24" aria-hidden="true" />
+        <div className="mx-auto w-full max-w-2xl space-y-6 px-4 py-8 sm:px-6">
+          <div>
+            <Button variant="ghost" onClick={() => setMode('start')} className="-ml-3 mb-2 min-h-11">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+            <h2 className="text-2xl font-bold">Which looks most like your shower?</h2>
+            <p className="mt-2 text-muted-foreground">
+              We’ll show you exactly what to measure for this layout.
+            </p>
+          </div>
+          <ShapeStep
+            {...stepProps}
+            selectedTemplateId={templateId}
+            onSelectTemplate={(t) => {
+              setTemplateId(t.id);
+              setState((s) => applyTemplate(s, t));
+              setActivePanelId(t.panels[0].id);
+              setMode('wizard');
+            }}
+            onStartFromScratch={() => {
+              setTemplateId(null);
+              const fresh = createInitialState(tenant.glassThicknessMm);
+              setState((s) => ({ ...fresh, finishId: s.finishId, handleId: s.handleId }));
+              setActivePanelId(fresh.panels[0].id);
+              setMode('wizard');
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === 'wizard') {
+    return (
+      <div className="flex min-h-full flex-col bg-background">
+        <div ref={topRef} className="scroll-mt-24" aria-hidden="true" />
+        <MeasuringWizard
+          configurationId={getConfigurationId()}
+          onComplete={handleWizardComplete}
+          onBack={() => setMode('template-flow')}
+        />
       </div>
     );
   }
@@ -228,37 +442,39 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
 
       {/* Progress. */}
       <div className="border-b bg-background">
-        <div className="mx-auto flex max-w-6xl items-center gap-1 px-4 py-3 sm:gap-2 sm:px-6 sm:py-4 overflow-x-auto">
-          {STEPS.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => i < stepIndex && setStepId(s.id)}
-              disabled={i > stepIndex}
-              className="flex items-center gap-1.5 disabled:cursor-default shrink-0 sm:gap-2"
-              aria-label={`${s.label}${i === stepIndex ? ' (current step)' : i < stepIndex ? ' (completed)' : ''}`}
-            >
-              <span
-                className={`flex h-6 w-6 sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
-                  i < stepIndex
-                    ? 'bg-foreground text-background'
-                    : i === stepIndex
-                      ? 'bg-foreground text-background ring-2 ring-foreground ring-offset-2'
-                      : 'bg-muted text-muted-foreground'
-                }`}
+        <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
+          <div className="flex items-center gap-1 overflow-x-auto sm:gap-2">
+            {STEPS.map((s, i) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => i < stepIndex && setStepId(s.id)}
+                disabled={i > stepIndex}
+                className="flex items-center gap-1.5 disabled:cursor-default shrink-0 sm:gap-2"
+                aria-label={`${s.label}${i === stepIndex ? ' (current step)' : i < stepIndex ? ' (completed)' : ''}`}
               >
-                {i < stepIndex ? <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> : i + 1}
-              </span>
-              <span
-                className={`hidden text-xs sm:text-sm md:inline ${
-                  i === stepIndex ? 'font-semibold' : 'text-muted-foreground'
-                }`}
-              >
-                {s.label}
-              </span>
-              {i < STEPS.length - 1 && <span className="mx-0.5 h-px w-2 bg-border sm:mx-1 sm:w-4 md:w-8" />}
-            </button>
-          ))}
+                <span
+                  className={`flex h-6 w-6 sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
+                    i < stepIndex
+                      ? 'bg-foreground text-background'
+                      : i === stepIndex
+                        ? 'bg-foreground text-background ring-2 ring-foreground ring-offset-2'
+                        : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {i < stepIndex ? <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> : i + 1}
+                </span>
+                <span
+                  className={`text-xs sm:text-sm ${
+                    i === stepIndex ? 'font-semibold md:inline' : 'hidden md:inline text-muted-foreground'
+                  }`}
+                >
+                  {s.label}
+                </span>
+                {i < STEPS.length - 1 && <span className="mx-0.5 h-px w-2 bg-border sm:mx-1 sm:w-4 md:w-8" />}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -303,8 +519,8 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                     setHoneypot={setHoneypot}
                   />
                   
-                  {/* Mobile nav buttons - shown inline on mobile, hidden on desktop */}
-                  <div className="mt-6 flex items-center justify-between gap-3 lg:hidden">
+                  {/* Review nav buttons - shown inline on all screen sizes for review step */}
+                  <div className="mt-6 flex items-center justify-between gap-3">
                     <Button
                       variant="outline"
                       size="sm"
@@ -396,8 +612,8 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
         </div>
       </div>
 
-      {/* Nav. Hidden on mobile for review step (buttons shown inline instead) */}
-      <div className={`sticky bottom-0 border-t bg-background/95 backdrop-blur ${stepId === 'review' ? 'hidden lg:flex' : 'flex'}`}>
+      {/* Nav. Hidden completely for review step (buttons shown inline in ReviewStep instead) */}
+      <div className={`sticky bottom-0 border-t bg-background/95 backdrop-blur ${stepId === 'review' ? 'hidden' : 'flex'}`}>
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
           <Button
             variant="outline"

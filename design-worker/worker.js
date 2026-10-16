@@ -193,7 +193,7 @@ export default {
 
       const mailAttachments = (attachments || [])
         .filter((a) => a && a.content && a.filename)
-        .slice(0, 4)
+        .slice(0, 10)
         .map((a) => ({ filename: a.filename, content: a.content }));
 
       const specTable = buildSpecTable(spec?.panels || []);
@@ -433,6 +433,26 @@ function businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast,
       <h3 style="margin:24px 0 8px;">Configuration</h3>
       <table style="border-collapse:collapse;width:100%;font-size:14px;">
         ${summaryRows(summary)}
+        ${
+          spec?.measuringMethod
+            ? `<tr><td ${TD}><strong>Measured with</strong></td><td ${TD}>${esc(spec.measuringMethod === 'laser' ? 'Laser' : 'Tape measure')}</td></tr>`
+            : ''
+        }
+        ${
+          spec?.heightReference
+            ? `<tr><td ${TD}><strong>Height reference</strong></td><td ${TD}>${esc(spec.heightReference)}</td></tr>`
+            : ''
+        }
+        ${
+          spec?.showerHeadHeightMm
+            ? `<tr><td ${TD}><strong>Shower head height</strong></td><td ${TD}>${esc(spec.showerHeadHeightMm)}mm from tray</td></tr>`
+            : ''
+        }
+        ${
+          spec?.headClearanceWarning
+            ? `<tr><td ${TD} colspan="2" style="background:#fffbeb;color:#92400e;"><strong>⚠️ ${esc(spec.headClearanceWarning)}</strong></td></tr>`
+            : ''
+        }
         <tr><td ${TD}><strong>Channel required</strong></td><td ${TD}>${esc(spec?.totalChannelLengthMm)}mm</td></tr>
         <tr><td ${TD}><strong>Total weight</strong></td><td ${TD}>${esc(spec?.totalGlassWeightKg)}kg</td></tr>
       </table>
@@ -445,6 +465,41 @@ function businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast,
           ? `<h3 style="margin:24px 0 8px;">Out of square</h3><ul style="font-size:14px;color:#334155;">${rakeNotes
               .map((n) => `<li>${esc(n)}</li>`)
               .join("")}</ul>`
+          : ""
+      }
+
+      ${
+        spec?.laserGaps
+          ? `<h3 style="margin:24px 0 8px;">Laser measurements (wall plumb)</h3>
+             <div style="font-size:13px;color:#334155;">
+               ${
+                 spec.laserGaps.leftWall
+                   ? `<p><strong>Left wall:</strong> Top ${spec.laserGaps.leftWall.gapTopMm}mm, ${
+                       spec.laserGaps.leftWall.gapMiddleMm ? `Middle ${spec.laserGaps.leftWall.gapMiddleMm}mm, ` : ''
+                     }Bottom ${spec.laserGaps.leftWall.gapBottomMm}mm over ${spec.laserGaps.leftWall.heightMm}mm<br>
+                     <em style="color:#64748b;">${esc(spec.laserGaps.leftWall.description || '')}</em>
+                     ${spec.laserGaps.leftWall.warningMessage ? `<br><strong style="color:#b45309;">⚠️ ${esc(spec.laserGaps.leftWall.warningMessage)}</strong>` : ''}</p>`
+                   : ''
+               }
+               ${
+                 spec.laserGaps.rightWall
+                   ? `<p><strong>Right wall:</strong> Top ${spec.laserGaps.rightWall.gapTopMm}mm, ${
+                       spec.laserGaps.rightWall.gapMiddleMm ? `Middle ${spec.laserGaps.rightWall.gapMiddleMm}mm, ` : ''
+                     }Bottom ${spec.laserGaps.rightWall.gapBottomMm}mm over ${spec.laserGaps.rightWall.heightMm}mm<br>
+                     <em style="color:#64748b;">${esc(spec.laserGaps.rightWall.description || '')}</em>
+                     ${spec.laserGaps.rightWall.warningMessage ? `<br><strong style="color:#b45309;">⚠️ ${esc(spec.laserGaps.rightWall.warningMessage)}</strong>` : ''}</p>`
+                   : ''
+               }
+               ${
+                 spec.laserGaps.backWall
+                   ? `<p><strong>Back wall:</strong> Top ${spec.laserGaps.backWall.gapTopMm}mm, ${
+                       spec.laserGaps.backWall.gapMiddleMm ? `Middle ${spec.laserGaps.backWall.gapMiddleMm}mm, ` : ''
+                     }Bottom ${spec.laserGaps.backWall.gapBottomMm}mm over ${spec.laserGaps.backWall.heightMm}mm<br>
+                     <em style="color:#64748b;">${esc(spec.laserGaps.backWall.description || '')}</em>
+                     ${spec.laserGaps.backWall.warningMessage ? `<br><strong style="color:#b45309;">⚠️ ${esc(spec.laserGaps.backWall.warningMessage)}</strong>` : ''}</p>`
+                   : ''
+               }
+             </div>`
           : ""
       }
 

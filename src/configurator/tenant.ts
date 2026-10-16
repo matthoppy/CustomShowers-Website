@@ -44,6 +44,11 @@ export interface TenantConfig {
    * than by whatever the browser sends.
    */
   enquiryEndpoint: string;
+  /**
+   * Base URL of the quote functions (submit, quote pages, payment). When set,
+   * designs are saved as quotes there instead of going to enquiryEndpoint.
+   */
+  quotesApi?: string;
   /** Reply-to shown on the enquiry, usually the customer's own address. */
   fromName: string;
   finishes: HardwareFinish[];
@@ -85,6 +90,7 @@ export const CUSTOM_SHOWERS: TenantConfig = {
   },
   destinationEmail: 'sales@customshowers.uk',
   enquiryEndpoint: 'https://customshowers-design.vcwvk4sm9m.workers.dev',
+  quotesApi: 'https://gjfzlvddtqyirtjcebjg.supabase.co/functions/v1',
   fromName: 'Custom Showers Design Tool',
   // Matches HARDWARE_FINISH_NAMES in lib/constants.ts, which is the list this
   // project already orders hinges against. Swatches are approximations for the

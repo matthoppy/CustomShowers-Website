@@ -10,10 +10,11 @@
 import { buildSpec, type ConfiguratorSpec } from './spec';
 import { finishLabel, handleLabel, type TenantConfig } from './tenant';
 import type { ConfiguratorState, CustomerDetails } from './types';
+import type { PriceBreakdown } from './pricing';
 
 export interface EnquiryAttachment {
   filename: string;
-  /** Base64 PNG, no data: prefix. */
+  /** Base64 file content, no data: prefix. The type comes from the filename. */
   content: string;
 }
 
@@ -146,9 +147,22 @@ export interface SubmitResult {
   error?: string;
 }
 
+/**
+ * Save the design as a quote. Same payload as an enquiry, plus what the quote
+ * system needs: the raw state (so the admin sees exactly what was drawn), the
+ * customer's site readings, and a suggested price for the admin to start from.
+ */
+export function submitQuote(
+  quotesApi: string,
+  payload: EnquiryPayload,
+  extra: { state: ConfiguratorState; siteRecord: string | null; suggestedPrice: PriceBreakdown }
+): Promise<SubmitResult> {
+  return submitEnquiry(`${quotesApi.replace(/\/$/, '')}/quote-submit`, { ...payload, ...extra });
+}
+
 export async function submitEnquiry(
   endpoint: string,
-  payload: EnquiryPayload
+  payload: EnquiryPayload | (EnquiryPayload & Record<string, unknown>)
 ): Promise<SubmitResult> {
   try {
     const res = await fetch(endpoint, {
