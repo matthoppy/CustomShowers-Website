@@ -193,7 +193,7 @@ export default {
 
       const mailAttachments = (attachments || [])
         .filter((a) => a && a.content && a.filename)
-        .slice(0, 4)
+        .slice(0, 10)
         .map((a) => ({ filename: a.filename, content: a.content }));
 
       const specTable = buildSpecTable(spec?.panels || []);

@@ -13,7 +13,7 @@ import type { ConfiguratorState, CustomerDetails } from './types';
 
 export interface EnquiryAttachment {
   filename: string;
-  /** Base64 PNG, no data: prefix. */
+  /** Base64 file content, no data: prefix. The type comes from the filename. */
   content: string;
 }
 

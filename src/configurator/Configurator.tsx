@@ -30,6 +30,8 @@ import { PhotoUpload } from './PhotoUpload';
 import { PhotoMarking } from './PhotoMarking';
 import { SuggestionPicker } from './SuggestionPicker';
 import { MeasuringWizard, type MeasuringResult } from './MeasuringWizard';
+import { applyMeasuredWidths } from './applyMeasurements';
+import { formatMeasuringRecord, photoFilename, textToBase64 } from './measuringRecord';
 import { getSuggestions, type Suggestion } from './suggestions';
 
 const EMPTY_CUSTOMER: CustomerDetails = {
@@ -71,6 +73,8 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
   const [photoStep, setPhotoStep] = useState<'upload' | 'marking' | 'suggestions'>('upload');
   const [photoCorners, setPhotoCorners] = useState<Array<{ x: number; y: number }>>([]);
   const [photoKnownWidth, setPhotoKnownWidth] = useState(0);
+  /** What the customer measured on site, kept so it reaches the workshop as well as the drawing. */
+  const [measuring, setMeasuring] = useState<MeasuringResult | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
@@ -172,6 +176,10 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     setError(null);
 
     const attachments: EnquiryAttachment[] = [];
+    // The site record first: if anything gets dropped on the way, it shouldn't be this.
+    if (measuring) {
+      attachments.push({ filename: 'site-measurements.txt', content: textToBase64(formatMeasuringRecord(measuring)) });
+    }
     const svgs = drawingRef.current?.querySelectorAll('svg') ?? [];
     const names = ['plan-view.png', 'elevation-view.png'];
     let i = 0;
@@ -179,6 +187,12 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
       const png = await svgToPngBase64(svg as SVGSVGElement);
       if (png) attachments.push({ filename: names[i] ?? `drawing-${i + 1}.png`, content: png });
       i++;
+    }
+    if (measuring) {
+      for (const [stepId, dataUrl] of Object.entries(measuring.photos).slice(0, 6)) {
+        const content = dataUrl.split(',')[1];
+        if (content) attachments.push({ filename: photoFilename(stepId), content });
+      }
     }
 
     const payload = buildEnquiryPayload(tenant, state, customer, attachments, turnstileToken, {
@@ -205,6 +219,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     setPhotoStep('upload');
     setPhotoCorners([]);
     setPhotoKnownWidth(0);
+    setMeasuring(null);
     setSuggestions([]);
     setSuggestionsLoading(false);
     setSuggestionsError(null);
@@ -221,18 +236,14 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     startedAtRef.current = Date.now();
   }
 
+  // Pick the layout first: the measuring steps depend on it, and a corner
+  // shower measured as an alcove gives the workshop the wrong numbers.
   const handleStartTemplate = () => {
-    // Use the currently selected template or default
-    setMode('wizard');
+    setMode('template-flow');
   };
 
-  const getConfigurationId = () => {
-    if (templateId) return templateId;
-    if (state.panels.length === 1 && state.panels[0].kind === 'door') return 'alcove-door';
-    if (state.panels.length === 2 && state.panels[0].kind === 'fixed' && state.panels[1].kind === 'door') return 'alcove-panel-door';
-    if (state.panels.length === 1 && state.panels[0].kind === 'fixed' && !state.rightWall) return 'walk-in';
-    return 'custom';
-  };
+  // "Something else" has no plan of its own, so it gets the general one.
+  const getConfigurationId = () => templateId ?? 'custom';
 
   const handleStartPhoto = () => {
     setMode('photo-flow');
@@ -272,10 +283,11 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
   };
 
   const handleWizardComplete = (result: MeasuringResult) => {
-    const configId = result.configurationId || 'alcove-door';
-    const template = TEMPLATES.find((t) => t.id === configId) || TEMPLATES[0];
-    
-    const newState = applyTemplate(state, template);
+    setMeasuring(result);
+    // The layout was chosen before measuring; "something else" keeps the
+    // customer's own starting shape rather than snapping to a template.
+    const template = templateId ? TEMPLATES.find((t) => t.id === templateId) : undefined;
+    const newState = template ? applyTemplate(state, template) : { ...state, panels: state.panels.map((p) => ({ ...p })) };
     newState.heightMm = result.heightToReferenceMm;
     newState.measuringMethod = result.measuringMethod;
     newState.heightMeasurement = {
@@ -285,40 +297,13 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
       headClearanceWarning: result.headClearanceWarning,
     };
 
-    // Apply width measurements to panels
     // Wizard inputs can arrive as strings; treat anything non-numeric as missing.
-    const raw = result.measurements;
-    const mm = (key: string): number => {
-      const n = Number(raw[key]);
-      return Number.isFinite(n) && n > 0 ? n : 0;
-    };
-    const measurements = Object.fromEntries(Object.keys(raw).map((k) => [k, mm(k)])) as Record<string, number>;
-    if (measurements['opening-width-bottom'] || measurements['opening-width-top']) {
-      const widths = [
-        measurements['opening-width-bottom'],
-        measurements['opening-width-middle'],
-        measurements['opening-width-top'],
-      ].filter((w) => w > 0);
-      
-      const minWidth = widths.length > 0 ? Math.min(...widths) : 900;
-      
-      if (newState.panels.length === 1) {
-        newState.panels[0].width_mm = minWidth;
-      } else if (newState.panels.length > 1) {
-        // For multi-panel, distribute width or use measurements if available
-        const totalWidth = minWidth;
-        newState.panels.forEach((panel, i) => {
-          if (measurements[`panel-${i}-width-bottom`]) {
-            panel.width_mm = Math.min(
-              measurements[`panel-${i}-width-bottom`] || 900,
-              measurements[`panel-${i}-width-top`] || 900
-            );
-          } else {
-            panel.width_mm = Math.floor(totalWidth / newState.panels.length);
-          }
-        });
-      }
+    const measurements: Record<string, number> = {};
+    for (const [k, v] of Object.entries(result.measurements)) {
+      const n = Number(v);
+      if (Number.isFinite(n) && n > 0) measurements[k] = n;
     }
+    newState.panels = applyMeasuredWidths(templateId ?? 'custom', newState.panels, measurements);
 
     setState(newState);
     setActivePanelId(newState.panels[0]?.id ?? null);
@@ -388,6 +373,43 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     );
   }
 
+  if (mode === 'template-flow') {
+    return (
+      <div className="flex min-h-full flex-col bg-background">
+        <div ref={topRef} className="scroll-mt-24" aria-hidden="true" />
+        <div className="mx-auto w-full max-w-2xl space-y-6 px-4 py-8 sm:px-6">
+          <div>
+            <Button variant="ghost" onClick={() => setMode('start')} className="-ml-3 mb-2 min-h-11">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+            <h2 className="text-2xl font-bold">Which looks most like your shower?</h2>
+            <p className="mt-2 text-muted-foreground">
+              We’ll show you exactly what to measure for this layout.
+            </p>
+          </div>
+          <ShapeStep
+            {...stepProps}
+            selectedTemplateId={templateId}
+            onSelectTemplate={(t) => {
+              setTemplateId(t.id);
+              setState((s) => applyTemplate(s, t));
+              setActivePanelId(t.panels[0].id);
+              setMode('wizard');
+            }}
+            onStartFromScratch={() => {
+              setTemplateId(null);
+              const fresh = createInitialState(tenant.glassThicknessMm);
+              setState((s) => ({ ...fresh, finishId: s.finishId, handleId: s.handleId }));
+              setActivePanelId(fresh.panels[0].id);
+              setMode('wizard');
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (mode === 'wizard') {
     return (
       <div className="flex min-h-full flex-col bg-background">
@@ -395,7 +417,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
         <MeasuringWizard
           configurationId={getConfigurationId()}
           onComplete={handleWizardComplete}
-          onBack={() => setMode('start')}
+          onBack={() => setMode('template-flow')}
         />
       </div>
     );
