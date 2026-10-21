@@ -12,8 +12,9 @@ import { ArrowLeft, ArrowRight, Check, Loader2, RotateCcw } from 'lucide-react';
 import { PlanView } from './views/PlanView';
 import { ElevationView } from './views/ElevationView';
 import { ShapeStep } from './steps/ShapeStep';
-import { MeasureStep } from './steps/MeasureStep';
 import { checkMeasurements, measurementsUsable, signedLeanMm } from './measure';
+import { MeasureStep, MEASURE_CARD_COUNT } from './steps/MeasureStep';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { SizesStep } from './steps/SizesStep';
 import { HardwareStep } from './steps/HardwareStep';
 import { ReviewStep } from './steps/ReviewStep';
@@ -21,7 +22,7 @@ import { STEPS, type StepId, type StepProps } from './steps/types';
 import { createInitialState, type ConfiguratorState, type CustomerDetails } from './types';
 import { getTenant, type TenantConfig } from './tenant';
 import { TEMPLATES, type ShowerTemplate } from './templates';
-import { type Photo } from './PhotoUpload';
+import { type Photo, type PhotoSlot } from './photos';
 import {
   buildEnquiryPayload,
   submitEnquiry,
@@ -82,6 +83,8 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
   const [customer, setCustomerState] = useState<CustomerDetails>(EMPTY_CUSTOMER);
   const [activePanelId, setActivePanelId] = useState<string | null>(state.panels[0]?.id ?? null);
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [measureCard, setMeasureCard] = useState(0);
+  const isMobile = useIsMobile();
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -130,14 +133,35 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
   const step = STEPS[stepIndex];
   const isLast = stepIndex === STEPS.length - 1;
 
+  const inMeasureCards = isMobile && stepId === 'measure';
+  const onLastMeasureCard = measureCard >= MEASURE_CARD_COUNT - 1;
+
+  const goNext = () => {
+    if (inMeasureCards && !onLastMeasureCard) {
+      setMeasureCard(measureCard + 1);
+      return;
+    }
+    setStepId(STEPS[stepIndex + 1].id);
+  };
+
+  const goBack = () => {
+    if (inMeasureCards && measureCard > 0) {
+      setMeasureCard(measureCard - 1);
+      return;
+    }
+    setStepId(STEPS[Math.max(0, stepIndex - 1)].id);
+  };
+
   const canProceed = useMemo(() => {
     switch (stepId) {
       case 'shape':
         return state.panels.length > 0;
       case 'measure':
-        // Nothing here is a style preference — a customer who walks past a
+        // Moving between the measurement cards on a phone is free; what is
+        // gated is leaving the step. A customer who walks past a
         // contradiction in their own numbers ends up paying for a panel that
-        // does not fit, so this one gate is held shut.
+        // does not fit, so that one gate is held shut.
+        if (isMobile && measureCard < MEASURE_CARD_COUNT - 1) return true;
         return measurementsUsable(checkMeasurements(state.opening, state.heightMm));
       case 'sizes':
         return (
@@ -161,7 +185,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
       default:
         return false;
     }
-  }, [stepId, state, customer, tenant.turnstileSiteKey, turnstileToken, challengeState]);
+  }, [stepId, state, customer, tenant.turnstileSiteKey, turnstileToken, challengeState, isMobile, measureCard]);
 
   const stepProps: StepProps = {
     tenant,
@@ -169,6 +193,9 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     update,
     activePanelId,
     setActivePanelId,
+    photos,
+    setPhotos,
+    measureCard,
     canvasWidth: 620,
     canvasHeight: 520,
   };
@@ -187,7 +214,15 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
       i++;
     }
 
-    for (const photo of photos) attachments.push(photo.attachment);
+    // Measurement photos first and in order, so the workshop reads them
+    // alongside the numbers they back up, with loose shots of the room last.
+    const photoOrder: PhotoSlot[] = ['height', 'width-floor', 'width-top', 'walls', 'floor', 'extra'];
+    const ordered = [...photos].sort(
+      (a, b) => photoOrder.indexOf(a.slot) - photoOrder.indexOf(b.slot)
+    );
+    for (const photo of ordered) {
+      attachments.push({ filename: photo.filename, content: photo.content });
+    }
 
     const payload = buildEnquiryPayload(tenant, state, customer, attachments, turnstileToken, {
       honeypot,
@@ -320,8 +355,6 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                     {...stepProps}
                     customer={customer}
                     setCustomer={setCustomer}
-                    photos={photos}
-                    setPhotos={setPhotos}
                     onTurnstileToken={setTurnstileToken}
                     onChallengeState={setChallengeState}
                     honeypot={honeypot}
@@ -333,8 +366,8 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setStepId(STEPS[Math.max(0, stepIndex - 1)].id)}
-                      disabled={stepIndex === 0 || submitting}
+                      onClick={goBack}
+                      disabled={(stepIndex === 0 && measureCard === 0) || submitting}
                     >
                       <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
                       <span className="text-xs">Back</span>
@@ -414,7 +447,8 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                 </figure>
               </div>
               <p className="mt-2 text-center text-xs text-muted-foreground sm:mt-3">
-                Drawings are to scale but indicative. Sizes are confirmed before cutting.
+                Drawings are to scale but indicative. The cut sizes come from your
+                measurements, on the Review step.
               </p>
             </div>
           </div>
@@ -427,8 +461,8 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setStepId(STEPS[Math.max(0, stepIndex - 1)].id)}
-            disabled={stepIndex === 0 || submitting}
+            onClick={goBack}
+            disabled={(stepIndex === 0 && measureCard === 0) || submitting}
             className="sm:size-default"
           >
             <ArrowLeft className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
@@ -456,7 +490,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
           ) : (
             <Button
               size="sm"
-              onClick={() => setStepId(STEPS[stepIndex + 1].id)}
+              onClick={goNext}
               disabled={!canProceed}
               className="sm:size-default"
             >

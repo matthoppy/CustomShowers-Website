@@ -1,3 +1,4 @@
+import type { Photo } from '../photos';
 import type { ConfiguratorState } from '../types';
 import type { TenantConfig } from '../tenant';
 
@@ -5,6 +6,19 @@ export interface StepProps {
   tenant: TenantConfig;
   state: ConfiguratorState;
   update: (patch: Partial<ConfiguratorState>) => void;
+  /**
+   * Photos live outside ConfiguratorState: they are evidence about the job
+   * rather than part of the design, and the Measure and Review steps both
+   * add to the same list.
+   */
+  photos: Photo[];
+  setPhotos: (photos: Photo[]) => void;
+  /**
+   * Which measurement card the phone layout is showing. Owned by the shell
+   * because its Back/Next buttons drive it — the Measure step is the only
+   * step with more than one screen inside it.
+   */
+  measureCard?: number;
   activePanelId: string | null;
   setActivePanelId: (id: string | null) => void;
   /** Drawing box the step should render its view into. */

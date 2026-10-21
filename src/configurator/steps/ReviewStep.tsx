@@ -15,7 +15,7 @@ import { AlertTriangle, Info } from 'lucide-react';
 import { buildSpec } from '../spec';
 import { finishLabel, handleLabel } from '../tenant';
 import type { CustomerDetails } from '../types';
-import { PhotoUpload, type Photo } from '../PhotoUpload';
+import { PhotoUpload } from '../PhotoUpload';
 import type { StepProps } from './types';
 
 interface ReviewStepProps extends StepProps {
@@ -26,8 +26,6 @@ interface ReviewStepProps extends StepProps {
   onChallengeState: (state: 'loading' | 'ready' | 'failed') => void;
   honeypot: string;
   setHoneypot: (value: string) => void;
-  photos: Photo[];
-  setPhotos: (photos: Photo[]) => void;
 }
 
 export function ReviewStep({

@@ -16,7 +16,7 @@
  */
 
 /** Bump when the code changes, so a browser visit shows which paste is live. */
-const WORKER_VERSION = "v10";
+const WORKER_VERSION = "v11";
 
 /**
  * CORS configuration. Allow production domain and Cloudflare Pages preview origins.
@@ -71,8 +71,8 @@ const TENANT_INBOXES = {
  * recycles them, so this is a burst brake rather than a hard quota. A WAF rate
  * limiting rule in front of the worker is the upgrade path if abuse gets real.
  */
-/** Two drawings plus up to four photos of the opening. */
-const MAX_ATTACHMENTS = 6;
+/** Two drawings, up to five measurement photos, up to four of the room. */
+const MAX_ATTACHMENTS = 12;
 /** Well inside Resend's limit, and inside what an inbox will accept. */
 const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
 
@@ -243,9 +243,10 @@ export default {
           to: [customer.email],
           subject: "Your shower design — Custom Showers",
           html: customerHtml({ customer, summary, disclaimer, specTable }),
-          // Drawings only. Posting the customer's own photos of their
-          // bathroom back to them adds megabytes and tells them nothing.
-          attachments: mailAttachments.filter((a) => !a.filename.startsWith("photo-")),
+          // Drawings only, which are the PNGs. Posting the customer's own
+          // photos of their bathroom back to them adds megabytes and tells
+          // them nothing.
+          attachments: mailAttachments.filter((a) => a.filename.endsWith(".png")),
         });
       }
 
@@ -524,13 +525,19 @@ function businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast,
       </p>
       ${
         mailAttachments.length
-          ? `<p style="color:#64748b;font-size:12px;">Attached: ${mailAttachments
-              .map((a) => esc(a.filename))
-              .join(", ")}${
-              mailAttachments.some((a) => a.filename.startsWith("photo-"))
-                ? " — the photos are the customer's own, of the opening."
-                : ""
-            }</p>`
+          ? (() => {
+              const drawings = mailAttachments.filter((a) => a.filename.endsWith(".png"));
+              const shots = mailAttachments.filter((a) => !a.filename.endsWith(".png"));
+              return `<p style="color:#64748b;font-size:12px;">Drawings: ${
+                drawings.map((a) => esc(a.filename)).join(", ") || "none"
+              }.${
+                shots.length
+                  ? ` Customer photos: ${shots
+                      .map((a) => esc(a.filename))
+                      .join(", ")} — the <strong>measured-</strong> ones show the tape in place for that measurement.`
+                  : ""
+              }</p>`;
+            })()
           : `<p style="color:#b45309;font-size:12px;">No drawings were attached — work from the panel schedule above.</p>`
       }
     </div>`;
