@@ -63,26 +63,56 @@ const TermsOfTrade = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">7. Site Conditions &amp; Measurements</h2>
-            <p>Measurements are taken to suit existing site conditions. The Customer acknowledges that:</p>
+            <h2 className="text-xl font-semibold mb-2">7. Measurements &amp; Site Conditions</h2>
+            <p className="font-semibold">
+              We supply glass made to the measurements you give us. We do not attend site to
+              measure, and we do not check your measurements before manufacture.
+            </p>
+            <p className="mt-3">Because the glass is made to your figures:</p>
             <ul className="list-disc pl-6 space-y-1 mt-2">
-              <li>Walls and floors are often not perfectly plumb or level</li>
-              <li>Minor rakes, out-of-plumb walls, and surface variations are normal in bathrooms</li>
+              <li>
+                All measurements are supplied by the Customer, including any allowance for walls
+                that are out of plumb or floors that are out of level
+              </li>
+              <li>
+                Toughened glass cannot be cut, drilled, trimmed or altered after manufacture —
+                any change means a new panel
+              </li>
+              <li>
+                The Customer is responsible for the accuracy of the measurements supplied
+              </li>
+              <li>
+                Where glass does not fit because the measurements supplied were inaccurate or
+                incomplete, a replacement is a new order at the Customer&apos;s cost
+              </li>
             </ul>
-            <p className="mt-3">Glass is manufactured to suit the site as measured at the time. The Customer must ensure:</p>
+            <p className="mt-3">Before measuring, the Customer must ensure:</p>
             <ul className="list-disc pl-6 space-y-1 mt-2">
               <li>Tiling and waterproofing are complete</li>
               <li>Plumbing positions are final</li>
               <li>Floors provide appropriate falls to waste</li>
               <li>Safe and clear access is provided</li>
             </ul>
+            <p className="mt-3">The Customer also acknowledges that:</p>
+            <ul className="list-disc pl-6 space-y-1 mt-2">
+              <li>Walls and floors are often not perfectly plumb or level</li>
+              <li>Minor rakes, out-of-plumb walls, and surface variations are normal in bathrooms</li>
+              <li>
+                Where these are not recorded at the time of measuring, the glass will be made
+                square and gaps may result
+              </li>
+            </ul>
             <p className="mt-3">We are not responsible for:</p>
             <ul className="list-disc pl-6 space-y-1 mt-2">
-              <li>Changes to site conditions after measurement</li>
+              <li>Changes to site conditions after the measurements were supplied</li>
               <li>Building movement or settlement</li>
-              <li>Variations caused by uneven or non-plumb surfaces</li>
+              <li>Variations caused by uneven or non-plumb surfaces that were not recorded</li>
             </ul>
             <p className="mt-3">Minor visual gaps do not constitute a defect.</p>
+            <p className="mt-3">
+              Nothing in this section affects your statutory rights in respect of goods that are
+              faulty, not as described, or not made to the measurements you supplied.
+            </p>
           </section>
 
           <section>

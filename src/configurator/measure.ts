@@ -14,20 +14,31 @@
  *    bad at it and confident about it. Ask them to measure the same opening
  *    in two places, and derive the lean from the difference.
  *
- * 2. Cross-check everything against everything else. The width at the floor,
- *    the width at the top and the two wall leans are not independent — they
- *    have to add up. When they don't, one of the four is wrong, and we can
+ * 2. Cross-check everything against everything else. A run's floor width, its
+ *    top width and the lean of the walls at its ends are not independent —
+ *    they have to add up. When they don't, one of them is wrong, and we can
  *    say so while it is still free to fix.
  *
  * The second is the whole point. Any form can collect four numbers; this one
  * can tell the customer that their four numbers disagree.
+ *
+ * ## Runs
+ *
+ * An enclosure is measured as one straight *run* per wall it follows: an
+ * inline screen is one run, an L-shaped corner is two, a three-sided
+ * enclosure is three. Each run gets its own widths and its own floor fall,
+ * because a corner shower turns into a different room halfway along.
+ *
+ * Only the two ends of the whole chain meet walls. Every other end is a
+ * glass-to-glass corner, and glass sets its own vertical there — so a middle
+ * run's top width should equal its floor width.
  */
 
 /** Which way the top of a wall leans, from the point of view of the shower. */
 export type WallLeanDirection = 'in' | 'out';
 
-/** Which end of the opening the floor is lower at. */
-export type FloorLowEnd = 'left' | 'right';
+/** Which end of a run the floor is lower at, walking along it. */
+export type FloorLowEnd = 'start' | 'end';
 
 /** How the customer established the lean. Changes how far we trust it. */
 export type MeasureMethod = 'laser' | 'packers' | 'level' | 'assumed-square';
@@ -42,33 +53,90 @@ export interface WallMeasurement {
   direction: WallLeanDirection | null;
 }
 
-export interface OpeningMeasurements {
-  /** Wall to wall, measured along the floor. */
+export interface RunMeasurement {
+  /** Wall (or corner) to wall (or corner), measured along the floor. */
   widthAtFloorMm: number;
-  /** Wall to wall, measured at the top of where the glass will go. */
+  /** The same, at the top of where the glass will go. */
   widthAtTopMm: number;
-  leftWall: WallMeasurement;
-  rightWall: WallMeasurement;
-  floor: {
-    /** Difference in floor height across the opening. 0 = level. */
-    fallMm: number;
-    lowEnd: FloorLowEnd | null;
-  };
+  /** Difference in floor height along this run. 0 = level. */
+  floorFallMm: number;
+  floorLowEnd: FloorLowEnd | null;
+}
+
+export interface OpeningMeasurements {
+  /** One per straight run, in chain order. */
+  runs: RunMeasurement[];
+  /** The wall at the start of the first run. */
+  startWall: WallMeasurement;
+  /** The wall at the end of the last run. */
+  endWall: WallMeasurement;
   method: MeasureMethod | null;
   /** Set once the customer has confirmed the drawn-back shape looks right. */
   shapeConfirmed: boolean;
 }
 
-export function createOpeningMeasurements(widthMm = 1000): OpeningMeasurements {
+/** What the shape of the enclosure tells us about the measurements. */
+export interface OpeningContext {
+  /** Does the first run terminate against a wall? */
+  hasStartWall: boolean;
+  /** Does the last run terminate against a wall? */
+  hasEndWall: boolean;
+  glassHeightMm: number;
+  /**
+   * What to call each run. Supplied by the caller because the right name
+   * comes from the traced geometry, not from the order the panels happen to
+   * be listed in.
+   */
+  labels?: string[];
+}
+
+function createRun(widthMm: number): RunMeasurement {
   return {
     widthAtFloorMm: widthMm,
     widthAtTopMm: widthMm,
-    leftWall: { outMm: 0, direction: null },
-    rightWall: { outMm: 0, direction: null },
-    floor: { fallMm: 0, lowEnd: null },
+    floorFallMm: 0,
+    floorLowEnd: null,
+  };
+}
+
+export function createOpeningMeasurements(runWidthsMm: number[] = [1000]): OpeningMeasurements {
+  return {
+    runs: runWidthsMm.map(createRun),
+    startWall: { outMm: 0, direction: null },
+    endWall: { outMm: 0, direction: null },
     method: null,
     shapeConfirmed: false,
   };
+}
+
+/**
+ * Keep the runs in step with the shape.
+ *
+ * Changing the template, adding a panel or turning a junction into a corner
+ * all change how many runs there are. Measurements already taken for a run
+ * are kept by position — the alternative is silently discarding what the
+ * customer walked to the bathroom to collect.
+ */
+export function syncRuns(
+  m: OpeningMeasurements,
+  runWidthsMm: number[]
+): OpeningMeasurements {
+  if (runWidthsMm.length === m.runs.length) return m;
+  return {
+    ...m,
+    runs: runWidthsMm.map((widthMm, i) => m.runs[i] ?? createRun(widthMm)),
+    // The shape has changed under them, so the confirmation no longer refers
+    // to what they are now looking at.
+    shapeConfirmed: false,
+  };
+}
+
+/** Names a customer would use for each run, given how many there are. */
+export function runLabels(count: number): string[] {
+  if (count <= 1) return ['The opening'];
+  if (count === 2) return ['Front', 'Return'];
+  if (count === 3) return ['Left return', 'Front', 'Right return'];
+  return Array.from({ length: count }, (_, i) => `Run ${i + 1}`);
 }
 
 /**
@@ -84,9 +152,30 @@ export function signedLeanMm(wall: WallMeasurement): number {
   return wall.direction === 'in' ? wall.outMm : -wall.outMm;
 }
 
-/** The top width implied by the floor width and the two wall leans. */
-export function impliedTopWidthMm(m: OpeningMeasurements): number {
-  return m.widthAtFloorMm - signedLeanMm(m.leftWall) - signedLeanMm(m.rightWall);
+/** Which walls, if any, bound a given run. Corners are not walls. */
+export function wallsForRun(
+  m: OpeningMeasurements,
+  runIndex: number,
+  ctx: OpeningContext
+): WallMeasurement[] {
+  const walls: WallMeasurement[] = [];
+  if (runIndex === 0 && ctx.hasStartWall) walls.push(m.startWall);
+  if (runIndex === m.runs.length - 1 && ctx.hasEndWall) walls.push(m.endWall);
+  return walls;
+}
+
+/** The top width implied by a run's floor width and the walls at its ends. */
+export function impliedTopWidthMm(
+  m: OpeningMeasurements,
+  runIndex: number,
+  ctx: OpeningContext
+): number {
+  const run = m.runs[runIndex];
+  if (!run) return 0;
+  return (
+    run.widthAtFloorMm -
+    wallsForRun(m, runIndex, ctx).reduce((sum, w) => sum + signedLeanMm(w), 0)
+  );
 }
 
 export type CheckLevel = 'blocking' | 'confirm' | 'hint';
@@ -96,8 +185,8 @@ export interface MeasureCheck {
   level: CheckLevel;
   /** Addressed to the customer, in their words, saying what to do about it. */
   message: string;
-  /** Which field to highlight, where there is a single culprit. */
-  field?: keyof OpeningMeasurements | 'widthAtTopMm' | 'widthAtFloorMm';
+  /** Which run the check is about, where it is about one. */
+  runIndex?: number;
 }
 
 /** Anything outside this is a typo or the wrong units, not a bathroom. */
@@ -121,40 +210,45 @@ const LARGE_LEAN_MM = 20;
 
 export function checkMeasurements(
   m: OpeningMeasurements,
-  glassHeightMm: number
+  ctx: OpeningContext
 ): MeasureCheck[] {
   const checks: MeasureCheck[] = [];
+  const labels = ctx.labels ?? runLabels(m.runs.length);
+  const named = (i: number) => (m.runs.length > 1 ? `${labels[i].toLowerCase()} ` : '');
 
   // --- Plausibility, before anything is derived from the numbers. ---
-  for (const [field, value, name] of [
-    ['widthAtFloorMm', m.widthAtFloorMm, 'width at the floor'],
-    ['widthAtTopMm', m.widthAtTopMm, 'width at the top'],
-  ] as const) {
-    if (!value) {
-      checks.push({
-        code: `${field}-missing`,
-        level: 'blocking',
-        message: `We still need the ${name}.`,
-        field,
-      });
-    } else if (value < MIN_PLAUSIBLE_MM || value > MAX_PLAUSIBLE_MM) {
-      checks.push({
-        code: `${field}-implausible`,
-        level: 'blocking',
-        message: `${value}mm for the ${name} looks wrong — we need millimetres, so a 1.4 metre opening is 1400. Please check and re-measure.`,
-        field,
-      });
+  m.runs.forEach((run, i) => {
+    for (const [key, value, name] of [
+      ['widthAtFloor', run.widthAtFloorMm, `${named(i)}width at the floor`],
+      ['widthAtTop', run.widthAtTopMm, `${named(i)}width at the top`],
+    ] as const) {
+      if (!value) {
+        checks.push({
+          code: `run${i}-${key}-missing`,
+          level: 'blocking',
+          message: `We still need the ${name}.`,
+          runIndex: i,
+        });
+      } else if (value < MIN_PLAUSIBLE_MM || value > MAX_PLAUSIBLE_MM) {
+        checks.push({
+          code: `run${i}-${key}-implausible`,
+          level: 'blocking',
+          message: `${value}mm for the ${name} looks wrong — we need millimetres, so a 1.4 metre opening is 1400. Please check and re-measure.`,
+          runIndex: i,
+        });
+      }
     }
-  }
+  });
 
   // Nothing below this point means anything if the widths are nonsense.
   if (checks.some((c) => c.level === 'blocking')) return checks;
 
   // --- Direction is not optional. ---
-  for (const [key, wall, name] of [
-    ['leftWall', m.leftWall, 'left wall'],
-    ['rightWall', m.rightWall, 'right wall'],
-  ] as const) {
+  const walls: [string, WallMeasurement, string][] = [];
+  if (ctx.hasStartWall) walls.push(['startWall', m.startWall, 'first wall']);
+  if (ctx.hasEndWall) walls.push(['endWall', m.endWall, 'far wall']);
+
+  for (const [key, wall, name] of walls) {
     if (wall.outMm > 0 && !wall.direction) {
       checks.push({
         code: `${key}-no-direction`,
@@ -166,39 +260,45 @@ export function checkMeasurements(
       checks.push({
         code: `${key}-large-lean`,
         level: 'confirm',
-        message: `${wall.outMm}mm is a lot of lean on the ${name} over ${glassHeightMm}mm of height. It does happen — but please double-check it before you send, because we will cut the glass to follow it.`,
+        message: `${wall.outMm}mm is a lot of lean on the ${name} over ${ctx.glassHeightMm}mm of height. It does happen — but please double-check it before you send, because we will cut the glass to follow it.`,
       });
     }
   }
 
-  // --- The cross-check. ---
-  const implied = impliedTopWidthMm(m);
-  const discrepancy = Math.round(m.widthAtTopMm - implied);
+  // --- The cross-check, per run. ---
+  m.runs.forEach((run, i) => {
+    const implied = impliedTopWidthMm(m, i, ctx);
+    const discrepancy = Math.round(run.widthAtTopMm - implied);
+    if (Math.abs(discrepancy) <= CROSS_CHECK_TOLERANCE_MM) return;
 
-  if (Math.abs(discrepancy) > CROSS_CHECK_TOLERANCE_MM) {
-    const leftOut = signedLeanMm(m.leftWall);
-    const rightOut = signedLeanMm(m.rightWall);
-    const leanTotal = leftOut + rightOut;
-    const widthDrop = m.widthAtFloorMm - m.widthAtTopMm;
+    const bounding = wallsForRun(m, i, ctx);
+    const leanTotal = bounding.reduce((sum, w) => sum + signedLeanMm(w), 0);
+    const widthDrop = run.widthAtFloorMm - run.widthAtTopMm;
+    const where = m.runs.length > 1 ? ` on the ${labels[i].toLowerCase()}` : '';
 
     checks.push({
-      code: 'cross-check-mismatch',
+      code: `run${i}-cross-check-mismatch`,
       level: 'blocking',
-      message:
-        `These numbers do not agree with each other. Your opening narrows by ${widthDrop}mm ` +
-        `between the floor and the top, but the wall leans you have given add up to ${leanTotal}mm. ` +
-        `One of the four measurements is out by about ${Math.abs(discrepancy)}mm. ` +
-        `Please re-check the width at the top and both wall leans — this is exactly the kind of ` +
-        `mistake that ends up as a panel that does not fit.`,
+      runIndex: i,
+      message: bounding.length
+        ? `These numbers do not agree with each other${where}. It narrows by ${widthDrop}mm ` +
+          `between the floor and the top, but the wall leans you have given add up to ${leanTotal}mm. ` +
+          `One of them is out by about ${Math.abs(discrepancy)}mm. Please re-check the width at ` +
+          `the top and the wall leans — this is exactly the kind of mistake that ends up as a ` +
+          `panel that does not fit.`
+        : `The measurements${where} do not agree. Both ends of this run meet glass rather than ` +
+          `a wall, so it should be the same width at the floor and at the top — but you have ` +
+          `given ${run.widthAtFloorMm}mm and ${run.widthAtTopMm}mm. Please re-measure both.`,
     });
-  }
+  });
 
   // --- Did they actually measure, or assume? ---
   const everythingPerfect =
-    m.widthAtFloorMm === m.widthAtTopMm &&
-    m.leftWall.outMm === 0 &&
-    m.rightWall.outMm === 0 &&
-    m.floor.fallMm === 0;
+    m.runs.every(
+      (r) => r.widthAtFloorMm === r.widthAtTopMm && r.floorFallMm === 0
+    ) &&
+    m.startWall.outMm === 0 &&
+    m.endWall.outMm === 0;
 
   if (everythingPerfect && m.method === 'assumed-square') {
     checks.push({
@@ -220,21 +320,26 @@ export function checkMeasurements(
     });
   }
 
-  // --- Floor. ---
-  if (m.floor.fallMm > 0 && !m.floor.lowEnd) {
-    checks.push({
-      code: 'floor-no-direction',
-      level: 'blocking',
-      message: `You have told us the floor is ${m.floor.fallMm}mm out of level, but not which end is lower.`,
-    });
-  }
-  if (m.floor.fallMm > LARGE_LEAN_MM) {
-    checks.push({
-      code: 'floor-large-fall',
-      level: 'confirm',
-      message: `A ${m.floor.fallMm}mm fall across the floor is a lot. Please double-check it — if it is right, the bottom of the glass will be cut on the slope to match.`,
-    });
-  }
+  // --- Floor, per run. ---
+  m.runs.forEach((run, i) => {
+    const where = m.runs.length > 1 ? ` along the ${labels[i].toLowerCase()}` : '';
+    if (run.floorFallMm > 0 && !run.floorLowEnd) {
+      checks.push({
+        code: `run${i}-floor-no-direction`,
+        level: 'blocking',
+        runIndex: i,
+        message: `You have told us the floor${where} is ${run.floorFallMm}mm out of level, but not which end is lower.`,
+      });
+    }
+    if (run.floorFallMm > LARGE_LEAN_MM) {
+      checks.push({
+        code: `run${i}-floor-large-fall`,
+        level: 'confirm',
+        runIndex: i,
+        message: `A ${run.floorFallMm}mm fall${where} is a lot. Please double-check it — if it is right, the bottom of the glass will be cut on the slope to match.`,
+      });
+    }
+  });
 
   // --- The last gate. ---
   if (!m.shapeConfirmed && !checks.some((c) => c.level === 'blocking')) {
@@ -254,22 +359,38 @@ export function measurementsUsable(checks: MeasureCheck[]): boolean {
 }
 
 /**
- * A one-line summary of how true the opening is, for the review screen and
- * the enquiry email.
+ * A plain-English summary of how true the opening is, for the review screen
+ * and the enquiry email.
  */
-export function describeOpening(m: OpeningMeasurements): string {
+export function describeOpening(m: OpeningMeasurements, ctx: OpeningContext): string {
   const parts: string[] = [];
-  if (m.leftWall.outMm && m.leftWall.direction) {
-    parts.push(`left wall ${m.leftWall.outMm}mm out, leaning ${m.leftWall.direction}`);
+  const labels = ctx.labels ?? runLabels(m.runs.length);
+
+  if (ctx.hasStartWall && m.startWall.outMm && m.startWall.direction) {
+    parts.push(`first wall ${m.startWall.outMm}mm out, leaning ${m.startWall.direction}`);
   }
-  if (m.rightWall.outMm && m.rightWall.direction) {
-    parts.push(`right wall ${m.rightWall.outMm}mm out, leaning ${m.rightWall.direction}`);
+  if (ctx.hasEndWall && m.endWall.outMm && m.endWall.direction) {
+    parts.push(`far wall ${m.endWall.outMm}mm out, leaning ${m.endWall.direction}`);
   }
-  if (m.floor.fallMm && m.floor.lowEnd) {
-    parts.push(`floor ${m.floor.fallMm}mm lower at the ${m.floor.lowEnd}`);
-  }
+  m.runs.forEach((run, i) => {
+    if (run.floorFallMm && run.floorLowEnd) {
+      const where = m.runs.length > 1 ? ` along the ${labels[i].toLowerCase()}` : '';
+      parts.push(`floor${where} ${run.floorFallMm}mm lower at the ${run.floorLowEnd}`);
+    }
+  });
+
   if (parts.length === 0) return 'Square and level throughout.';
   return parts.join('; ');
+}
+
+/** The measured widths, run by run, for the email. */
+export function describeWidths(m: OpeningMeasurements, labels = runLabels(m.runs.length)): string {
+  return m.runs
+    .map(
+      (run, i) =>
+        `${labels[i]}: ${run.widthAtFloorMm}mm at the floor, ${run.widthAtTopMm}mm at the top`
+    )
+    .join('; ');
 }
 
 /**

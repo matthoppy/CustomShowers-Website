@@ -12,11 +12,16 @@
  * them matters more here than it would if a fitter had taken them.
  */
 
-/** Which measurement a photo backs up, or 'extra' for a loose one. */
+/**
+ * Which measurement a photo backs up, or 'extra' for a loose one.
+ *
+ * The width slots carry a run index, because a corner shower is measured one
+ * straight run at a time and each has its own pair of widths.
+ */
 export type PhotoSlot =
   | 'height'
-  | 'width-floor'
-  | 'width-top'
+  | `width-floor-${number}`
+  | `width-top-${number}`
   | 'walls'
   | 'floor'
   | 'extra';
@@ -38,25 +43,49 @@ const JPEG_QUALITY = 0.75;
 /** How many loose photos the review step accepts on top of the measurement ones. */
 export const MAX_EXTRA_PHOTOS = 4;
 
-/** Names the workshop can read without opening them. */
-const SLOT_FILENAMES: Record<PhotoSlot, string> = {
-  height: 'measured-height',
-  'width-floor': 'measured-width-at-floor',
-  'width-top': 'measured-width-at-top',
-  walls: 'measured-wall-lean',
-  floor: 'measured-floor-level',
-  extra: 'photo',
-};
+/** The run a width slot refers to, 1-based, or null for the others. */
+function slotRunNumber(slot: PhotoSlot): number | null {
+  const match = /-(\d+)$/.exec(slot);
+  return match ? Number(match[1]) + 1 : null;
+}
 
-/** How each is introduced in the enquiry email. */
-export const SLOT_LABELS: Record<PhotoSlot, string> = {
-  height: 'Height',
-  'width-floor': 'Width at the floor',
-  'width-top': 'Width at the top',
-  walls: 'Wall lean',
-  floor: 'Floor level',
-  extra: 'The opening',
-};
+/** Names the workshop can read without opening them. */
+export function slotFilename(slot: PhotoSlot): string {
+  const run = slotRunNumber(slot);
+  const suffix = run === null ? '' : `-run${run}`;
+  if (slot.startsWith('width-floor')) return `measured-width-at-floor${suffix}`;
+  if (slot.startsWith('width-top')) return `measured-width-at-top${suffix}`;
+  if (slot === 'height') return 'measured-height';
+  if (slot === 'walls') return 'measured-wall-lean';
+  if (slot === 'floor') return 'measured-floor-level';
+  return 'photo';
+}
+
+/** How each is introduced to a reader. */
+export function slotLabel(slot: PhotoSlot): string {
+  const run = slotRunNumber(slot);
+  const suffix = run === null ? '' : ` (run ${run})`;
+  if (slot.startsWith('width-floor')) return `Width at the floor${suffix}`;
+  if (slot.startsWith('width-top')) return `Width at the top${suffix}`;
+  if (slot === 'height') return 'Height';
+  if (slot === 'walls') return 'Wall lean';
+  if (slot === 'floor') return 'Floor level';
+  return 'The opening';
+}
+
+/**
+ * The order attachments are sent in: every measurement photo, in the order
+ * the customer was asked for it, then loose shots of the room.
+ */
+export function slotSortKey(slot: PhotoSlot): number {
+  const run = slotRunNumber(slot) ?? 0;
+  if (slot === 'height') return 0;
+  if (slot.startsWith('width-floor')) return 1 + run * 2;
+  if (slot.startsWith('width-top')) return 2 + run * 2;
+  if (slot === 'walls') return 1000;
+  if (slot === 'floor') return 1001;
+  return 2000;
+}
 
 /**
  * Downscale and re-encode in the browser.
@@ -98,7 +127,7 @@ export async function createPhoto(
     id: `${slot}-${Date.now()}-${index}`,
     slot,
     previewUrl: URL.createObjectURL(file),
-    filename: `${SLOT_FILENAMES[slot]}${slot === 'extra' ? `-${index}` : ''}.jpg`,
+    filename: `${slotFilename(slot)}${slot === 'extra' ? `-${index}` : ''}.jpg`,
     content,
   };
 }

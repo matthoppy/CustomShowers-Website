@@ -16,7 +16,7 @@
  */
 
 /** Bump when the code changes, so a browser visit shows which paste is live. */
-const WORKER_VERSION = "v11";
+const WORKER_VERSION = "v12";
 
 /**
  * CORS configuration. Allow production domain and Cloudflare Pages preview origins.
@@ -534,7 +534,9 @@ function businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast,
                 shots.length
                   ? ` Customer photos: ${shots
                       .map((a) => esc(a.filename))
-                      .join(", ")} — the <strong>measured-</strong> ones show the tape in place for that measurement.`
+                      .join(
+                        ", "
+                      )} — the <strong>measured-</strong> ones were taken at the wall and show the tape in place for that measurement, so they can be checked against the figures above.`
                   : ""
               }</p>`;
             })()

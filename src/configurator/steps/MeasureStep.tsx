@@ -22,11 +22,16 @@ import { PhotoCapture } from '../PhotoCapture';
 import { releasePhoto, type Photo, type PhotoSlot } from '../photos';
 import {
   checkMeasurements,
+  runLabels,
   signedLeanMm,
+  wallsForRun,
   type MeasureMethod,
   type OpeningMeasurements,
+  type RunMeasurement,
   type WallLeanDirection,
+  type WallMeasurement,
 } from '../measure';
+import { openingContext, runPanelIndices } from '../geometry';
 import type { ConfiguratorPanel } from '../types';
 import {
   FIGURE_CAPTIONS,
@@ -126,8 +131,8 @@ function WallLean({
   onChange,
 }: {
   name: string;
-  wall: OpeningMeasurements['leftWall'];
-  onChange: (patch: Partial<OpeningMeasurements['leftWall']>) => void;
+  wall: WallMeasurement;
+  onChange: (patch: Partial<WallMeasurement>) => void;
 }) {
   return (
     <div className="space-y-2 rounded border p-3">
@@ -171,94 +176,98 @@ function WallLean({
 }
 
 /**
- * Spread a new overall width across the existing panels, keeping their
- * proportions. The rounding remainder goes on the widest panel, where a
- * millimetre matters least — the alternative is a run that does not add up
- * to the opening it is supposed to fill.
+ * How many cards the phone layout walks through for a given shape.
+ *
+ * Height, then a pair of width cards per straight run, then the walls, the
+ * floor and the confirmation. A corner shower is two runs and so four width
+ * cards — the customer really does have to walk to the other wall and
+ * measure it, and pretending otherwise is how a return panel comes out wrong.
  */
-function scalePanelsToWidth(
-  panels: ConfiguratorPanel[],
-  targetMm: number
-): ConfiguratorPanel[] {
-  const total = panels.reduce((s, p) => s + p.width_mm, 0);
-  if (total <= 0 || targetMm <= 0) return panels;
-
-  const scaled = panels.map((p) => ({
-    ...p,
-    width_mm: Math.max(1, Math.round((p.width_mm / total) * targetMm)),
-  }));
-
-  const drift = targetMm - scaled.reduce((s, p) => s + p.width_mm, 0);
-  if (drift !== 0) {
-    let widest = 0;
-    scaled.forEach((p, i) => {
-      if (p.width_mm > scaled[widest].width_mm) widest = i;
-    });
-    scaled[widest] = { ...scaled[widest], width_mm: scaled[widest].width_mm + drift };
-  }
-  return scaled;
+export function measureCardCount(runCount: number): number {
+  return 4 + 2 * Math.max(1, runCount);
 }
 
 /**
- * How many cards the phone layout walks through.
- *
- * The shell drives them with its own Next button rather than the step
- * growing a second pair, so it needs to know how many there are.
+ * Spread a new width across one run's panels, keeping their proportions. The
+ * rounding remainder goes on the widest panel, where a millimetre matters
+ * least — the alternative is a run that does not add up to the wall it fills.
  */
-export const MEASURE_CARD_COUNT = 6;
+function scaleRunPanels(
+  panels: ConfiguratorPanel[],
+  indices: number[],
+  targetMm: number
+): ConfiguratorPanel[] {
+  const total = indices.reduce((sum, i) => sum + panels[i].width_mm, 0);
+  if (total <= 0 || targetMm <= 0) return panels;
 
-/**
- * Which card a given check becomes answerable on.
- *
- * On a phone the customer sees one measurement at a time, so a check is only
- * worth raising once they have been shown the card that produces it. Telling
- * someone on the floor-width card that they have not said how they checked
- * the walls is noise about a question they have not been asked yet — and
- * noise is how a real contradiction gets scrolled past.
- */
-function checkCardIndex(code: string): number {
-  if (code.startsWith('widthAtFloorMm')) return 1;
-  if (code.startsWith('widthAtTopMm')) return 2;
-  if (code === 'cross-check-mismatch') return 3;
-  if (code.startsWith('leftWall') || code.startsWith('rightWall')) return 3;
-  if (code === 'no-method' || code === 'assumed-square') return 3;
-  if (code.startsWith('floor-')) return 4;
-  if (code === 'shape-unconfirmed') return 5;
-  return 0;
+  const next = [...panels];
+  for (const i of indices) {
+    next[i] = {
+      ...next[i],
+      width_mm: Math.max(1, Math.round((panels[i].width_mm / total) * targetMm)),
+    };
+  }
+
+  const drift = targetMm - indices.reduce((sum, i) => sum + next[i].width_mm, 0);
+  if (drift !== 0) {
+    const widest = indices.reduce((a, b) => (next[b].width_mm > next[a].width_mm ? b : a));
+    next[widest] = { ...next[widest], width_mm: next[widest].width_mm + drift };
+  }
+  return next;
 }
 
 export function MeasureStep({ state, update, photos, setPhotos, measureCard }: StepProps) {
   const m = state.opening;
+  const ctx = openingContext(state);
   const isMobile = useIsMobile();
-  const cardIndex = Math.min(measureCard ?? 0, MEASURE_CARD_COUNT - 1);
   const topRef = useRef<HTMLDivElement>(null);
+
+  const runs = m.runs;
+  const labels = ctx.labels ?? runLabels(runs.length);
+  const runIndices = runPanelIndices(state.panels, state.junctions);
+  const cardCount = measureCardCount(runs.length);
+  const cardIndex = Math.min(measureCard ?? 0, cardCount - 1);
 
   const patch = (p: Partial<OpeningMeasurements>) => update({ opening: { ...m, ...p } });
 
+  const patchRun = (i: number, p: Partial<RunMeasurement>) =>
+    patch({
+      runs: runs.map((r, j) => (j === i ? { ...r, ...p } : r)),
+      shapeConfirmed: false,
+    });
+
   /**
-   * The width at the floor is the opening, so the panels have to follow it.
+   * A run's floor width is the wall it fills, so its panels have to follow.
    * Without this the customer measures 1000mm and then sees a drawing of the
-   * template's default 700mm run, which reads as the tool ignoring them.
+   * template's default, which reads as the tool ignoring them.
    */
-  const setFloorWidth = (widthMm: number) =>
+  const setRunFloorWidth = (i: number, widthMm: number) => {
+    const run = runs[i];
     update({
-      panels: scalePanelsToWidth(state.panels, widthMm),
+      panels: scaleRunPanels(state.panels, runIndices[i] ?? [], widthMm),
       opening: {
         ...m,
-        widthAtFloorMm: widthMm,
-        // Carry the top width along by the same amount. The opening starts
-        // out square, so typing 1000 at the floor should leave it square
-        // rather than reading as a 300mm lean against a default the customer
-        // never entered. Any difference they have already recorded survives.
-        widthAtTopMm: Math.max(0, m.widthAtTopMm + (widthMm - m.widthAtFloorMm)),
+        runs: runs.map((r, j) =>
+          j === i
+            ? {
+                ...r,
+                widthAtFloorMm: widthMm,
+                // Carry the top width along by the same amount. The run starts
+                // out square, so typing 1000 at the floor should leave it
+                // square rather than reading as a lean against a default the
+                // customer never entered. Any difference already recorded
+                // survives.
+                widthAtTopMm: Math.max(0, r.widthAtTopMm + (widthMm - run.widthAtFloorMm)),
+              }
+            : r
+        ),
         shapeConfirmed: false,
       },
     });
+  };
 
-  const patchWall = (
-    key: 'leftWall' | 'rightWall',
-    p: Partial<OpeningMeasurements['leftWall']>
-  ) => patch({ [key]: { ...m[key], ...p }, shapeConfirmed: false } as Partial<OpeningMeasurements>);
+  const patchWall = (key: 'startWall' | 'endWall', p: Partial<WallMeasurement>) =>
+    patch({ [key]: { ...m[key], ...p }, shapeConfirmed: false } as Partial<OpeningMeasurements>);
 
   const photoFor = (slot: PhotoSlot) => photos.find((p) => p.slot === slot);
   const setPhotoFor = (slot: PhotoSlot, photo: Photo | null) => {
@@ -266,11 +275,37 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
     setPhotos(photo ? [...rest, photo] : rest);
   };
 
-  const allChecks = checkMeasurements(m, state.heightMm);
+  const allChecks = checkMeasurements(m, ctx);
+
+  /**
+   * Which card a given check becomes answerable on.
+   *
+   * On a phone the customer sees one measurement at a time, so a check is
+   * only worth raising once they have been shown the card that produces it.
+   * Telling someone on the floor-width card that they have not said how they
+   * checked the walls is noise about a question they have not been asked yet
+   * — and noise is how a real contradiction gets scrolled past.
+   */
+  const checkCardIndex = (check: (typeof allChecks)[number]): number => {
+    const { code, runIndex } = check;
+    if (runIndex !== undefined) {
+      const floorCard = 1 + runIndex * 2;
+      if (code.includes('widthAtFloor')) return floorCard;
+      if (code.includes('widthAtTop')) return floorCard + 1;
+      // A mismatch is only fixable once the wall leans have been asked for.
+      if (code.includes('cross-check')) return 1 + runs.length * 2;
+      if (code.includes('floor-')) return 2 + runs.length * 2;
+    }
+    if (code.startsWith('startWall') || code.startsWith('endWall')) return 1 + runs.length * 2;
+    if (code === 'no-method' || code === 'assumed-square') return 1 + runs.length * 2;
+    if (code === 'shape-unconfirmed') return cardCount - 1;
+    return 0;
+  };
+
   // Desktop shows the lot: every card is on screen, so every check is about
   // something the customer can see.
   const checks = isMobile
-    ? allChecks.filter((c) => checkCardIndex(c.code) <= cardIndex)
+    ? allChecks.filter((c) => checkCardIndex(c) <= cardIndex)
     : allChecks;
   const blocking = checks.filter((c) => c.level === 'blocking' && c.code !== 'shape-unconfirmed');
   const confirms = checks.filter((c) => c.level === 'confirm');
@@ -289,6 +324,8 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
           Toughened glass cannot be trimmed once it is made, so take your time over this part.
           You will need a tape measure, and ideally a laser or a spirit level to check the walls.
           It takes about ten minutes.
+          {runs.length > 1 &&
+            ' Your shower turns a corner, so there are two walls to measure — each one separately.'}
         </p>
         <p className="text-muted-foreground">
           Everything is in <strong>millimetres</strong> — a 1.4 metre opening is 1400.
@@ -333,11 +370,11 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
     </>
   );
 
-  /**
-   * One definition per measurement, rendered either stacked (desktop) or one
-   * at a time (phone). Describing them twice is how the two drift apart.
-   */
-  const cards: { title: string; figure?: MeasureFigure; help?: string; body: JSX.Element }[] = [
+  /** How a run is referred to in a sentence. */
+  const runPhrase = (i: number) => (runs.length > 1 ? ` — ${labels[i].toLowerCase()}` : '');
+
+  type Card = { title: string; figure?: MeasureFigure; help?: string; body: JSX.Element };
+  const cards: Card[] = [
     {
       title: 'How tall should the glass be?',
       figure: 'height',
@@ -380,242 +417,318 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
         </>
       ),
     },
-    {
-      title: 'Width across the opening, at the floor',
+  ];
+
+  // Two cards per run: along the floor, then at the top. The customer
+  // physically walks to a different wall for each run, so they get their own
+  // screens rather than being crammed into one.
+  runs.forEach((run, i) => {
+    const endsAtCorner = i < runs.length - 1;
+    const startsAtCorner = i > 0;
+    const between =
+      runs.length === 1
+        ? 'from wall to wall'
+        : `from ${startsAtCorner ? 'the corner' : 'the wall'} to ${
+            endsAtCorner ? 'the corner' : 'the wall'
+          }`;
+
+    cards.push({
+      title: `Width at the floor${runPhrase(i)}`,
       figure: 'width-floor',
-      help: 'Measure to the tiles or finished surface, not to the plaster behind them.',
+      help: `Measure ${between}, to the tiles or finished surface rather than the plaster behind them.`,
       body: (
         <>
-          <Label htmlFor="w-floor">Width at the floor (mm)</Label>
+          <Label htmlFor={`w-floor-${i}`}>Width at the floor (mm)</Label>
           <Input
-            id="w-floor"
+            id={`w-floor-${i}`}
             type="number"
             inputMode="numeric"
-            value={m.widthAtFloorMm}
-            onChange={(e) => setFloorWidth(parseInt(e.target.value, 10) || 0)}
+            value={run.widthAtFloorMm}
+            onChange={(e) => setRunFloorWidth(i, parseInt(e.target.value, 10) || 0)}
           />
+          {runs.length > 1 && (
+            <p className="rounded bg-muted/60 px-3 py-2 text-xs">
+              This is the <strong>{labels[i].toLowerCase()}</strong>, measured {between}. At a
+              corner, measure to the outside face of the glass on the other run.
+            </p>
+          )}
           <PhotoCapture
-            slot="width-floor"
-            prompt="Show the tape flat on the floor, with both ends against the walls."
-            photo={photoFor('width-floor')}
-            onChange={(p) => setPhotoFor('width-floor', p)}
+            slot={`width-floor-${i}` as PhotoSlot}
+            prompt="Show the tape flat on the floor, with both ends in place."
+            photo={photoFor(`width-floor-${i}` as PhotoSlot)}
+            onChange={(p) => setPhotoFor(`width-floor-${i}` as PhotoSlot, p)}
           />
         </>
       ),
-    },
-    {
-      title: 'Width again, at the top of the glass',
+    });
+
+    cards.push({
+      title: `Width at the top${runPhrase(i)}`,
       figure: 'width-top',
-      help: 'If this differs from the floor width, your walls lean — which is normal, and we cut the glass to follow it.',
+      help: wallsForRun(m, i, ctx).length
+        ? 'If this differs from the floor width, the wall leans — which is normal, and we cut the glass to follow it.'
+        : 'Both ends of this run meet glass rather than a wall, so it should come out the same as the floor width.',
       body: (
         <>
-          <Label htmlFor="w-top">Width at the top (mm)</Label>
+          <Label htmlFor={`w-top-${i}`}>Width at the top (mm)</Label>
           <Input
-            id="w-top"
+            id={`w-top-${i}`}
             type="number"
             inputMode="numeric"
-            value={m.widthAtTopMm}
+            value={run.widthAtTopMm}
             onChange={(e) =>
-              patch({ widthAtTopMm: parseInt(e.target.value, 10) || 0, shapeConfirmed: false })
+              patchRun(i, { widthAtTopMm: parseInt(e.target.value, 10) || 0 })
             }
           />
-          {m.widthAtFloorMm > 0 && m.widthAtTopMm > 0 && m.widthAtFloorMm !== m.widthAtTopMm && (
-            <p className="rounded bg-muted/60 px-3 py-2 text-xs">
-              Your opening is <strong>{Math.abs(m.widthAtFloorMm - m.widthAtTopMm)}mm</strong>{' '}
-              {m.widthAtTopMm < m.widthAtFloorMm ? 'narrower' : 'wider'} at the top. The next
-              step works out which wall is responsible.
-            </p>
-          )}
+          {run.widthAtFloorMm > 0 &&
+            run.widthAtTopMm > 0 &&
+            run.widthAtFloorMm !== run.widthAtTopMm && (
+              <p className="rounded bg-muted/60 px-3 py-2 text-xs">
+                This run is <strong>{Math.abs(run.widthAtFloorMm - run.widthAtTopMm)}mm</strong>{' '}
+                {run.widthAtTopMm < run.widthAtFloorMm ? 'narrower' : 'wider'} at the top. The
+                wall card works out which wall is responsible.
+              </p>
+            )}
           <PhotoCapture
-            slot="width-top"
+            slot={`width-top-${i}` as PhotoSlot}
             prompt="Same again, with the tape at the height the glass will reach."
-            photo={photoFor('width-top')}
-            onChange={(p) => setPhotoFor('width-top', p)}
+            photo={photoFor(`width-top-${i}` as PhotoSlot)}
+            onChange={(p) => setPhotoFor(`width-top-${i}` as PhotoSlot, p)}
           />
         </>
       ),
-    },
-    {
-      title: 'Which wall leans, and by how much?',
-      body: (
-        <>
-          <div className="space-y-1.5">
-            <Label className="text-sm">How did you check?</Label>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {METHODS.map((method) => (
-                <button
-                  key={method.id}
-                  type="button"
-                  onClick={() => patch({ method: method.id, shapeConfirmed: false })}
-                  className={`rounded border p-3 text-left transition-colors ${
-                    m.method === method.id
-                      ? 'border-primary bg-primary/5'
-                      : 'hover:border-muted-foreground/40'
-                  }`}
-                >
-                  <div className="text-sm font-medium">{method.label}</div>
-                  <div className="mt-0.5 text-xs text-muted-foreground">{method.blurb}</div>
-                </button>
-              ))}
-            </div>
+    });
+  });
+
+  const startWallName =
+    runs.length === 1 ? 'Left wall' : `Wall at the open end of the ${labels[0].toLowerCase()}`;
+  const endWallName =
+    runs.length === 1
+      ? 'Right wall'
+      : `Wall at the end of the ${labels[labels.length - 1].toLowerCase()}`;
+
+  cards.push({
+    title: 'Which wall leans, and by how much?',
+    body: (
+      <>
+        <div className="space-y-1.5">
+          <Label className="text-sm">How did you check?</Label>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {METHODS.map((method) => (
+              <button
+                key={method.id}
+                type="button"
+                onClick={() => patch({ method: method.id, shapeConfirmed: false })}
+                className={`rounded border p-3 text-left transition-colors ${
+                  m.method === method.id
+                    ? 'border-primary bg-primary/5'
+                    : 'hover:border-muted-foreground/40'
+                }`}
+              >
+                <div className="text-sm font-medium">{method.label}</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">{method.blurb}</div>
+              </button>
+            ))}
           </div>
+        </div>
 
-          {/* The drawing follows the choice. Showing all three at once is a
-              lot of scroll on a phone, and only one of them is what they are
-              about to do. Before they choose, show the most likely. */}
-          <div className="sm:max-w-sm">
-            <Figure figure={METHODS.find((x) => x.id === m.method)?.figure ?? 'wall-packers'} />
+        {/* The drawing follows the choice. Showing all three at once is a lot
+            of scroll on a phone, and only one of them is what they are about
+            to do. Before they choose, show the most likely. */}
+        <div className="sm:max-w-sm">
+          <Figure figure={METHODS.find((x) => x.id === m.method)?.figure ?? 'wall-packers'} />
+        </div>
+
+        {m.method && m.method !== 'assumed-square' && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {ctx.hasStartWall && (
+              <WallLean
+                name={startWallName}
+                wall={m.startWall}
+                onChange={(p) => patchWall('startWall', p)}
+              />
+            )}
+            {ctx.hasEndWall && (
+              <WallLean
+                name={endWallName}
+                wall={m.endWall}
+                onChange={(p) => patchWall('endWall', p)}
+              />
+            )}
           </div>
+        )}
 
-          {m.method && m.method !== 'assumed-square' && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <WallLean
-                name="Left wall"
-                wall={m.leftWall}
-                onChange={(p) => patchWall('leftWall', p)}
-              />
-              <WallLean
-                name="Right wall"
-                wall={m.rightWall}
-                onChange={(p) => patchWall('rightWall', p)}
-              />
-            </div>
-          )}
-
+        {runs.length > 1 && (
           <p className="text-xs text-muted-foreground">
-            If a wall is straight but the whole thing is off vertical, that still counts — it is
-            the difference between top and bottom we need, not whether the wall itself is flat.
+            Only the two ends of the whole enclosure meet a wall — the corner between them is
+            glass against glass, which sets its own vertical, so there is nothing to check there.
           </p>
+        )}
 
-          <PhotoCapture
-            slot="walls"
-            prompt="Show the level or laser against the wall, with the gap visible."
-            photo={photoFor('walls')}
-            onChange={(p) => setPhotoFor('walls', p)}
-          />
-        </>
-      ),
-    },
-    {
-      title: 'Is the floor level?',
-      figure: 'floor-level',
-      body: (
-        <>
-          <div className="flex items-center gap-2">
-            <Input
-              type="number"
-              inputMode="numeric"
-              className="w-24"
-              value={m.floor.fallMm}
-              onChange={(e) =>
-                patch({
-                  floor: { ...m.floor, fallMm: Math.max(0, parseInt(e.target.value, 10) || 0) },
-                  shapeConfirmed: false,
-                })
-              }
-            />
-            <span className="text-sm text-muted-foreground">mm of fall across the opening</span>
-          </div>
-          {m.floor.fallMm > 0 && (
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Which end is lower?</Label>
-              <div className="flex gap-2">
-                {(['left', 'right'] as const).map((end) => (
-                  <Button
-                    key={end}
-                    size="sm"
-                    variant={m.floor.lowEnd === end ? 'default' : 'outline'}
-                    onClick={() =>
-                      patch({ floor: { ...m.floor, lowEnd: end }, shapeConfirmed: false })
-                    }
-                  >
-                    {end === 'left' ? 'Left' : 'Right'}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-          <PhotoCapture
-            slot="floor"
-            prompt="Show the level across the floor, with any gap underneath it."
-            photo={photoFor('floor')}
-            onChange={(p) => setPhotoFor('floor', p)}
-          />
-        </>
-      ),
-    },
-    {
-      title: 'Does this look like your bathroom?',
-      body:
-        anyBlocking ? (
-          <div className="sm:col-span-2">
-            <p className="text-sm text-muted-foreground">
-              We cannot draw your opening yet — go back and sort the problem above first.
-            </p>
-          </div>
-        ) : (
-          <>
-            <OpeningPreview
-              widthAtFloorMm={m.widthAtFloorMm}
-              widthAtTopMm={m.widthAtTopMm}
-              heightMm={state.heightMm}
-              leftLeanMm={signedLeanMm(m.leftWall)}
-              rightLeanMm={signedLeanMm(m.rightWall)}
-              floorFallMm={m.floor.fallMm}
-              floorLowEnd={m.floor.lowEnd}
-              className="w-full rounded bg-muted/40 p-2"
-            />
-            <label className="flex cursor-pointer gap-3 rounded border p-3">
-              <Checkbox
-                checked={m.shapeConfirmed}
-                onCheckedChange={(v) => patch({ shapeConfirmed: v === true })}
-                className="mt-0.5"
+        <p className="text-xs text-muted-foreground">
+          If a wall is straight but the whole thing is off vertical, that still counts — it is
+          the difference between top and bottom we need, not whether the wall itself is flat.
+        </p>
+
+        <PhotoCapture
+          slot="walls"
+          prompt="Show the level or laser against the wall, with the gap visible."
+          photo={photoFor('walls')}
+          onChange={(p) => setPhotoFor('walls', p)}
+        />
+      </>
+    ),
+  });
+
+  cards.push({
+    title: 'Is the floor level?',
+    figure: 'floor-level',
+    body: (
+      <>
+        {runs.map((run, i) => (
+          <div key={i} className="space-y-2 rounded border p-3">
+            {runs.length > 1 && (
+              <Label className="text-sm font-medium">Along the {labels[i].toLowerCase()}</Label>
+            )}
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                inputMode="numeric"
+                className="w-24"
+                value={run.floorFallMm}
+                onChange={(e) =>
+                  patchRun(i, { floorFallMm: Math.max(0, parseInt(e.target.value, 10) || 0) })
+                }
               />
-              <span className="text-sm">
-                Yes — that is the right shape, and the walls lean the way shown.
-              </span>
-            </label>
-            <p className="text-xs text-muted-foreground">
-              The lean is drawn much larger than it really is so you can see which way it goes.
-              The dashed line is what a perfectly square opening would look like.
-            </p>
-          </>
-        ),
-    },
-  ];
+              <span className="text-sm text-muted-foreground">mm of fall</span>
+            </div>
+            {run.floorFallMm > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Which end is lower?</Label>
+                <div className="flex gap-2">
+                  {(
+                    [
+                      ['start', runs.length > 1 && i > 0 ? 'Corner end' : 'Left'],
+                      ['end', runs.length > 1 && i < runs.length - 1 ? 'Corner end' : 'Right'],
+                    ] as const
+                  ).map(([end, label]) => (
+                    <Button
+                      key={end}
+                      size="sm"
+                      variant={run.floorLowEnd === end ? 'default' : 'outline'}
+                      onClick={() => patchRun(i, { floorLowEnd: end })}
+                    >
+                      {label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+        <PhotoCapture
+          slot="floor"
+          prompt="Show the level across the floor, with any gap underneath it."
+          photo={photoFor('floor')}
+          onChange={(p) => setPhotoFor('floor', p)}
+        />
+      </>
+    ),
+  });
+
+  cards.push({
+    title:
+      runs.length > 1 ? 'Do these look like your bathroom?' : 'Does this look like your bathroom?',
+    body: anyBlocking ? (
+      <div className="sm:col-span-2">
+        <p className="text-sm text-muted-foreground">
+          We cannot draw your opening yet — go back and sort the problem above first.
+        </p>
+      </div>
+    ) : (
+      <>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {runs.map((run, i) => {
+            const bounding = wallsForRun(m, i, ctx);
+            const startLean =
+              i === 0 && ctx.hasStartWall ? signedLeanMm(m.startWall) : 0;
+            const endLean =
+              i === runs.length - 1 && ctx.hasEndWall ? signedLeanMm(m.endWall) : 0;
+            return (
+              <figure key={i} className="space-y-1">
+                <OpeningPreview
+                  widthAtFloorMm={run.widthAtFloorMm}
+                  widthAtTopMm={run.widthAtTopMm}
+                  heightMm={state.heightMm}
+                  leftLeanMm={startLean}
+                  rightLeanMm={endLean}
+                  floorFallMm={run.floorFallMm}
+                  floorLowEnd={
+                    run.floorLowEnd === 'start'
+                      ? 'left'
+                      : run.floorLowEnd === 'end'
+                        ? 'right'
+                        : null
+                  }
+                  className="w-full rounded bg-muted/40 p-2"
+                />
+                {runs.length > 1 && (
+                  <figcaption className="text-xs font-medium text-muted-foreground">
+                    {labels[i]}
+                    {bounding.length === 0 ? ' (glass both ends)' : ''}
+                  </figcaption>
+                )}
+              </figure>
+            );
+          })}
+        </div>
+        <label className="flex cursor-pointer gap-3 rounded border p-3 sm:col-span-2">
+          <Checkbox
+            checked={m.shapeConfirmed}
+            onCheckedChange={(v) => patch({ shapeConfirmed: v === true })}
+            className="mt-0.5"
+          />
+          <span className="text-sm">
+            Yes — {runs.length > 1 ? 'those are' : 'that is'} the right shape, and the walls lean
+            the way shown.
+          </span>
+        </label>
+        <p className="text-xs text-muted-foreground sm:col-span-2">
+          The lean is drawn much larger than it really is so you can see which way it goes. The
+          dashed line is what a perfectly square opening would look like.
+        </p>
+      </>
+    ),
+  });
 
   if (!isMobile) {
     return (
       <div className="space-y-5">
         {intro}
-        {cards.slice(0, 5).map((card, i) => (
+        {cards.slice(0, -1).map((card, i) => (
           <Measurement key={card.title} number={i + 1} {...card}>
             {card.body}
           </Measurement>
         ))}
         {alerts}
         {!anyBlocking && (
-          <Measurement number={6} title={cards[5].title}>
-            {cards[5].body}
+          <Measurement number={cards.length} title={cards[cards.length - 1].title}>
+            {cards[cards.length - 1].body}
           </Measurement>
         )}
       </div>
     );
   }
 
-  // --- Phone: one measurement per screen. ---
-  const card = cards[cardIndex];
-  const isFinal = cardIndex === cards.length - 1;
-
   return (
     <MobileCards
       topRef={topRef}
       intro={intro}
       alerts={alerts}
-      card={card}
+      card={cards[cardIndex]}
       cardIndex={cardIndex}
       total={cards.length}
-      isFinal={isFinal}
+      isFinal={cardIndex === cards.length - 1}
       done={!anyBlocking && m.shapeConfirmed}
     />
   );
@@ -673,8 +786,8 @@ function MobileCards({
             </span>
           )}
         </div>
-        {/* A plain bar rather than numbered dots: six tap targets across a
-            phone are too small to hit, and nobody jumps to measurement four. */}
+        {/* A plain bar rather than numbered dots: that many tap targets across
+            a phone are too small to hit, and nobody jumps to measurement four. */}
         <div className="h-1.5 overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-primary transition-all"

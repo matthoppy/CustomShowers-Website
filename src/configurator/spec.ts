@@ -23,8 +23,8 @@ import {
   type HingePlacement,
   type PanelDeductions,
 } from '@/lib/showerCalculations';
-import { derivePlanes, type Plane, totalRunWidthMm } from './geometry';
-import { METHOD_LABELS } from './measure';
+import { derivePlanes, openingContext, runLabelsFor, type Plane, totalRunWidthMm } from './geometry';
+import { describeOpening, describeWidths, METHOD_LABELS } from './measure';
 import {
   CUTOUTS,
   checkDoorLimits,
@@ -328,31 +328,15 @@ export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
   // these are what the glass is cut to follow, and the workshop should see
   // both the numbers and how they were arrived at.
   const o = state.opening;
-  const rakeNotes: string[] = [];
-  if (o.leftWall.outMm > 0 && o.leftWall.direction) {
-    rakeNotes.push(
-      `Left wall is ${o.leftWall.outMm}mm out of plumb, leaning ${o.leftWall.direction} at the top.`
-    );
-  }
-  if (o.rightWall.outMm > 0 && o.rightWall.direction) {
-    rakeNotes.push(
-      `Right wall is ${o.rightWall.outMm}mm out of plumb, leaning ${o.rightWall.direction} at the top.`
-    );
-  }
-  if (o.floor.fallMm > 0 && o.floor.lowEnd) {
-    rakeNotes.push(`Floor falls ${o.floor.fallMm}mm, lower at the ${o.floor.lowEnd}.`);
-  }
-  if (o.widthAtFloorMm !== o.widthAtTopMm) {
-    rakeNotes.push(
-      `Opening measures ${o.widthAtFloorMm}mm at the floor and ${o.widthAtTopMm}mm at the top of the glass.`
-    );
-  }
-  if (o.method) {
-    rakeNotes.push(`Checked with: ${METHOD_LABELS[o.method]}.`);
-  }
-  if (rakeNotes.length === 0) {
-    rakeNotes.push('Customer reports the opening as square and level.');
-  }
+  const ctx = openingContext(state);
+  const rakeNotes: string[] = [describeWidths(o, runLabelsFor(state.panels, state.junctions))];
+  const condition = describeOpening(o, ctx);
+  rakeNotes.push(
+    condition === 'Square and level throughout.'
+      ? 'Customer reports the opening as square and level.'
+      : `Out of true: ${condition}`
+  );
+  if (o.method) rakeNotes.push(`Checked with: ${METHOD_LABELS[o.method]}.`);
 
   if (support.supportPanelRequired && support.supportPanelReason) {
     warnings.push(`Support panel required: ${support.supportPanelReason}`);

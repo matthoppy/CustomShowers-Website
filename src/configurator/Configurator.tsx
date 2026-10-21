@@ -12,8 +12,9 @@ import { ArrowLeft, ArrowRight, Check, Loader2, RotateCcw } from 'lucide-react';
 import { PlanView } from './views/PlanView';
 import { ElevationView } from './views/ElevationView';
 import { ShapeStep } from './steps/ShapeStep';
-import { checkMeasurements, measurementsUsable, signedLeanMm } from './measure';
-import { MeasureStep, MEASURE_CARD_COUNT } from './steps/MeasureStep';
+import { checkMeasurements, createOpeningMeasurements, measurementsUsable, syncRuns } from './measure';
+import { openingContext, runWidthsMm } from './geometry';
+import { MeasureStep, measureCardCount } from './steps/MeasureStep';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SizesStep } from './steps/SizesStep';
 import { HardwareStep } from './steps/HardwareStep';
@@ -22,7 +23,7 @@ import { STEPS, type StepId, type StepProps } from './steps/types';
 import { createInitialState, type ConfiguratorState, type CustomerDetails } from './types';
 import { getTenant, type TenantConfig } from './tenant';
 import { TEMPLATES, type ShowerTemplate } from './templates';
-import { type Photo, type PhotoSlot } from './photos';
+import { slotSortKey, type Photo } from './photos';
 import {
   buildEnquiryPayload,
   submitEnquiry,
@@ -48,23 +49,19 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  */
 function applyTemplate(state: ConfiguratorState, template: ShowerTemplate): ConfiguratorState {
   const panels = structuredClone(template.panels);
+  const junctions = structuredClone(template.junctions);
   // The template's own widths become the opening until the customer measures
   // it, so the two never start out contradicting each other. Anything they
   // had already confirmed about the shape no longer applies.
-  const widthMm = panels.reduce((sum, p) => sum + p.width_mm, 0);
+  const widths = runWidthsMm(panels, junctions);
   return {
     ...state,
     panels,
-    junctions: structuredClone(template.junctions),
+    junctions,
     leftWall: template.leftWall,
     rightWall: template.rightWall,
     heightMm: template.heightMm ?? state.heightMm,
-    opening: {
-      ...state.opening,
-      widthAtFloorMm: widthMm,
-      widthAtTopMm: widthMm - signedLeanMm(state.opening.leftWall) - signedLeanMm(state.opening.rightWall),
-      shapeConfirmed: false,
-    },
+    opening: syncRuns(createOpeningMeasurements(widths), widths),
   };
 }
 
@@ -125,7 +122,21 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [stepId, submitted, embedded]);
 
-  const update = (patch: Partial<ConfiguratorState>) => setState((s) => ({ ...s, ...patch }));
+  /**
+   * Every state change goes through here, and anything that reshapes the
+   * chain — adding a panel, turning a junction into a corner — changes how
+   * many straight runs there are to measure. Keeping the measurements in step
+   * centrally means no caller has to remember to; forgetting once would leave
+   * a corner shower collecting one set of widths for two walls.
+   *
+   * Measurements already taken are kept by position rather than discarded.
+   */
+  const update = (patch: Partial<ConfiguratorState>) =>
+    setState((s) => {
+      const next = { ...s, ...patch };
+      if (!patch.panels && !patch.junctions) return next;
+      return { ...next, opening: syncRuns(next.opening, runWidthsMm(next.panels, next.junctions)) };
+    });
   const setCustomer = (patch: Partial<CustomerDetails>) =>
     setCustomerState((c) => ({ ...c, ...patch }));
 
@@ -133,8 +144,11 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
   const step = STEPS[stepIndex];
   const isLast = stepIndex === STEPS.length - 1;
 
+  // How many measurement cards this shape needs: a corner shower is two
+  // straight runs and so two more pairs of widths than an inline one.
+  const cardTotal = measureCardCount(state.opening.runs.length);
   const inMeasureCards = isMobile && stepId === 'measure';
-  const onLastMeasureCard = measureCard >= MEASURE_CARD_COUNT - 1;
+  const onLastMeasureCard = measureCard >= cardTotal - 1;
 
   const goNext = () => {
     if (inMeasureCards && !onLastMeasureCard) {
@@ -161,8 +175,8 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
         // gated is leaving the step. A customer who walks past a
         // contradiction in their own numbers ends up paying for a panel that
         // does not fit, so that one gate is held shut.
-        if (isMobile && measureCard < MEASURE_CARD_COUNT - 1) return true;
-        return measurementsUsable(checkMeasurements(state.opening, state.heightMm));
+        if (isMobile && measureCard < cardTotal - 1) return true;
+        return measurementsUsable(checkMeasurements(state.opening, openingContext(state)));
       case 'sizes':
         return (
           state.panels.length > 0 &&
@@ -185,7 +199,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
       default:
         return false;
     }
-  }, [stepId, state, customer, tenant.turnstileSiteKey, turnstileToken, challengeState, isMobile, measureCard]);
+  }, [stepId, state, customer, tenant.turnstileSiteKey, turnstileToken, challengeState, isMobile, measureCard, cardTotal]);
 
   const stepProps: StepProps = {
     tenant,
@@ -214,12 +228,10 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
       i++;
     }
 
-    // Measurement photos first and in order, so the workshop reads them
-    // alongside the numbers they back up, with loose shots of the room last.
-    const photoOrder: PhotoSlot[] = ['height', 'width-floor', 'width-top', 'walls', 'floor', 'extra'];
-    const ordered = [...photos].sort(
-      (a, b) => photoOrder.indexOf(a.slot) - photoOrder.indexOf(b.slot)
-    );
+    // Measurement photos first and in the order they were asked for, so the
+    // workshop reads each one alongside the number it backs up, with loose
+    // shots of the room last.
+    const ordered = [...photos].sort((a, b) => slotSortKey(a.slot) - slotSortKey(b.slot));
     for (const photo of ordered) {
       attachments.push({ filename: photo.filename, content: photo.content });
     }

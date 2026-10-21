@@ -7,9 +7,10 @@
  * HTML table that survives even when images are blocked.
  */
 
-import { describeOpening, METHOD_LABELS } from './measure';
+import { describeOpening, describeWidths, METHOD_LABELS } from './measure';
 import { buildSpec, type ConfiguratorSpec } from './spec';
 import { finishLabel, handleLabel, type TenantConfig } from './tenant';
+import { openingContext, runLabelsFor } from './geometry';
 import type { ConfiguratorState, CustomerDetails } from './types';
 
 export interface EnquiryAttachment {
@@ -144,8 +145,8 @@ export function buildEnquiryPayload(
       measuredBy: state.opening.method
         ? METHOD_LABELS[state.opening.method]
         : 'Not stated',
-      openingCondition: describeOpening(state.opening),
-      openingWidths: `${state.opening.widthAtFloorMm}mm at the floor, ${state.opening.widthAtTopMm}mm at the top`,
+      openingCondition: describeOpening(state.opening, openingContext(state)),
+      openingWidths: describeWidths(state.opening, runLabelsFor(state.panels, state.junctions)),
     },
     spec,
     disclaimer: tenant.measurementDisclaimer,

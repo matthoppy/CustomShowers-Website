@@ -106,7 +106,7 @@ export function createInitialState(glassThicknessMm: GlassThickness = 10): Confi
     glassCoating: 'none',
     finishId: 'chrome',
     handleId: 'pull',
-    opening: createOpeningMeasurements(700),
+    opening: createOpeningMeasurements([700]),
   };
 }
 
