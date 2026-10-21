@@ -281,7 +281,7 @@ export function describeOpening(m: OpeningMeasurements): string {
  */
 export const METHOD_LABELS: Record<MeasureMethod, string> = {
   laser: 'Laser plumb line',
-  packers: 'Laser and glazing packers',
+  packers: 'Spirit level and glazing packers',
   level: 'Spirit level',
   'assumed-square': 'Not checked — assumed square',
 };

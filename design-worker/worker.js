@@ -16,7 +16,7 @@
  */
 
 /** Bump when the code changes, so a browser visit shows which paste is live. */
-const WORKER_VERSION = "v9";
+const WORKER_VERSION = "v10";
 
 /**
  * CORS configuration. Allow production domain and Cloudflare Pages preview origins.
@@ -71,6 +71,11 @@ const TENANT_INBOXES = {
  * recycles them, so this is a burst brake rather than a hard quota. A WAF rate
  * limiting rule in front of the worker is the upgrade path if abuse gets real.
  */
+/** Two drawings plus up to four photos of the opening. */
+const MAX_ATTACHMENTS = 6;
+/** Well inside Resend's limit, and inside what an inbox will accept. */
+const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 const MAX_PER_IP = 5;
 const hits = new Map();
@@ -191,10 +196,27 @@ export default {
       const businessEmail = TENANT_INBOXES[tenantId] || env.BUSINESS_EMAIL || "sales@customshowers.uk";
       const fromAddress = env.FROM_EMAIL || "Custom Showers <noreply@customshowers.uk>";
 
-      const mailAttachments = (attachments || [])
-        .filter((a) => a && a.content && a.filename)
-        .slice(0, 4)
-        .map((a) => ({ filename: a.filename, content: a.content }));
+      // Drawings first, then up to four customer photos. The client sends them
+      // in that order and this keeps it: if anything has to be dropped for
+      // size it should be a photo, never the panel schedule.
+      //
+      // The cap is a total size rather than a count. Photos are downscaled in
+      // the browser to roughly 200-400KB each, but a browser that could not
+      // run the canvas step falls back to sending what it has, and an email
+      // Resend refuses helps nobody.
+      const mailAttachments = [];
+      let attachmentBytes = 0;
+      for (const a of (attachments || []).slice(0, MAX_ATTACHMENTS)) {
+        if (!a || !a.content || !a.filename) continue;
+        // base64 carries 3 bytes in every 4 characters.
+        const bytes = Math.ceil((a.content.length * 3) / 4);
+        if (attachmentBytes + bytes > MAX_ATTACHMENT_BYTES) {
+          console.warn("Attachment skipped, over size budget", { filename: a.filename, bytes });
+          continue;
+        }
+        attachmentBytes += bytes;
+        mailAttachments.push({ filename: a.filename, content: a.content });
+      }
 
       const specTable = buildSpecTable(spec?.panels || []);
 
@@ -221,7 +243,9 @@ export default {
           to: [customer.email],
           subject: "Your shower design — Custom Showers",
           html: customerHtml({ customer, summary, disclaimer, specTable }),
-          attachments: mailAttachments,
+          // Drawings only. Posting the customer's own photos of their
+          // bathroom back to them adds megabytes and tells them nothing.
+          attachments: mailAttachments.filter((a) => !a.filename.startsWith("photo-")),
         });
       }
 
@@ -500,7 +524,13 @@ function businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast,
       </p>
       ${
         mailAttachments.length
-          ? `<p style="color:#64748b;font-size:12px;">Drawings attached: ${mailAttachments.map((a) => esc(a.filename)).join(", ")}.</p>`
+          ? `<p style="color:#64748b;font-size:12px;">Attached: ${mailAttachments
+              .map((a) => esc(a.filename))
+              .join(", ")}${
+              mailAttachments.some((a) => a.filename.startsWith("photo-"))
+                ? " — the photos are the customer's own, of the opening."
+                : ""
+            }</p>`
           : `<p style="color:#b45309;font-size:12px;">No drawings were attached — work from the panel schedule above.</p>`
       }
     </div>`;

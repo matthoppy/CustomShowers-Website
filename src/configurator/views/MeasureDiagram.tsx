@@ -19,6 +19,7 @@ export type MeasureFigure =
   | 'width-top'
   | 'height'
   | 'wall-laser'
+  | 'wall-level'
   | 'wall-packers'
   | 'floor-level';
 
@@ -41,8 +42,10 @@ export const FIGURE_CAPTIONS: Record<MeasureFigure, string> = {
   height: 'Floor or tray up to a grout line above the shower head.',
   'wall-laser':
     'Set a laser to a true vertical near the wall, then measure the gap between line and wall at the top and again at the bottom. The difference is the lean.',
+  'wall-level':
+    'Hold a long level flat against the wall with the bubble centred. One end will touch and the other will stand off — measure that gap.',
   'wall-packers':
-    'Or push glazing packers into the widest part of the gap until they are snug, and add up the thicknesses printed on them.',
+    'Easier than reading a tape: slide glazing packers into the gap behind the level until they are snug, then add up the thicknesses printed on them.',
   'floor-level':
     'Rest a level across the opening. If one end lifts, measure the gap underneath — that is the fall.',
 };
@@ -100,6 +103,37 @@ function Dim({
         fill={ACCENT}
       >
         {label}
+      </text>
+    </g>
+  );
+}
+
+/**
+ * A spirit level held plumb against a leaning wall.
+ *
+ * Drawn touching at the top and standing off at the bottom, because that is
+ * what the customer will actually see — and the gap at the loose end is the
+ * number we are asking them for.
+ */
+function SpiritLevel() {
+  return (
+    <g>
+      <rect x={70} y={16} width={15} height={156} rx={2} fill={ACCENT} fillOpacity={0.18} />
+      <rect
+        x={70}
+        y={16}
+        width={15}
+        height={156}
+        rx={2}
+        fill="none"
+        stroke={ACCENT}
+        strokeWidth={1.5}
+      />
+      {/* Bubble vial, centred and reading true. */}
+      <rect x={73} y={84} width={9} height={22} rx={4.5} fill="hsl(var(--background))" stroke={ACCENT} strokeWidth={1} />
+      <circle cx={77.5} cy={95} r={3} fill={ACCENT} />
+      <text x={92} y={30} fontSize={11} fontWeight={600} fill={ACCENT}>
+        level
       </text>
     </g>
   );
@@ -277,6 +311,7 @@ const FIGURE_LABELS: Record<MeasureFigure, string> = {
   'width-top': 'Measuring the width of the opening at the top of the glass',
   height: 'Measuring from the floor up to the top of the glass',
   'wall-laser': 'Finding how far a wall leans using a laser plumb line',
+  'wall-level': 'Finding how far a wall leans using a spirit level',
   'wall-packers': 'Finding how far a wall leans using glazing packers',
   'floor-level': 'Finding how far the floor falls across the opening',
 };
@@ -324,18 +359,29 @@ const FIGURES: Record<MeasureFigure, JSX.Element> = {
     </>
   ),
 
+  'wall-level': (
+    <>
+      <Room leftLean={30} />
+      <SpiritLevel />
+      <Dim x1={44} y1={150} x2={70} y2={150} label="" />
+      <text x={57} y={142} textAnchor="middle" fontSize={11} fontWeight={700} fill={ACCENT}>
+        gap
+      </text>
+    </>
+  ),
+
   'wall-packers': (
     <>
       <Room leftLean={30} />
-      <line x1={76} y1={10} x2={76} y2={186} stroke={ACCENT} strokeWidth={2} strokeDasharray="7 5" />
-      {/* A stack filling the widest part of the gap. */}
+      <SpiritLevel />
+      {/* A stack filling the widest part of the gap, behind the level. */}
       {[0, 1, 2].map((i) => (
         <rect
           key={i}
-          x={48 + i * 9}
-          y={142}
+          x={44 + i * 9}
+          y={140}
           width={8}
-          height={18}
+          height={20}
           rx={1}
           fill={ACCENT}
           fillOpacity={0.3 + i * 0.22}
@@ -343,7 +389,7 @@ const FIGURES: Record<MeasureFigure, JSX.Element> = {
           strokeWidth={1}
         />
       ))}
-      <text x={88} y={155} fontSize={11} fontWeight={700} fill={ACCENT}>
+      <text x={90} y={154} fontSize={11} fontWeight={700} fill={ACCENT}>
         3 x 2mm = 6mm
       </text>
     </>

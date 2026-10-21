@@ -34,26 +34,39 @@ import type { StepProps } from './types';
 
 const HEIGHT_PRESETS = [1500, 1850, 2000, 2100];
 
-const METHODS: { id: MeasureMethod; label: string; blurb: string }[] = [
-  {
-    id: 'laser',
-    label: 'Laser line',
-    blurb: 'A self-levelling laser gives a true vertical to measure the wall against. The most accurate way, and the one we recommend.',
-  },
+/**
+ * Each method gets its own drawing, because what the customer does with their
+ * hands differs completely between them — and the drawing is the instruction.
+ */
+const METHODS: {
+  id: MeasureMethod;
+  label: string;
+  blurb: string;
+  figure: MeasureFigure | null;
+}[] = [
   {
     id: 'packers',
-    label: 'Laser and packers',
-    blurb: 'Same laser line, but instead of reading a tape you slide glazing packers into the gap until snug and add up what you used. Easier to get right.',
+    label: 'Level and packers',
+    blurb: 'A level held against the wall, then glazing packers pushed into the gap until snug. The easiest to get right, because you are matching a thickness rather than reading a tape.',
+    figure: 'wall-packers',
   },
   {
     id: 'level',
     label: 'Spirit level',
-    blurb: 'A long level held against the wall. Works, but the longer the level the better — a short one on a tall wall will miss a gentle lean.',
+    blurb: 'A long level held against the wall, measuring the gap at the loose end. The longer the level the better — a short one on a tall wall will miss a gentle lean.',
+    figure: 'wall-level',
+  },
+  {
+    id: 'laser',
+    label: 'Laser line',
+    blurb: 'A self-levelling laser gives a true vertical the full height of the wall. The most accurate of the three if you have one.',
+    figure: 'wall-laser',
   },
   {
     id: 'assumed-square',
     label: "Haven't checked",
     blurb: 'You can send it like this, but we will cut to square — and if the walls are not, the gaps will show.',
+    figure: null,
   },
 ];
 
@@ -303,11 +316,6 @@ export function MeasureStep({ state, update }: StepProps) {
       </Measurement>
 
       <Measurement number={4} title="Which wall leans, and by how much?">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Figure figure="wall-laser" />
-          <Figure figure="wall-packers" />
-        </div>
-
         <div className="space-y-1.5">
           <Label className="text-sm">How did you check?</Label>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -327,6 +335,13 @@ export function MeasureStep({ state, update }: StepProps) {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* The drawing follows the choice. Showing all three at once is a lot
+            of scroll on a phone, and only one of them is what they are about
+            to do. Before they choose, show the one most people will use. */}
+        <div className="sm:max-w-sm">
+          <Figure figure={METHODS.find((x) => x.id === m.method)?.figure ?? 'wall-packers'} />
         </div>
 
         {m.method && m.method !== 'assumed-square' && (

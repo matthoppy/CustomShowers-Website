@@ -21,6 +21,7 @@ import { STEPS, type StepId, type StepProps } from './steps/types';
 import { createInitialState, type ConfiguratorState, type CustomerDetails } from './types';
 import { getTenant, type TenantConfig } from './tenant';
 import { TEMPLATES, type ShowerTemplate } from './templates';
+import { type Photo } from './PhotoUpload';
 import {
   buildEnquiryPayload,
   submitEnquiry,
@@ -80,6 +81,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
   );
   const [customer, setCustomerState] = useState<CustomerDetails>(EMPTY_CUSTOMER);
   const [activePanelId, setActivePanelId] = useState<string | null>(state.panels[0]?.id ?? null);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -184,6 +186,8 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
       if (png) attachments.push({ filename: names[i] ?? `drawing-${i + 1}.png`, content: png });
       i++;
     }
+
+    for (const photo of photos) attachments.push(photo.attachment);
 
     const payload = buildEnquiryPayload(tenant, state, customer, attachments, turnstileToken, {
       honeypot,
@@ -316,6 +320,8 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                     {...stepProps}
                     customer={customer}
                     setCustomer={setCustomer}
+                    photos={photos}
+                    setPhotos={setPhotos}
                     onTurnstileToken={setTurnstileToken}
                     onChallengeState={setChallengeState}
                     honeypot={honeypot}
