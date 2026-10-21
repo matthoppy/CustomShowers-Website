@@ -12,6 +12,8 @@ import { ArrowLeft, ArrowRight, Check, Loader2, RotateCcw } from 'lucide-react';
 import { PlanView } from './views/PlanView';
 import { ElevationView } from './views/ElevationView';
 import { ShapeStep } from './steps/ShapeStep';
+import { MeasureStep } from './steps/MeasureStep';
+import { checkMeasurements, measurementsUsable, signedLeanMm } from './measure';
 import { SizesStep } from './steps/SizesStep';
 import { HardwareStep } from './steps/HardwareStep';
 import { ReviewStep } from './steps/ReviewStep';
@@ -43,13 +45,24 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * mounting — so switching template does not silently undo their hardware.
  */
 function applyTemplate(state: ConfiguratorState, template: ShowerTemplate): ConfiguratorState {
+  const panels = structuredClone(template.panels);
+  // The template's own widths become the opening until the customer measures
+  // it, so the two never start out contradicting each other. Anything they
+  // had already confirmed about the shape no longer applies.
+  const widthMm = panels.reduce((sum, p) => sum + p.width_mm, 0);
   return {
     ...state,
-    panels: structuredClone(template.panels),
+    panels,
     junctions: structuredClone(template.junctions),
     leftWall: template.leftWall,
     rightWall: template.rightWall,
     heightMm: template.heightMm ?? state.heightMm,
+    opening: {
+      ...state.opening,
+      widthAtFloorMm: widthMm,
+      widthAtTopMm: widthMm - signedLeanMm(state.opening.leftWall) - signedLeanMm(state.opening.rightWall),
+      shapeConfirmed: false,
+    },
   };
 }
 
@@ -119,6 +132,11 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     switch (stepId) {
       case 'shape':
         return state.panels.length > 0;
+      case 'measure':
+        // Nothing here is a style preference — a customer who walks past a
+        // contradiction in their own numbers ends up paying for a panel that
+        // does not fit, so this one gate is held shut.
+        return measurementsUsable(checkMeasurements(state.opening, state.heightMm));
       case 'sizes':
         return (
           state.panels.length > 0 &&
@@ -289,6 +307,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                   }}
                 />
               )}
+              {stepId === 'measure' && <MeasureStep {...stepProps} />}
               {stepId === 'sizes' && <SizesStep {...stepProps} />}
               {stepId === 'hardware' && <HardwareStep {...stepProps} />}
               {stepId === 'review' && (

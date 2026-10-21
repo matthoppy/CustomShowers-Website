@@ -107,8 +107,12 @@ export const CUSTOM_SHOWERS: TenantConfig = {
   ],
   handles: DEFAULT_HANDLES,
   glassThicknessMm: 10,
+  // Said in the first person, in short sentences, because this is the one
+  // thing on the page the customer is taking on. The previous wording promised
+  // a site survey, which is no longer how Custom Showers works — and it was
+  // the only line setting out who carries a wrong measurement.
   measurementDisclaimer:
-    'These measurements are provided by you as a guide. We will confirm all sizes on a site survey before any glass is cut — please do not treat this design as a final cutting list.',
+    'I have measured this myself and the sizes above are correct. I understand the glass is toughened and made to these measurements, so it cannot be altered afterwards, and that if my measurements turn out to be wrong a replacement panel is a new order at my cost.',
   intro: 'Design your enclosure and send the measurements straight to our workshop.',
   // Overridable at build time via VITE_TURNSTILE_SITE_KEY, set in the
   // Cloudflare Pages environment variables. Rotating a Turnstile widget then

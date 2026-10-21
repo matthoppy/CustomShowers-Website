@@ -24,6 +24,7 @@ import {
   type PanelDeductions,
 } from '@/lib/showerCalculations';
 import { derivePlanes, type Plane, totalRunWidthMm } from './geometry';
+import { METHOD_LABELS } from './measure';
 import {
   CUTOUTS,
   checkDoorLimits,
@@ -323,15 +324,34 @@ export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
     0
   );
 
+  // Site conditions, as the customer measured them. Carried through verbatim:
+  // these are what the glass is cut to follow, and the workshop should see
+  // both the numbers and how they were arrived at.
+  const o = state.opening;
   const rakeNotes: string[] = [];
-  if (state.rakes.floor.direction !== 'none' && state.rakes.floor.amount_mm > 0) {
-    rakeNotes.push(`Floor falls ${state.rakes.floor.amount_mm}mm to the ${state.rakes.floor.direction}.`);
+  if (o.leftWall.outMm > 0 && o.leftWall.direction) {
+    rakeNotes.push(
+      `Left wall is ${o.leftWall.outMm}mm out of plumb, leaning ${o.leftWall.direction} at the top.`
+    );
   }
-  if (state.rakes.leftWall.direction !== 'none' && state.rakes.leftWall.amount_mm > 0) {
-    rakeNotes.push(`Left wall leans ${state.rakes.leftWall.direction} by ${state.rakes.leftWall.amount_mm}mm.`);
+  if (o.rightWall.outMm > 0 && o.rightWall.direction) {
+    rakeNotes.push(
+      `Right wall is ${o.rightWall.outMm}mm out of plumb, leaning ${o.rightWall.direction} at the top.`
+    );
   }
-  if (state.rakes.rightWall.direction !== 'none' && state.rakes.rightWall.amount_mm > 0) {
-    rakeNotes.push(`Right wall leans ${state.rakes.rightWall.direction} by ${state.rakes.rightWall.amount_mm}mm.`);
+  if (o.floor.fallMm > 0 && o.floor.lowEnd) {
+    rakeNotes.push(`Floor falls ${o.floor.fallMm}mm, lower at the ${o.floor.lowEnd}.`);
+  }
+  if (o.widthAtFloorMm !== o.widthAtTopMm) {
+    rakeNotes.push(
+      `Opening measures ${o.widthAtFloorMm}mm at the floor and ${o.widthAtTopMm}mm at the top of the glass.`
+    );
+  }
+  if (o.method) {
+    rakeNotes.push(`Checked with: ${METHOD_LABELS[o.method]}.`);
+  }
+  if (rakeNotes.length === 0) {
+    rakeNotes.push('Customer reports the opening as square and level.');
   }
 
   if (support.supportPanelRequired && support.supportPanelReason) {

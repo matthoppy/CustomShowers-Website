@@ -16,7 +16,7 @@
  */
 
 /** Bump when the code changes, so a browser visit shows which paste is live. */
-const WORKER_VERSION = "v8";
+const WORKER_VERSION = "v9";
 
 /**
  * CORS configuration. Allow production domain and Cloudflare Pages preview origins.
@@ -337,6 +337,11 @@ const SUMMARY_LABELS = {
   finish: "Finish",
   handle: "Handle",
   glass: "Glass",
+  glassType: "Glass type",
+  glassCoating: "Coating",
+  openingWidths: "Opening measured",
+  openingCondition: "Walls and floor",
+  measuredBy: "Checked with",
 };
 
 function summaryRows(summary) {

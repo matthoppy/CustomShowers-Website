@@ -12,7 +12,7 @@ export interface StepProps {
   canvasHeight: number;
 }
 
-export type StepId = 'shape' | 'sizes' | 'hardware' | 'review';
+export type StepId = 'shape' | 'measure' | 'sizes' | 'hardware' | 'review';
 
 export const STEPS: { id: StepId; label: string; heading: string; blurb: string }[] = [
   {
@@ -22,10 +22,16 @@ export const STEPS: { id: StepId; label: string; heading: string; blurb: string 
     blurb: 'Pick the closest match. You can change every size and move things around next.',
   },
   {
+    id: 'measure',
+    label: 'Measure',
+    heading: 'Measuring your opening',
+    blurb: 'We cut the glass to these numbers, so this is the part worth getting right. Follow the pictures and it takes about ten minutes.',
+  },
+  {
     id: 'sizes',
-    label: 'Sizes',
-    heading: 'Your measurements',
-    blurb: 'Measure the opening and tell us how tall you want the glass.',
+    label: 'Layout',
+    heading: 'How the glass is arranged',
+    blurb: 'Split the opening into panels, and say where the door goes.',
   },
   {
     id: 'hardware',
