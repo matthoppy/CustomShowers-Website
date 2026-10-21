@@ -10,7 +10,7 @@
 import { describeOpening, describeWidths, METHOD_LABELS } from './measure';
 import { buildSpec, type ConfiguratorSpec } from './spec';
 import { finishLabel, handleLabel, type TenantConfig } from './tenant';
-import { openingContext, runLabelsFor } from './geometry';
+import { openingContext } from './geometry';
 import type { ConfiguratorState, CustomerDetails } from './types';
 
 export interface EnquiryAttachment {
@@ -146,7 +146,7 @@ export function buildEnquiryPayload(
         ? METHOD_LABELS[state.opening.method]
         : 'Not stated',
       openingCondition: describeOpening(state.opening, openingContext(state)),
-      openingWidths: describeWidths(state.opening, runLabelsFor(state.panels, state.junctions)),
+      openingWidths: describeWidths(state.opening, openingContext(state)),
     },
     spec,
     disclaimer: tenant.measurementDisclaimer,

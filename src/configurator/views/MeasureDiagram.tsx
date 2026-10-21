@@ -41,11 +41,11 @@ export const FIGURE_CAPTIONS: Record<MeasureFigure, string> = {
   'width-top': 'The same measurement again, at the height the glass will reach.',
   height: 'Floor or tray up to a grout line above the shower head.',
   'wall-laser':
-    'Set a laser to a true vertical near the wall, then measure the gap between line and wall at the top and again at the bottom. The difference is the lean.',
+    'Set a laser to a true vertical a little off the wall, then measure straight across from the line to the wall — once near the floor, once near the top. We work the rest out from those two numbers.',
   'wall-level':
-    'Hold a long level flat against the wall with the bubble centred. One end will touch and the other will stand off — measure that gap.',
+    'Hold a long level flat against the wall with the bubble centred. One end will touch, so that reading is 0 — measure the gap at the other end.',
   'wall-packers':
-    'Easier than reading a tape: slide glazing packers into the gap behind the level until they are snug, then add up the thicknesses printed on them.',
+    'Easier than reading a tape: slide glazing packers into the gap behind the level until they are snug, then add up the thicknesses printed on them. The touching end is 0.',
   'floor-level':
     'Rest a level across the opening. If one end lifts, measure the gap underneath — that is the fall.',
 };
@@ -346,15 +346,19 @@ const FIGURES: Record<MeasureFigure, JSX.Element> = {
   'wall-laser': (
     <>
       <Room leftLean={30} />
-      {/* A true vertical close to the wall. The gap to the wall is nil at the
-          top and opens up towards the floor, which is the lean. */}
-      <line x1={76} y1={10} x2={76} y2={186} stroke={ACCENT} strokeWidth={2} strokeDasharray="7 5" />
-      <text x={84} y={22} fontSize={11} fontWeight={600} fill={ACCENT}>
+      {/* A true vertical, set a little off the wall so there is something to
+          measure at both ends. Two readings in, lean and direction out. */}
+      <line x1={104} y1={10} x2={104} y2={186} stroke={ACCENT} strokeWidth={2} strokeDasharray="7 5" />
+      <text x={110} y={22} fontSize={11} fontWeight={600} fill={ACCENT}>
         laser
       </text>
-      <Dim x1={44} y1={150} x2={76} y2={150} label="" />
-      <text x={60} y={142} textAnchor="middle" fontSize={11} fontWeight={700} fill={ACCENT}>
-        gap
+      <Dim x1={72} y1={40} x2={104} y2={40} label="" />
+      <text x={88} y={32} textAnchor="middle" fontSize={11} fontWeight={700} fill={ACCENT}>
+        top
+      </text>
+      <Dim x1={43} y1={158} x2={104} y2={158} label="" />
+      <text x={73} y={150} textAnchor="middle" fontSize={11} fontWeight={700} fill={ACCENT}>
+        bottom
       </text>
     </>
   ),
@@ -363,9 +367,14 @@ const FIGURES: Record<MeasureFigure, JSX.Element> = {
     <>
       <Room leftLean={30} />
       <SpiritLevel />
+      {/* Held against the wall, the level touches at the top: that reading is
+          zero, and the gap at the foot is the whole lean. */}
+      <text x={92} y={48} fontSize={11} fontWeight={700} fill={ACCENT}>
+        top 0
+      </text>
       <Dim x1={44} y1={150} x2={70} y2={150} label="" />
       <text x={57} y={142} textAnchor="middle" fontSize={11} fontWeight={700} fill={ACCENT}>
-        gap
+        bottom
       </text>
     </>
   ),
@@ -374,7 +383,6 @@ const FIGURES: Record<MeasureFigure, JSX.Element> = {
     <>
       <Room leftLean={30} />
       <SpiritLevel />
-      {/* A stack filling the widest part of the gap, behind the level. */}
       {[0, 1, 2].map((i) => (
         <rect
           key={i}
@@ -389,7 +397,10 @@ const FIGURES: Record<MeasureFigure, JSX.Element> = {
           strokeWidth={1}
         />
       ))}
-      <text x={90} y={154} fontSize={11} fontWeight={700} fill={ACCENT}>
+      <text x={92} y={48} fontSize={11} fontWeight={700} fill={ACCENT}>
+        top 0
+      </text>
+      <text x={88} y={155} fontSize={11} fontWeight={700} fill={ACCENT}>
         3 x 2mm = 6mm
       </text>
     </>

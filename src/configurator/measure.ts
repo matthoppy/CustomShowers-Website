@@ -10,17 +10,16 @@
  * holding the tape is standing in their own bathroom and has never done this
  * before:
  *
- * 1. Never ask them to *judge* whether something is out of true. People are
- *    bad at it and confident about it. Ask them to measure the same opening
- *    in two places, and derive the lean from the difference.
+ * 1. Never ask them to *judge* anything. "Is that wall plumb, and which way
+ *    does it lean?" is a question people answer badly and confidently. Two
+ *    tape readings against a vertical reference — the gap at the bottom and
+ *    the gap at the top — give the same answer arithmetically, and the sign
+ *    of the difference supplies the direction for free.
  *
- * 2. Cross-check everything against everything else. A run's floor width, its
- *    top width and the lean of the walls at its ends are not independent —
- *    they have to add up. When they don't, one of them is wrong, and we can
- *    say so while it is still free to fix.
- *
- * The second is the whole point. Any form can collect four numbers; this one
- * can tell the customer that their four numbers disagree.
+ * 2. Derive whatever can be derived. The width at the top is the width at
+ *    the bottom minus however far the walls lean in, so there is no reason to
+ *    send someone up a ladder for a number we already know. It is offered as
+ *    an optional check, not asked for as a measurement.
  *
  * ## Runs
  *
@@ -43,21 +42,81 @@ export type FloorLowEnd = 'start' | 'end';
 /** How the customer established the lean. Changes how far we trust it. */
 export type MeasureMethod = 'laser' | 'packers' | 'level' | 'assumed-square';
 
+/**
+ * A wall, measured as two gaps from a vertical reference — a laser line, a
+ * plumb line, or the edge of a long level held true.
+ *
+ * Recorded as readings rather than as a lean because a reading is a thing the
+ * customer can see on a tape. The lean, and which way it goes, fall out of
+ * the arithmetic: nobody has to decide whether "into the shower" describes
+ * what they are looking at.
+ *
+ * Null means not measured, which is different from zero and must not be
+ * silently treated as plumb.
+ */
 export interface WallMeasurement {
-  /** How far out of plumb, in mm over the glass height. 0 = plumb. */
-  outMm: number;
+  gapBottomMm: number | null;
   /**
-   * Which way the top leans. Null means they have not answered yet, which is
-   * different from "straight" and must not be treated as zero.
+   * Optional. A wall that leans is straight; a wall that bows is not, and the
+   * middle reading is the only thing that tells them apart. A bow cannot be
+   * followed by a single tapered cut, so it is worth knowing before cutting.
    */
+  gapMiddleMm: number | null;
+  gapTopMm: number | null;
+}
+
+export interface WallLean {
+  /** Positive narrows the opening at the top. */
+  signedMm: number;
+  leanMm: number;
   direction: WallLeanDirection | null;
+  /** How far the middle strays from a straight line between the two ends. */
+  bowMm: number | null;
+  isBowed: boolean;
+}
+
+/** Past this a wall is bowed rather than leaning, and needs a human to look. */
+export const BOW_THRESHOLD_MM = 5;
+
+/** Work out the lean, its direction and any bow. Null until both ends are in. */
+export function wallLean(wall: WallMeasurement): WallLean | null {
+  const { gapBottomMm: bottom, gapTopMm: top, gapMiddleMm: middle } = wall;
+  if (bottom === null || top === null) return null;
+
+  // A bigger gap at the top means the wall falls away from the reference up
+  // there, so it leans out; a smaller one means it leans in and eats into the
+  // opening. That is the sign the width arithmetic wants.
+  const signedMm = Math.round(bottom - top);
+  const bowMm =
+    middle === null ? null : Math.round((middle - (top + bottom) / 2) * 10) / 10;
+
+  return {
+    signedMm,
+    leanMm: Math.abs(signedMm),
+    direction: signedMm === 0 ? null : signedMm > 0 ? 'in' : 'out',
+    bowMm,
+    isBowed: bowMm !== null && Math.abs(bowMm) > BOW_THRESHOLD_MM,
+  };
+}
+
+export function createWallMeasurement(): WallMeasurement {
+  return { gapBottomMm: null, gapMiddleMm: null, gapTopMm: null };
+}
+
+/** True once the customer has given us enough to work with. */
+export function wallMeasured(wall: WallMeasurement): boolean {
+  return wall.gapBottomMm !== null && wall.gapTopMm !== null;
 }
 
 export interface RunMeasurement {
   /** Wall (or corner) to wall (or corner), measured along the floor. */
   widthAtFloorMm: number;
-  /** The same, at the top of where the glass will go. */
-  widthAtTopMm: number;
+  /**
+   * Optional. The top width is derived from the floor width and the wall
+   * leans, so this is only here for someone who measured it anyway and wants
+   * it checked. When it is set, it has to agree.
+   */
+  widthAtTopCheckMm: number | null;
   /** Difference in floor height along this run. 0 = level. */
   floorFallMm: number;
   floorLowEnd: FloorLowEnd | null;
@@ -93,7 +152,7 @@ export interface OpeningContext {
 function createRun(widthMm: number): RunMeasurement {
   return {
     widthAtFloorMm: widthMm,
-    widthAtTopMm: widthMm,
+    widthAtTopCheckMm: null,
     floorFallMm: 0,
     floorLowEnd: null,
   };
@@ -102,8 +161,8 @@ function createRun(widthMm: number): RunMeasurement {
 export function createOpeningMeasurements(runWidthsMm: number[] = [1000]): OpeningMeasurements {
   return {
     runs: runWidthsMm.map(createRun),
-    startWall: { outMm: 0, direction: null },
-    endWall: { outMm: 0, direction: null },
+    startWall: createWallMeasurement(),
+    endWall: createWallMeasurement(),
     method: null,
     shapeConfirmed: false,
   };
@@ -148,8 +207,7 @@ export function runLabels(count: number): string[] {
  * why direction is a required answer rather than an optional refinement.
  */
 export function signedLeanMm(wall: WallMeasurement): number {
-  if (!wall.direction || !wall.outMm) return 0;
-  return wall.direction === 'in' ? wall.outMm : -wall.outMm;
+  return wallLean(wall)?.signedMm ?? 0;
 }
 
 /** Which walls, if any, bound a given run. Corners are not walls. */
@@ -164,17 +222,23 @@ export function wallsForRun(
   return walls;
 }
 
-/** The top width implied by a run's floor width and the walls at its ends. */
-export function impliedTopWidthMm(
+/**
+ * The width at the top of the glass.
+ *
+ * Derived, not measured: it is the floor width less however far each bounding
+ * wall leans into the opening. A run between two corners has no wall to lean,
+ * so it comes out the same at both ends.
+ */
+export function topWidthMm(
   m: OpeningMeasurements,
   runIndex: number,
   ctx: OpeningContext
 ): number {
   const run = m.runs[runIndex];
   if (!run) return 0;
-  return (
+  return Math.round(
     run.widthAtFloorMm -
-    wallsForRun(m, runIndex, ctx).reduce((sum, w) => sum + signedLeanMm(w), 0)
+      wallsForRun(m, runIndex, ctx).reduce((sum, w) => sum + signedLeanMm(w), 0)
   );
 }
 
@@ -187,18 +251,23 @@ export interface MeasureCheck {
   message: string;
   /** Which run the check is about, where it is about one. */
   runIndex?: number;
+  /** A corrected value they can accept with one tap. */
+  suggestionMm?: number;
 }
 
 /** Anything outside this is a typo or the wrong units, not a bathroom. */
 const MIN_PLAUSIBLE_MM = 400;
 const MAX_PLAUSIBLE_MM = 3000;
 
+/** A gap to a laser line or a level. Bigger than this and something is wrong. */
+const MAX_GAP_MM = 300;
+
 /**
- * How far the cross-check may disagree before we stop the customer.
+ * How far an optional top-width check may disagree with the derived figure.
  *
  * 3mm is roughly the best a careful amateur does with a tape over a metre,
  * and it is also small enough that a panel cut to it still fits. Beyond that
- * the numbers are telling us something real.
+ * the readings are telling us something real.
  */
 const CROSS_CHECK_TOLERANCE_MM = 3;
 
@@ -208,6 +277,38 @@ const CROSS_CHECK_TOLERANCE_MM = 3;
  */
 const LARGE_LEAN_MM = 20;
 
+/**
+ * Catch the slip where someone types the right number in the wrong unit.
+ *
+ * 90 for 900 and 0.9 for 900 are the two that actually reach workshops, and
+ * neither is caught by "is it a positive number". Offering the corrected
+ * figure to accept with one tap beats telling someone they are wrong.
+ */
+function unitSlip(value: number, name: string): MeasureCheck | null {
+  if (value >= MIN_PLAUSIBLE_MM) return null;
+
+  const fromMetres = Math.round(value * 1000);
+  const fromCm = Math.round(value * 10);
+
+  if (value > 0 && value < 10 && fromMetres <= MAX_PLAUSIBLE_MM && fromMetres >= MIN_PLAUSIBLE_MM) {
+    return {
+      code: 'unit-metres',
+      level: 'blocking',
+      message: `${value} looks like metres. Did you mean ${fromMetres}mm for the ${name}?`,
+      suggestionMm: fromMetres,
+    };
+  }
+  if (fromCm >= MIN_PLAUSIBLE_MM && fromCm <= MAX_PLAUSIBLE_MM) {
+    return {
+      code: 'unit-centimetres',
+      level: 'blocking',
+      message: `${value} looks like centimetres. Did you mean ${fromCm}mm for the ${name}?`,
+      suggestionMm: fromCm,
+    };
+  }
+  return null;
+}
+
 export function checkMeasurements(
   m: OpeningMeasurements,
   ctx: OpeningContext
@@ -216,107 +317,149 @@ export function checkMeasurements(
   const labels = ctx.labels ?? runLabels(m.runs.length);
   const named = (i: number) => (m.runs.length > 1 ? `${labels[i].toLowerCase()} ` : '');
 
-  // --- Plausibility, before anything is derived from the numbers. ---
+  // --- Floor widths, before anything is derived from them. ---
   m.runs.forEach((run, i) => {
-    for (const [key, value, name] of [
-      ['widthAtFloor', run.widthAtFloorMm, `${named(i)}width at the floor`],
-      ['widthAtTop', run.widthAtTopMm, `${named(i)}width at the top`],
-    ] as const) {
-      if (!value) {
-        checks.push({
-          code: `run${i}-${key}-missing`,
-          level: 'blocking',
-          message: `We still need the ${name}.`,
-          runIndex: i,
-        });
-      } else if (value < MIN_PLAUSIBLE_MM || value > MAX_PLAUSIBLE_MM) {
-        checks.push({
-          code: `run${i}-${key}-implausible`,
-          level: 'blocking',
-          message: `${value}mm for the ${name} looks wrong — we need millimetres, so a 1.4 metre opening is 1400. Please check and re-measure.`,
-          runIndex: i,
-        });
-      }
+    const name = `${named(i)}width at the floor`;
+    const value = run.widthAtFloorMm;
+
+    if (!value) {
+      checks.push({
+        code: `run${i}-widthAtFloor-missing`,
+        level: 'blocking',
+        message: `We still need the ${name}.`,
+        runIndex: i,
+      });
+      return;
+    }
+
+    const slip = unitSlip(value, name);
+    if (slip) {
+      checks.push({ ...slip, code: `run${i}-widthAtFloor-${slip.code}`, runIndex: i });
+      return;
+    }
+
+    if (value < MIN_PLAUSIBLE_MM || value > MAX_PLAUSIBLE_MM) {
+      checks.push({
+        code: `run${i}-widthAtFloor-implausible`,
+        level: 'blocking',
+        message: `${value}mm for the ${name} looks wrong — we need millimetres, so a 1.4 metre opening is 1400. Please check and re-measure.`,
+        runIndex: i,
+      });
     }
   });
 
   // Nothing below this point means anything if the widths are nonsense.
   if (checks.some((c) => c.level === 'blocking')) return checks;
 
-  // --- Direction is not optional. ---
+  // --- The walls, as two readings each. ---
   const walls: [string, WallMeasurement, string][] = [];
   if (ctx.hasStartWall) walls.push(['startWall', m.startWall, 'first wall']);
   if (ctx.hasEndWall) walls.push(['endWall', m.endWall, 'far wall']);
 
+  const checkedWalls = m.method !== null && m.method !== 'assumed-square';
+
   for (const [key, wall, name] of walls) {
-    if (wall.outMm > 0 && !wall.direction) {
-      checks.push({
-        code: `${key}-no-direction`,
-        level: 'blocking',
-        message: `You have told us the ${name} is ${wall.outMm}mm out, but not which way it leans. Without that we would cut the panel the wrong shape — it matters as much as the measurement itself.`,
-      });
+    for (const [field, value, where] of [
+      ['gapBottomMm', wall.gapBottomMm, 'bottom'],
+      ['gapMiddleMm', wall.gapMiddleMm, 'middle'],
+      ['gapTopMm', wall.gapTopMm, 'top'],
+    ] as const) {
+      if (value === null) continue;
+      if (value < 0) {
+        checks.push({
+          code: `${key}-${field}-negative`,
+          level: 'blocking',
+          message: `The gap at the ${where} of the ${name} cannot be less than zero.`,
+        });
+      } else if (value > MAX_GAP_MM) {
+        checks.push({
+          code: `${key}-${field}-too-big`,
+          level: 'confirm',
+          message: `${value}mm is a big gap at the ${where} of the ${name}. Check you measured from the line or the level to the wall, and not something else.`,
+        });
+      }
     }
-    if (wall.outMm > LARGE_LEAN_MM) {
+
+    if (checkedWalls && !wallMeasured(wall)) {
+      checks.push({
+        code: `${key}-not-measured`,
+        level: 'blocking',
+        message: `We need the gap at the bottom and at the top of the ${name}. If it is dead plumb, both readings will be the same — enter them anyway so we know it was checked.`,
+      });
+      continue;
+    }
+
+    const lean = wallLean(wall);
+    if (!lean) continue;
+
+    if (lean.leanMm > LARGE_LEAN_MM) {
       checks.push({
         code: `${key}-large-lean`,
         level: 'confirm',
-        message: `${wall.outMm}mm is a lot of lean on the ${name} over ${ctx.glassHeightMm}mm of height. It does happen — but please double-check it before you send, because we will cut the glass to follow it.`,
+        message: `Those readings make the ${name} ${lean.leanMm}mm out of plumb over ${ctx.glassHeightMm}mm, leaning ${lean.direction}. It does happen — but please double-check them, because we will cut the glass to follow it.`,
+      });
+    }
+
+    if (lean.isBowed) {
+      checks.push({
+        code: `${key}-bowed`,
+        level: 'confirm',
+        message: `The middle reading on the ${name} is ${Math.abs(lean.bowMm ?? 0)}mm off a straight line between the top and the bottom, so the wall bows rather than leans. Glass is cut straight and cannot follow a curve — please check the reading, and send us a photo of that wall so we can see what we are dealing with.`,
       });
     }
   }
 
-  // --- The cross-check, per run. ---
+  // --- The optional top-width check. ---
   m.runs.forEach((run, i) => {
-    const implied = impliedTopWidthMm(m, i, ctx);
-    const discrepancy = Math.round(run.widthAtTopMm - implied);
+    if (run.widthAtTopCheckMm === null) return;
+
+    const slip = unitSlip(run.widthAtTopCheckMm, `${named(i)}width at the top`);
+    if (slip) {
+      checks.push({ ...slip, code: `run${i}-widthAtTopCheck-${slip.code}`, runIndex: i });
+      return;
+    }
+
+    const derived = topWidthMm(m, i, ctx);
+    const discrepancy = Math.round(run.widthAtTopCheckMm - derived);
     if (Math.abs(discrepancy) <= CROSS_CHECK_TOLERANCE_MM) return;
 
-    const bounding = wallsForRun(m, i, ctx);
-    const leanTotal = bounding.reduce((sum, w) => sum + signedLeanMm(w), 0);
-    const widthDrop = run.widthAtFloorMm - run.widthAtTopMm;
     const where = m.runs.length > 1 ? ` on the ${labels[i].toLowerCase()}` : '';
+    const bounding = wallsForRun(m, i, ctx);
 
     checks.push({
       code: `run${i}-cross-check-mismatch`,
       level: 'blocking',
       runIndex: i,
       message: bounding.length
-        ? `These numbers do not agree with each other${where}. It narrows by ${widthDrop}mm ` +
-          `between the floor and the top, but the wall leans you have given add up to ${leanTotal}mm. ` +
-          `One of them is out by about ${Math.abs(discrepancy)}mm. Please re-check the width at ` +
-          `the top and the wall leans — this is exactly the kind of mistake that ends up as a ` +
-          `panel that does not fit.`
-        : `The measurements${where} do not agree. Both ends of this run meet glass rather than ` +
-          `a wall, so it should be the same width at the floor and at the top — but you have ` +
-          `given ${run.widthAtFloorMm}mm and ${run.widthAtTopMm}mm. Please re-measure both.`,
+        ? `Your readings do not agree with each other${where}. From the floor width and the wall ` +
+          `readings, the top should measure ${derived}mm — but you measured ${run.widthAtTopCheckMm}mm, ` +
+          `about ${Math.abs(discrepancy)}mm out. Either the width at the top or one of the wall ` +
+          `readings is wrong. This is exactly the kind of mistake that ends up as a panel that ` +
+          `does not fit.`
+        : `The measurements${where} do not agree. Both ends of this run meet glass rather than a ` +
+          `wall, so it should be the same width top and bottom — but you have given ` +
+          `${run.widthAtFloorMm}mm and ${run.widthAtTopCheckMm}mm. Please re-measure both.`,
     });
   });
 
-  // --- Did they actually measure, or assume? ---
-  const everythingPerfect =
-    m.runs.every(
-      (r) => r.widthAtFloorMm === r.widthAtTopMm && r.floorFallMm === 0
-    ) &&
-    m.startWall.outMm === 0 &&
-    m.endWall.outMm === 0;
-
-  if (everythingPerfect && m.method === 'assumed-square') {
-    checks.push({
-      code: 'assumed-square',
-      level: 'confirm',
-      message:
-        'You have told us everything is perfectly square and level. That is unusual — most ' +
-        'bathrooms are out by a few millimetres somewhere. If you have not actually checked ' +
-        'the walls and floor, it is worth doing now: we cut to these numbers, and a wall that ' +
-        'leans 5mm leaves a wedge-shaped gap no amount of silicone will hide.',
-    });
-  }
-
+  // --- Did they actually check, or assume? ---
   if (!m.method) {
     checks.push({
       code: 'no-method',
       level: 'blocking',
       message: 'Please tell us how you checked the walls and floor.',
+    });
+  }
+
+  if (m.method === 'assumed-square') {
+    checks.push({
+      code: 'assumed-square',
+      level: 'confirm',
+      message:
+        'You have not checked whether the walls are plumb, so we will cut the glass square. ' +
+        'Most bathrooms are out by a few millimetres somewhere, and where they are, the gap ' +
+        'will be wider at one end than the other. If you can borrow a level, it is worth ten ' +
+        'minutes now.',
     });
   }
 
@@ -366,12 +509,22 @@ export function describeOpening(m: OpeningMeasurements, ctx: OpeningContext): st
   const parts: string[] = [];
   const labels = ctx.labels ?? runLabels(m.runs.length);
 
-  if (ctx.hasStartWall && m.startWall.outMm && m.startWall.direction) {
-    parts.push(`first wall ${m.startWall.outMm}mm out, leaning ${m.startWall.direction}`);
+  for (const [wall, name, present] of [
+    [m.startWall, 'first wall', ctx.hasStartWall],
+    [m.endWall, 'far wall', ctx.hasEndWall],
+  ] as const) {
+    if (!present) continue;
+    const lean = wallLean(wall);
+    if (!lean) continue;
+    if (lean.leanMm > 0) {
+      parts.push(
+        `${name} ${lean.leanMm}mm out of plumb, leaning ${lean.direction} ` +
+          `(gap ${wall.gapBottomMm}mm at the bottom, ${wall.gapTopMm}mm at the top)`
+      );
+    }
+    if (lean.isBowed) parts.push(`${name} bows ${Math.abs(lean.bowMm ?? 0)}mm at mid height`);
   }
-  if (ctx.hasEndWall && m.endWall.outMm && m.endWall.direction) {
-    parts.push(`far wall ${m.endWall.outMm}mm out, leaning ${m.endWall.direction}`);
-  }
+
   m.runs.forEach((run, i) => {
     if (run.floorFallMm && run.floorLowEnd) {
       const where = m.runs.length > 1 ? ` along the ${labels[i].toLowerCase()}` : '';
@@ -383,13 +536,23 @@ export function describeOpening(m: OpeningMeasurements, ctx: OpeningContext): st
   return parts.join('; ');
 }
 
-/** The measured widths, run by run, for the email. */
-export function describeWidths(m: OpeningMeasurements, labels = runLabels(m.runs.length)): string {
+/**
+ * The widths, run by run, for the email. The floor figure is measured; the
+ * top is worked out from it and the wall readings, and is labelled as such so
+ * nobody takes it for a second reading.
+ */
+export function describeWidths(
+  m: OpeningMeasurements,
+  ctx: OpeningContext,
+  labels = ctx.labels ?? runLabels(m.runs.length)
+): string {
   return m.runs
-    .map(
-      (run, i) =>
-        `${labels[i]}: ${run.widthAtFloorMm}mm at the floor, ${run.widthAtTopMm}mm at the top`
-    )
+    .map((run, i) => {
+      const top = topWidthMm(m, i, ctx);
+      const checked =
+        run.widthAtTopCheckMm !== null ? `, customer also measured ${run.widthAtTopCheckMm}mm` : '';
+      return `${labels[i]}: ${run.widthAtFloorMm}mm measured at the floor, ${top}mm derived at the top${checked}`;
+    })
     .join('; ');
 }
 
@@ -404,5 +567,5 @@ export const METHOD_LABELS: Record<MeasureMethod, string> = {
   laser: 'Laser plumb line',
   packers: 'Spirit level and glazing packers',
   level: 'Spirit level',
-  'assumed-square': 'Not checked — assumed square',
+  'assumed-square': 'Not checked — cut square',
 };

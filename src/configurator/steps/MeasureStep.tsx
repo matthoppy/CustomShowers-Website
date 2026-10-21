@@ -24,11 +24,13 @@ import {
   checkMeasurements,
   runLabels,
   signedLeanMm,
+  topWidthMm,
+  wallLean,
+  wallMeasured,
   wallsForRun,
   type MeasureMethod,
   type OpeningMeasurements,
   type RunMeasurement,
-  type WallLeanDirection,
   type WallMeasurement,
 } from '../measure';
 import { openingContext, runPanelIndices } from '../geometry';
@@ -124,8 +126,43 @@ function Measurement({
   );
 }
 
-/** Lean amount plus direction for one wall. Both are required together. */
-function WallLean({
+/** A nullable millimetre box. Empty means not measured, which is not zero. */
+function GapInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number | null;
+  onChange: (v: number | null) => void;
+}) {
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs text-muted-foreground">{label}</Label>
+      <Input
+        type="number"
+        inputMode="numeric"
+        className="w-full"
+        placeholder="mm"
+        value={value ?? ''}
+        onChange={(e) => {
+          const raw = e.target.value.trim();
+          onChange(raw === '' ? null : Math.max(0, parseInt(raw, 10) || 0));
+        }}
+      />
+    </div>
+  );
+}
+
+/**
+ * One wall, as two tape readings against a vertical reference.
+ *
+ * The customer is never asked which way it leans — that falls out of which
+ * reading is bigger. Asking was the shakiest part of the old flow: it is a
+ * question people answer confidently and wrongly, and getting it backwards
+ * puts the panel out by twice the lean instead of nothing.
+ */
+function WallGaps({
   name,
   wall,
   onChange,
@@ -134,41 +171,52 @@ function WallLean({
   wall: WallMeasurement;
   onChange: (patch: Partial<WallMeasurement>) => void;
 }) {
+  const lean = wallLean(wall);
+
   return (
-    <div className="space-y-2 rounded border p-3">
+    <div className="space-y-3 rounded border p-3">
       <Label className="text-sm font-medium">{name}</Label>
-      <div className="flex items-center gap-2">
-        <Input
-          type="number"
-          inputMode="numeric"
-          className="w-24"
-          value={wall.outMm}
-          onChange={(e) => onChange({ outMm: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+      <div className="grid grid-cols-2 gap-2">
+        <GapInput
+          label="Gap at the bottom"
+          value={wall.gapBottomMm}
+          onChange={(v) => onChange({ gapBottomMm: v })}
         />
-        <span className="text-sm text-muted-foreground">mm out of plumb</span>
+        <GapInput
+          label="Gap at the top"
+          value={wall.gapTopMm}
+          onChange={(v) => onChange({ gapTopMm: v })}
+        />
       </div>
-      {wall.outMm > 0 && (
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">
-            At the top, which way does it lean?
-          </Label>
-          <div className="flex flex-wrap gap-2">
-            {(
-              [
-                ['in', 'Into the shower'],
-                ['out', 'Away from the shower'],
-              ] as [WallLeanDirection, string][]
-            ).map(([id, label]) => (
-              <Button
-                key={id}
-                size="sm"
-                variant={wall.direction === id ? 'default' : 'outline'}
-                onClick={() => onChange({ direction: id })}
-              >
-                {label}
-              </Button>
-            ))}
-          </div>
+      <GapInput
+        label="Gap at mid height (optional)"
+        value={wall.gapMiddleMm}
+        onChange={(v) => onChange({ gapMiddleMm: v })}
+      />
+
+      {lean && (
+        <div
+          className={`rounded px-3 py-2 text-xs ${
+            lean.isBowed
+              ? 'bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200'
+              : 'bg-muted/60'
+          }`}
+        >
+          {lean.leanMm === 0 ? (
+            <>That wall is <strong>plumb</strong>.</>
+          ) : (
+            <>
+              That makes it <strong>{lean.leanMm}mm out of plumb</strong>, leaning{' '}
+              {lean.direction === 'in' ? 'into the shower' : 'away from the shower'} at the top.
+            </>
+          )}
+          {lean.isBowed && (
+            <>
+              {' '}
+              The middle reading is {Math.abs(lean.bowMm ?? 0)}mm off a straight line, so it bows
+              rather than leans.
+            </>
+          )}
         </div>
       )}
     </div>
@@ -184,7 +232,7 @@ function WallLean({
  * measure it, and pretending otherwise is how a return panel comes out wrong.
  */
 export function measureCardCount(runCount: number): number {
-  return 4 + 2 * Math.max(1, runCount);
+  return 4 + Math.max(1, runCount);
 }
 
 /**
@@ -241,30 +289,15 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
    * Without this the customer measures 1000mm and then sees a drawing of the
    * template's default, which reads as the tool ignoring them.
    */
-  const setRunFloorWidth = (i: number, widthMm: number) => {
-    const run = runs[i];
+  const setRunFloorWidth = (i: number, widthMm: number) =>
     update({
       panels: scaleRunPanels(state.panels, runIndices[i] ?? [], widthMm),
       opening: {
         ...m,
-        runs: runs.map((r, j) =>
-          j === i
-            ? {
-                ...r,
-                widthAtFloorMm: widthMm,
-                // Carry the top width along by the same amount. The run starts
-                // out square, so typing 1000 at the floor should leave it
-                // square rather than reading as a lean against a default the
-                // customer never entered. Any difference already recorded
-                // survives.
-                widthAtTopMm: Math.max(0, r.widthAtTopMm + (widthMm - run.widthAtFloorMm)),
-              }
-            : r
-        ),
+        runs: runs.map((r, j) => (j === i ? { ...r, widthAtFloorMm: widthMm } : r)),
         shapeConfirmed: false,
       },
     });
-  };
 
   const patchWall = (key: 'startWall' | 'endWall', p: Partial<WallMeasurement>) =>
     patch({ [key]: { ...m[key], ...p }, shapeConfirmed: false } as Partial<OpeningMeasurements>);
@@ -276,6 +309,23 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
   };
 
   const allChecks = checkMeasurements(m, ctx);
+
+  /**
+   * Apply a corrected value the check offered.
+   *
+   * Telling someone their 90 should have been 900 and leaving them to retype
+   * it invites the same slip again; handing them the right number to accept
+   * does not. The field is read back out of the check's code, which is why
+   * the codes carry the run index and the field name.
+   */
+  const applySuggestion = (check: (typeof allChecks)[number]) => {
+    if (check.suggestionMm === undefined || check.runIndex === undefined) return;
+    if (check.code.includes('widthAtFloor')) {
+      setRunFloorWidth(check.runIndex, check.suggestionMm);
+    } else if (check.code.includes('widthAtTopCheck')) {
+      patchRun(check.runIndex, { widthAtTopCheckMm: check.suggestionMm });
+    }
+  };
 
   /**
    * Which card a given check becomes answerable on.
@@ -344,9 +394,14 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
               Something does not add up
             </div>
             {blocking.map((c) => (
-              <p key={c.code} className="text-red-800 dark:text-red-300">
-                {c.message}
-              </p>
+              <div key={c.code} className="space-y-2">
+                <p className="text-red-800 dark:text-red-300">{c.message}</p>
+                {c.suggestionMm !== undefined && (
+                  <Button size="sm" variant="outline" onClick={() => applySuggestion(c)}>
+                    Use {c.suggestionMm}mm
+                  </Button>
+                )}
+              </div>
             ))}
           </div>
         </div>
@@ -452,48 +507,44 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
               corner, measure to the outside face of the glass on the other run.
             </p>
           )}
+
+          <p className="text-xs text-muted-foreground">
+            You do not need to measure the top. We work that out from this width and how far the
+            walls lean, which you will tell us in a moment.
+          </p>
+
+          {/* Offered, not asked for. Someone who measured the top anyway gets
+              it checked against the derived figure; everyone else is not sent
+              up a ladder for a number we can already work out. */}
+          <details className="rounded border px-3 py-2">
+            <summary className="cursor-pointer text-xs font-medium">
+              Measured the top as well? Let us check it
+            </summary>
+            <div className="mt-2 space-y-1.5">
+              <Label htmlFor={`w-top-${i}`} className="text-xs text-muted-foreground">
+                Width at the top (mm) — optional
+              </Label>
+              <Input
+                id={`w-top-${i}`}
+                type="number"
+                inputMode="numeric"
+                placeholder="Leave blank if you did not measure it"
+                value={run.widthAtTopCheckMm ?? ''}
+                onChange={(e) => {
+                  const raw = e.target.value.trim();
+                  patchRun(i, {
+                    widthAtTopCheckMm: raw === '' ? null : parseInt(raw, 10) || 0,
+                  });
+                }}
+              />
+            </div>
+          </details>
+
           <PhotoCapture
             slot={`width-floor-${i}` as PhotoSlot}
             prompt="Show the tape flat on the floor, with both ends in place."
             photo={photoFor(`width-floor-${i}` as PhotoSlot)}
             onChange={(p) => setPhotoFor(`width-floor-${i}` as PhotoSlot, p)}
-          />
-        </>
-      ),
-    });
-
-    cards.push({
-      title: `Width at the top${runPhrase(i)}`,
-      figure: 'width-top',
-      help: wallsForRun(m, i, ctx).length
-        ? 'If this differs from the floor width, the wall leans — which is normal, and we cut the glass to follow it.'
-        : 'Both ends of this run meet glass rather than a wall, so it should come out the same as the floor width.',
-      body: (
-        <>
-          <Label htmlFor={`w-top-${i}`}>Width at the top (mm)</Label>
-          <Input
-            id={`w-top-${i}`}
-            type="number"
-            inputMode="numeric"
-            value={run.widthAtTopMm}
-            onChange={(e) =>
-              patchRun(i, { widthAtTopMm: parseInt(e.target.value, 10) || 0 })
-            }
-          />
-          {run.widthAtFloorMm > 0 &&
-            run.widthAtTopMm > 0 &&
-            run.widthAtFloorMm !== run.widthAtTopMm && (
-              <p className="rounded bg-muted/60 px-3 py-2 text-xs">
-                This run is <strong>{Math.abs(run.widthAtFloorMm - run.widthAtTopMm)}mm</strong>{' '}
-                {run.widthAtTopMm < run.widthAtFloorMm ? 'narrower' : 'wider'} at the top. The
-                wall card works out which wall is responsible.
-              </p>
-            )}
-          <PhotoCapture
-            slot={`width-top-${i}` as PhotoSlot}
-            prompt="Same again, with the tape at the height the glass will reach."
-            photo={photoFor(`width-top-${i}` as PhotoSlot)}
-            onChange={(p) => setPhotoFor(`width-top-${i}` as PhotoSlot, p)}
           />
         </>
       ),
@@ -542,14 +593,14 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
         {m.method && m.method !== 'assumed-square' && (
           <div className="grid gap-3 sm:grid-cols-2">
             {ctx.hasStartWall && (
-              <WallLean
+              <WallGaps
                 name={startWallName}
                 wall={m.startWall}
                 onChange={(p) => patchWall('startWall', p)}
               />
             )}
             {ctx.hasEndWall && (
-              <WallLean
+              <WallGaps
                 name={endWallName}
                 wall={m.endWall}
                 onChange={(p) => patchWall('endWall', p)}
@@ -566,9 +617,27 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
         )}
 
         <p className="text-xs text-muted-foreground">
-          If a wall is straight but the whole thing is off vertical, that still counts — it is
-          the difference between top and bottom we need, not whether the wall itself is flat.
+          Measure from the line, or from the edge of the level, straight across to the wall. If
+          one end touches, that reading is 0. It is the difference between the two we need, not
+          whether the wall itself is flat.
         </p>
+
+        {/* The payoff from the readings, shown where they were taken: this is
+            the number that would otherwise have sent someone up a ladder. */}
+        {runs.some((_, i) => wallsForRun(m, i, ctx).some(wallMeasured)) && (
+          <div className="rounded bg-muted/60 px-3 py-2 text-xs">
+            <div className="font-medium">That gives us the width at the top:</div>
+            <ul className="mt-1 space-y-0.5">
+              {runs.map((run, i) => (
+                <li key={i}>
+                  {runs.length > 1 ? `${labels[i]}: ` : ''}
+                  <strong>{topWidthMm(m, i, ctx)}mm</strong> at the top, from{' '}
+                  {run.widthAtFloorMm}mm at the floor.
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <PhotoCapture
           slot="walls"
@@ -658,7 +727,7 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
               <figure key={i} className="space-y-1">
                 <OpeningPreview
                   widthAtFloorMm={run.widthAtFloorMm}
-                  widthAtTopMm={run.widthAtTopMm}
+                  widthAtTopMm={topWidthMm(m, i, ctx)}
                   heightMm={state.heightMm}
                   leftLeanMm={startLean}
                   rightLeanMm={endLean}

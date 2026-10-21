@@ -23,7 +23,7 @@ import {
   type HingePlacement,
   type PanelDeductions,
 } from '@/lib/showerCalculations';
-import { derivePlanes, openingContext, runLabelsFor, type Plane, totalRunWidthMm } from './geometry';
+import { derivePlanes, openingContext, type Plane, totalRunWidthMm } from './geometry';
 import { describeOpening, describeWidths, METHOD_LABELS } from './measure';
 import {
   CUTOUTS,
@@ -329,7 +329,7 @@ export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
   // both the numbers and how they were arrived at.
   const o = state.opening;
   const ctx = openingContext(state);
-  const rakeNotes: string[] = [describeWidths(o, runLabelsFor(state.panels, state.junctions))];
+  const rakeNotes: string[] = [describeWidths(o, ctx)];
   const condition = describeOpening(o, ctx);
   rakeNotes.push(
     condition === 'Square and level throughout.'

@@ -15,13 +15,12 @@
 /**
  * Which measurement a photo backs up, or 'extra' for a loose one.
  *
- * The width slots carry a run index, because a corner shower is measured one
- * straight run at a time and each has its own pair of widths.
+ * The width slot carries a run index, because a corner shower is measured one
+ * straight run at a time and each has its own width at the floor.
  */
 export type PhotoSlot =
   | 'height'
   | `width-floor-${number}`
-  | `width-top-${number}`
   | 'walls'
   | 'floor'
   | 'extra';
@@ -54,7 +53,6 @@ export function slotFilename(slot: PhotoSlot): string {
   const run = slotRunNumber(slot);
   const suffix = run === null ? '' : `-run${run}`;
   if (slot.startsWith('width-floor')) return `measured-width-at-floor${suffix}`;
-  if (slot.startsWith('width-top')) return `measured-width-at-top${suffix}`;
   if (slot === 'height') return 'measured-height';
   if (slot === 'walls') return 'measured-wall-lean';
   if (slot === 'floor') return 'measured-floor-level';
@@ -66,7 +64,6 @@ export function slotLabel(slot: PhotoSlot): string {
   const run = slotRunNumber(slot);
   const suffix = run === null ? '' : ` (run ${run})`;
   if (slot.startsWith('width-floor')) return `Width at the floor${suffix}`;
-  if (slot.startsWith('width-top')) return `Width at the top${suffix}`;
   if (slot === 'height') return 'Height';
   if (slot === 'walls') return 'Wall lean';
   if (slot === 'floor') return 'Floor level';
@@ -80,8 +77,7 @@ export function slotLabel(slot: PhotoSlot): string {
 export function slotSortKey(slot: PhotoSlot): number {
   const run = slotRunNumber(slot) ?? 0;
   if (slot === 'height') return 0;
-  if (slot.startsWith('width-floor')) return 1 + run * 2;
-  if (slot.startsWith('width-top')) return 2 + run * 2;
+  if (slot.startsWith('width-floor')) return 1 + run;
   if (slot === 'walls') return 1000;
   if (slot === 'floor') return 1001;
   return 2000;

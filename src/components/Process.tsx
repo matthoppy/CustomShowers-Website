@@ -1,15 +1,15 @@
 const steps = [
   {
     number: "01",
-    title: "Survey & Consultation",
+    title: "Design & Measure",
     description:
-      "We visit your site at a time that suits you. Our surveyor takes precise measurements, discusses your vision, and advises on hardware finishes and design options.",
+      "You design your enclosure online and measure your space using our step-by-step guide. It checks your figures as you enter them and tells you if anything does not add up, before a single pane is cut.",
   },
   {
     number: "02",
-    title: "Design & Quote",
+    title: "Drawings & Quote",
     description:
-      "We produce detailed technical drawings and a clear, itemised quote same day. No hidden costs — everything is specified upfront before you commit.",
+      "We turn your measurements into detailed technical drawings and a clear, itemised quote. No hidden costs — everything is specified upfront before you commit.",
   },
   {
     number: "03",

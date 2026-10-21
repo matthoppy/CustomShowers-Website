@@ -21,10 +21,10 @@ const Services = () => {
               <ClipboardCheck className="w-14 h-14 text-primary" />
             </div>
             <h3 className="text-2xl font-bold text-card-foreground mb-4">
-              Professional Survey
+              Guided Measuring
             </h3>
             <p className="text-muted-foreground leading-relaxed">
-              We offer a comprehensive on-site survey to assess your space and provide tailored recommendations for your custom frameless shower enclosure.
+              Our online designer walks you through measuring your own space, step by step with pictures, and checks your figures as you go. No appointment, no waiting in.
             </p>
           </div>
 

@@ -30,7 +30,7 @@ const faqs = [
   {
     question: "Can you work with awkward spaces like loft conversions or sloped ceilings?",
     answer:
-      "Absolutely — bespoke is what we do. We regularly work with challenging spaces including loft conversions, sloped ceilings, alcoves, and non-standard layouts. We carry out a full survey before production to ensure every enclosure fits perfectly.",
+      "Absolutely — bespoke is what we do. We regularly work with challenging spaces including loft conversions, sloped ceilings, alcoves, and non-standard layouts. Our online designer asks for the measurements an awkward space needs — how far a wall leans, where a ceiling drops — and checks them against each other before anything is made.",
   },
   {
     question: "Do you offer a warranty on your products?",
