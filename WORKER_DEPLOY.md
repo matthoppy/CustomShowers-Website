@@ -1,177 +1,138 @@
-# Worker Deployment Instructions
+# Deploying the `customshowers-design` Worker
 
-## ⚠️ IMPORTANT: DO NOT DEPLOY WITHOUT OWNER APPROVAL
+This Worker receives a completed shower design from the configurator at
+customshowers.uk/design-shower and emails it to the workshop, with the
+drawings and the customer's photos attached.
 
-The Worker code in `design-worker/worker.js` has been updated to fix CORS issues preventing preview branch testing. **However, this Worker runs in production and handles live customer enquiries**, so deployment requires owner approval.
-
----
-
-## What Changed in the Worker
-
-### Version: v5 → v6
-
-### Changes Made:
-1. **CORS configuration updated** to allow preview origins
-   - Added `*.customshowers-website-bfs.pages.dev` (preview branches)
-   - Kept `customshowers.uk` and `www.customshowers.uk` (production)
-   - Changed from wildcard `*` to origin-specific `Access-Control-Allow-Origin`
-
-2. **CORS headers now passed through all responses**
-   - Preflight OPTIONS responses
-   - Success responses (200)
-   - Error responses (400, 403, 429, 500, 502)
-   - This ensures browser allows cross-origin requests from preview URLs
-
-3. **No functional changes**
-   - Turnstile verification logic unchanged
-   - Rate limiting unchanged
-   - Email sending unchanged
-   - Honeypot detection unchanged
+It is deployed by **pasting one file into the Cloudflare dashboard**. There is
+no build step and no bundler — `design-worker/worker.js` is the whole thing.
 
 ---
 
-## Why This Is Needed
+## What is being deployed, and why it matters
 
-**Problem**: Preview branches cannot test Turnstile because the Worker rejects their requests with CORS errors.
+| | |
+| --- | --- |
+| Worker name | `customshowers-design` (exact — the configurator posts to it by name) |
+| URL | `https://customshowers-design.vcwvk4sm9m.workers.dev` |
+| File to paste | `design-worker/worker.js` from this repository |
+| Currently live | **v7** |
+| This file | **v12** |
 
-**Evidence**: 
-- Preview URL: `https://cursor-designer-fixes-5ad3.customshowers-website-bfs.pages.dev`
-- Browser shows: "We could not reach our server. Check your connection and try again."
-- Console shows: CORS preflight failed (no Access-Control-Allow-Origin header for preview origin)
+The live version is five behind. Until it is updated:
 
-**Solution**: Allow preview origins in Worker CORS config so testing can proceed before production deployment.
+- **Attachments are capped at 4.** Two of those are the plan and elevation
+  drawings, so only the first two customer photos arrive. Anything after that
+  is dropped silently — no error, no note in the email.
+- The measurement summary rows (`openingWidths`, `openingCondition`,
+  `measuredBy`) render as raw field names instead of labels.
+- Blocking issues the customer was warned about are not shown.
+- Cutout positions are missing from the panel table.
+
+Nothing breaks — v7 degrades rather than erroring — but the photos backing up
+each measurement are the point of the new flow, and most of them never arrive.
 
 ---
 
-## How to Deploy the Worker
+## Steps
 
-### Option 1: Using Wrangler CLI (Recommended)
+1. Sign in at **dash.cloudflare.com**.
+2. Left sidebar → **Compute (Workers)** → **Workers & Pages**.
+3. Open the Worker named **`customshowers-design`**.
+4. Top right → **Edit code**. A code editor opens showing the current
+   `worker.js`.
+5. Click into the editor, **select all** (Ctrl-A / Cmd-A) and **delete**.
+6. Paste the entire contents of `design-worker/worker.js` from this
+   repository. Paste all 564 lines — the file is self-contained.
+7. Top right → **Deploy**. Confirm when prompted.
 
-```bash
-# Navigate to worker directory
-cd design-worker
+### Check it took
 
-# Deploy to production
-npx wrangler deploy
+Open this in a browser:
+
+```
+https://customshowers-design.vcwvk4sm9m.workers.dev
 ```
 
-### Option 2: Via Cloudflare Dashboard
+It should answer:
 
-1. Go to **Workers & Pages** in Cloudflare Dashboard
-2. Select `customshowers-design` worker
-3. Click **Quick Edit** or **Edit Code**
-4. Copy contents of `design-worker/worker.js` into the editor
-5. Click **Save and Deploy**
-
-### Option 3: Using wrangler.toml configuration
-
-If `wrangler.toml` exists in `design-worker/`:
-
-```bash
-cd design-worker
-npx wrangler deploy
 ```
+customshowers-design v12 — this endpoint only accepts POST from the configurator.
+```
+
+A **405 Method Not Allowed** page showing **v12** is the correct, healthy
+response — the Worker only accepts POST from the configurator, and the version
+string is there precisely so a browser visit confirms which paste is live.
+
+If it still says **v7**, the deploy did not take. Repeat from step 4.
 
 ---
 
-## Verification After Deploy
+## Do not touch the secrets
 
-### 1. Check Worker Version
-```bash
-curl https://customshowers-design.ACCOUNT.workers.dev
-# Should show: customshowers-design v6 — this endpoint only accepts POST from the configurator.
-```
+The Worker already has these set, and they are **not** in the file:
 
-### 2. Test CORS from Preview Branch
-Open browser DevTools on preview URL and run:
-```javascript
-fetch('https://customshowers-design.ACCOUNT.workers.dev', {
-  method: 'OPTIONS',
-  headers: { 'Origin': 'https://cursor-designer-fixes-5ad3.customshowers-website-bfs.pages.dev' }
-}).then(r => console.log('CORS headers:', r.headers.get('access-control-allow-origin')));
-// Should return: https://cursor-designer-fixes-5ad3.customshowers-website-bfs.pages.dev
-```
+| Variable | Purpose |
+| --- | --- |
+| `RESEND_API_KEY` | Sends the email. Without it every enquiry fails. |
+| `TURNSTILE_SECRET_KEY` | Pairs with the site key in `src/configurator/tenant.ts`. |
+| `BUSINESS_EMAIL` | Optional. Defaults to sales@customshowers.uk. |
+| `FROM_EMAIL` | Optional. Defaults to noreply@customshowers.uk. |
 
-### 3. Test Production Still Works
-Navigate to `https://customshowers.uk/design-shower` and verify:
-- Page loads without errors
-- Turnstile widget attempts to load
-- No new console errors related to Worker
+Pasting the code does not affect them. **Do not delete and recreate the
+Worker** — that loses the secrets, and the Turnstile key in particular must be
+the exact pair of the site key the page uses, or every submission is rejected
+with "Security check failed".
 
 ---
 
-## Rollback Plan
+## Alternative: command line
 
-If the deployment causes issues:
+If wrangler is set up and authenticated against the right Cloudflare account:
 
-### Quick Rollback via Cloudflare Dashboard:
-1. Go to **Workers & Pages** → `customshowers-design`
-2. Click **Deployments** tab
-3. Find the previous deployment (v5)
-4. Click **...** → **Rollback to this deployment**
-
-### Or revert the code:
 ```bash
 cd design-worker
-git checkout HEAD~1 worker.js
 npx wrangler deploy
 ```
 
----
-
-## Environment Variables (No Changes Required)
-
-The Worker requires these secrets (already configured):
-- `RESEND_API_KEY` - Required for sending emails
-- `TURNSTILE_SECRET_KEY` - Required for verifying Turnstile tokens
-- `BUSINESS_EMAIL` - Optional, defaults to sales@customshowers.uk
-- `FROM_EMAIL` - Optional, defaults to noreply@customshowers.uk
-
-**These do NOT need to be changed** - CORS fix is code-only.
+`wrangler.toml` already names the Worker and sets the compatibility date.
+Secrets are untouched by a deploy.
 
 ---
 
-## Testing Checklist After Deploy
+## Afterwards: send one real enquiry
 
-- [ ] Worker version shows v6 when visiting endpoint directly
-- [ ] Production site (customshowers.uk) still accepts form submissions
-- [ ] Preview branch can now POST to Worker without CORS errors
-- [ ] Turnstile tokens are verified server-side (check Worker logs)
-- [ ] Rate limiting still works (test with multiple rapid submissions)
-- [ ] Emails arrive at business inbox and customer inbox
-- [ ] No new errors in Worker logs
+Worth doing from a phone, because the photo capture opens the rear camera and
+that path cannot be tested on a desktop.
 
----
+1. Go to **customshowers.uk/design-shower**.
+2. Pick a shape, work through the **Measure** step, attach a photo at one or
+   two of the measurements.
+3. Fill in your own name and email, and send it.
 
-## Deploy Command Summary
+Then check **sales@customshowers.uk**. The email should contain:
 
-**To deploy the updated Worker code:**
+- A **Configuration** table including *Opening measured*, *Walls and floor*
+  and *Checked with* — as labels, not as `openingWidths`.
+- A **panel schedule** with cut sizes, hinge counts and cutout positions.
+- Attachments named for what they show: `plan-view.png`,
+  `elevation-view.png`, then `measured-height.jpg`,
+  `measured-width-at-floor-run1.jpg`, `measured-wall-lean.jpg` and so on.
 
-```bash
-cd /workspace/design-worker
-npx wrangler deploy
-```
-
-**⚠️ Only run this command after owner approval.**
-
----
-
-## Contact
-
-If deployment issues occur:
-1. Check Cloudflare Worker logs in Dashboard
-2. Verify all environment variables are set
-3. Test with a known-good request payload
-4. Roll back to v5 if problems persist
+If the labels are right but the photos are missing, the paste did not take —
+check the version string again.
 
 ---
 
-## Additional Notes
+## If something goes wrong
 
-- The CORS change is **additive** (adds preview origins, keeps production)
-- The Worker endpoint URL remains unchanged
-- No database or secret changes required
-- Zero downtime deployment (Cloudflare handles this automatically)
-- Previous deployments remain available for rollback
+The Worker names its own faults rather than returning a generic error.
 
-**The Worker code in this repository is ready to deploy.** It has been tested in the build pipeline and the syntax is valid. The only step remaining is the actual Cloudflare Workers deployment command.
+| What the browser shows | What it means |
+| --- | --- |
+| `Could not send the email. The RESEND_API_KEY on this worker is missing or wrong.` | Resend rejected the key. |
+| `Resend refused the sender address...` | The domain in `FROM_EMAIL` is not verified in Resend. |
+| `Security check failed. The TURNSTILE_SECRET_KEY on this worker does not match the site key...` | The secret and the site key are from different Turnstile widgets. They only work as the pair Turnstile issued. |
+| `Too many designs sent from here just now.` | Rate limit: 5 per IP per 10 minutes. Expected while testing — wait it out. |
+
+Live logs: Worker → **Logs** → **Begin log stream**, then submit an enquiry.

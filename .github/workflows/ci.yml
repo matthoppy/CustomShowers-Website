@@ -1,0 +1,40 @@
+# Build check on every pull request.
+#
+# Until now the only thing standing between a broken build and main was a
+# Netlify deploy preview attached to a host the site no longer uses. This
+# replaces it with something that does not depend on a hosting provider.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      # The real gate: if this fails, the site does not deploy.
+      - name: Build
+        run: npm run build
+
+      # Lint is scoped to the configurator rather than the whole repo. Running
+      # it everywhere reports 40 pre-existing errors in the admin and Supabase
+      # pages, and a check that is red on arrival teaches people to ignore it.
+      # Widen this as those are cleared.
+      - name: Lint the configurator
+        run: npx eslint src/configurator
+
+      # The worker is pasted into Cloudflare by hand, so a syntax error in it
+      # would not surface until an enquiry failed in production.
+      - name: Check the worker parses
+        run: node --check design-worker/worker.js
