@@ -16,7 +16,7 @@
  */
 
 /** Bump when the code changes, so a browser visit shows which paste is live. */
-const WORKER_VERSION = "v7";
+const WORKER_VERSION = "v8";
 
 /**
  * CORS configuration. Allow production domain and Cloudflare Pages preview origins.
@@ -353,24 +353,36 @@ function buildSpecTable(panels) {
     .map((p) => {
       const detail = [];
       if (p.door) {
+        const count = p.door.hingeCount ? `${esc(p.door.hingeCount)} × ` : "";
         detail.push(
-          `${esc(p.door.hingeBrand)} hinges, ${esc(p.door.hingeSide)} hand`,
+          `${count}${esc(p.door.hingeBrand)} hinges, ${esc(p.door.hingeSide)} hand`,
           `opens ${p.door.swing === "both" ? "both ways" : "outwards only"}`,
           esc(p.door.sealType)
         );
-        if (p.door.hingePlacement?.bottomHingeOffset) {
-          detail.push(`hinges ${esc(p.door.hingePlacement.bottomHingeOffset)}mm from each edge`);
+        if (p.door.hingeHeightsMm?.length) {
+          detail.push(
+            `hinge centres ${p.door.hingeHeightsMm.map(esc).join(" / ")}mm from the bottom`
+          );
         }
       }
       for (const n of p.notches || []) {
         detail.push(`notch ${esc(n.corner)} ${esc(n.widthMm)}×${esc(n.heightMm)}mm`);
       }
+      // Cutouts carry their own height, so they are listed rather than folded
+      // into the run-on detail line — the workshop reads these one at a time.
+      const cutouts = (p.cutouts || [])
+        .map((c) => `<div>${esc(c.description)} — ${esc(c.heightMm)}mm, ${esc(c.edge)}</div>`)
+        .join("");
 
       return `
         <tr>
           <td ${TD}><strong>${esc(p.label)}</strong>${
             detail.length
               ? `<div style="color:#64748b;font-size:12px;margin-top:4px;">${detail.join(" · ")}</div>`
+              : ""
+          }${
+            cutouts
+              ? `<div style="color:#64748b;font-size:12px;margin-top:4px;">${cutouts}</div>`
               : ""
           }</td>
           <td ${TD} align="right">${esc(p.tightWidthMm)} × ${esc(p.tightHeightMm)}</td>
@@ -396,12 +408,25 @@ function buildSpecTable(panels) {
 
 function businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast, challengeSkipped, antispam, mailAttachments }) {
   const warnings = spec?.warnings || [];
+  const blockingIssues = spec?.blockingIssues || [];
   const rakeNotes = spec?.rakeNotes || [];
 
   return `
     <div style="font-family:Arial,sans-serif;max-width:680px;margin:0 auto;color:#0f172a;">
       <h2 style="margin:0 0 4px;">New shower design</h2>
       <p style="margin:0 0 20px;color:#64748b;">Sent from the online configurator.</p>
+
+      ${
+        blockingIssues.length
+          ? `<div style="margin:0 0 20px;padding:12px 14px;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;color:#991b1b;font-size:13px;">
+               <strong>Cannot be made as drawn.</strong> The customer was told this and sent it anyway,
+               so they are expecting an alternative:
+               <ul style="margin:8px 0 0;padding-left:18px;">
+                 ${blockingIssues.map((w) => `<li>${esc(w)}</li>`).join("")}
+               </ul>
+             </div>`
+          : ""
+      }
 
       ${
         tooFast

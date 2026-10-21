@@ -12,6 +12,7 @@ import {
     selectHingeBrand,
     HINGE_LIMITS
 } from '@/types/square';
+import { cornerButtDeductionMm, selectHinge } from '@/configurator/rules';
 
 // ============================================================================
 // CONSTANTS
@@ -32,25 +33,25 @@ export const CLAMP_DEDUCTION_MM = 3;
 // Corner/Joint Deductions
 export const SILICONE_GAP_MM = 2;
 export const CHANNEL_THICKNESS_MM = 1;
-export const CORNER_LONG_PANEL_DEDUCTION_MM = 1;   // Channel thickness only
-export const CORNER_SHORT_PANEL_DEDUCTION_MM = 13; // 2mm silicone + 10mm glass + 1mm channel
+// At a 90° butt joint the run carrying the door passes through to the outside
+// corner and loses nothing; the return tucks in behind it and loses the full
+// glass thickness plus the silicone joint. See configurator/rules.ts.
+export const CORNER_LONG_PANEL_DEDUCTION_MM = 0;
 
 // Door Deductions
 export const DOOR_BI_SWING_DEDUCTION_MM = 9;   // With bubble seal
 export const DOOR_OUT_ONLY_DEDUCTION_MM = 5;   // With 90° stopper seal
 
 // Hinge Placement
-export const HINGE_CUTOUT_HEIGHT_MM = 60;
-export const HINGE_MIN_EDGE_OFFSET_MM = 230;
-export const HINGE_MAX_EDGE_OFFSET_MM = 300;
+export const HINGE_CUTOUT_HEIGHT_MM = 47;      // Edge notch 58 × 47 r8
+export const HINGE_EDGE_OFFSET_MM = 250;       // From each end of the door glass
 export const HINGE_MIN_CLEAR_GAP_MM = 400;
 
 // Handle Placement
-export const HANDLE_EDGE_CLEARANCE_MM = 75;
+export const HANDLE_EDGE_CLEARANCE_MM = 76;    // Hole centre in from the edge
 export const HANDLE_HOLE_SPACING_MM = 203;     // 8 inch
-export const HANDLE_HOLE_DIAMETER_MM = 70;
+export const HANDLE_HOLE_DIAMETER_MM = 12;
 export const KNOB_CENTER_TARGET_MM = 950;
-export const HANDLE_BOTTOM_TARGET_MM = 850;
 
 // Support Structures
 export const SUPPORT_PANEL_HEAD_DEDUCTION_MM = 4;
@@ -153,7 +154,8 @@ export function calculateHorizontalDeductions(
     hasRightWallChannel: boolean,
     isLongPanel: boolean,  // At corner: front panel is "long", return is "short"
     hasLeftCorner: boolean,
-    hasRightCorner: boolean
+    hasRightCorner: boolean,
+    glassThicknessMm: GlassThickness = GLASS_THICKNESS_MM as GlassThickness
 ): HorizontalDeductions {
     const breakdown: string[] = [];
     let left = 0;
@@ -181,16 +183,23 @@ export function calculateHorizontalDeductions(
         }
     }
 
-    // Corner deductions
+    // Corner deductions. The run carrying the door passes through to the
+    // outside corner and loses nothing; the return butts in behind it and
+    // loses the glass thickness plus the silicone joint.
+    const cornerDeduction = isLongPanel
+        ? CORNER_LONG_PANEL_DEDUCTION_MM
+        : cornerButtDeductionMm(glassThicknessMm);
     if (hasLeftCorner) {
-        const deduction = isLongPanel ? CORNER_LONG_PANEL_DEDUCTION_MM : CORNER_SHORT_PANEL_DEDUCTION_MM;
-        left += deduction;
-        breakdown.push(`Left corner (${isLongPanel ? 'long' : 'short'}): -${deduction}mm`);
+        left += cornerDeduction;
+        breakdown.push(
+            `Left corner (${isLongPanel ? 'runs through' : 'butts behind'}): -${cornerDeduction}mm`
+        );
     }
     if (hasRightCorner) {
-        const deduction = isLongPanel ? CORNER_LONG_PANEL_DEDUCTION_MM : CORNER_SHORT_PANEL_DEDUCTION_MM;
-        right += deduction;
-        breakdown.push(`Right corner (${isLongPanel ? 'long' : 'short'}): -${deduction}mm`);
+        right += cornerDeduction;
+        breakdown.push(
+            `Right corner (${isLongPanel ? 'runs through' : 'butts behind'}): -${cornerDeduction}mm`
+        );
     }
 
     return {
@@ -234,6 +243,7 @@ export function calculatePanelDeductions(
         isLongPanel: boolean;
         hasLeftCorner: boolean;
         hasRightCorner: boolean;
+        glassThicknessMm?: GlassThickness;
     } = { isLongPanel: true, hasLeftCorner: false, hasRightCorner: false }
 ): PanelDeductions {
     const vertical = calculateVerticalDeductions(
@@ -250,7 +260,8 @@ export function calculatePanelDeductions(
         panel.wall_fix.right,
         cornerConfig.isLongPanel,
         cornerConfig.hasLeftCorner,
-        cornerConfig.hasRightCorner
+        cornerConfig.hasRightCorner,
+        cornerConfig.glassThicknessMm
     );
 
     return {
@@ -274,16 +285,15 @@ export interface HingePlacement {
 
 /**
  * Calculate hinge placement (edge-based, 2-hinge system)
- * 
- * Target: 14% of height from each edge, clamped to 230-300mm
- * Hinge cutout height: 60mm
+ *
+ * Hinges sit a fixed 250mm from the top and bottom of the door glass — not a
+ * percentage of the height. Confirmed against CRL's own designer: a 1990mm
+ * door and a 2290mm door both place their hinges at 250mm.
+ *
+ * Hinge cutout: edge notch 58 × 47 r8.
  */
 export function calculateHingePlacement(glassHeightMm: number): HingePlacement {
-    // Calculate 14% offset
-    let offset = Math.round(glassHeightMm * 0.14);
-
-    // Clamp to valid range
-    offset = Math.max(HINGE_MIN_EDGE_OFFSET_MM, Math.min(HINGE_MAX_EDGE_OFFSET_MM, offset));
+    const offset = HINGE_EDGE_OFFSET_MM;
 
     // Calculate clear gap between hinges
     const clearGap = glassHeightMm - (2 * offset) - (2 * (HINGE_CUTOUT_HEIGHT_MM / 2));
@@ -314,22 +324,25 @@ export interface HandlePlacement {
 }
 
 /**
- * Calculate handle placement (centre-based for knobs, bottom for pull handles)
+ * Calculate handle placement.
+ *
+ * A pull handle is centred vertically on the leaf — its two Ø12 holes sit
+ * 203mm apart, straddling the centre, 76mm in from the handle edge. On a
+ * 1990mm door that puts them at 893.5mm and 1096.5mm.
+ *
+ * A knob keeps its fixed 950mm height, which is a comfortable grab height
+ * regardless of how tall the door is.
  */
 export function calculateHandlePlacement(
     glassHeightMm: number,
     handleType: 'knob' | 'pull_handle',
     hingePlacement: HingePlacement
 ): HandlePlacement {
-    let targetHeight: number;
-
-    if (handleType === 'knob') {
-        // Knob: center at 950mm from bottom
-        targetHeight = KNOB_CENTER_TARGET_MM;
-    } else {
-        // Pull handle: bottom at 850mm from bottom
-        targetHeight = HANDLE_BOTTOM_TARGET_MM;
-    }
+    // Handle extent, measured from the bottom of the glass.
+    const centre = handleType === 'knob' ? KNOB_CENTER_TARGET_MM : glassHeightMm / 2;
+    const halfSpan = handleType === 'knob' ? 25 : HANDLE_HOLE_SPACING_MM / 2;
+    const handleBottom = centre - halfSpan;
+    const handleTop = centre + halfSpan;
 
     // Check for interference with hinges
     const bottomHingeTop = hingePlacement.bottomHingeOffset + (HINGE_CUTOUT_HEIGHT_MM / 2);
@@ -338,18 +351,13 @@ export function calculateHandlePlacement(
     let warning: string | null = null;
     let isValid = true;
 
-    // Handle extends from targetHeight to targetHeight + HANDLE_HOLE_SPACING_MM (for pull handle)
-    const handleTop = handleType === 'pull_handle'
-        ? targetHeight + HANDLE_HOLE_SPACING_MM
-        : targetHeight + 25; // knob radius
-
-    if (targetHeight < bottomHingeTop + 50 || handleTop > topHingeBottom - 50) {
+    if (handleBottom < bottomHingeTop + 50 || handleTop > topHingeBottom - 50) {
         warning = 'Handle position may conflict with hinge location';
         isValid = false;
     }
 
     return {
-        handleHeight: targetHeight,
+        handleHeight: Math.round(centre * 10) / 10,
         edgeClearance: HANDLE_EDGE_CLEARANCE_MM,
         isValid,
         warning
@@ -430,45 +438,33 @@ export function checkSupportRequirements(
 // ============================================================================
 
 export interface HingeSelection {
-    brand: HingeBrand;
+    brand: string;
+    /** How many hinges the rating assumes — a third hinge raises the limits. */
+    hingeCount: number;
+    weightKg: number;
     isAutoSelected: boolean;
-    isUpgrade: boolean;
     reason: string;
-    warning: string | null;
+    warnings: string[];
 }
 
 /**
- * Select appropriate hinge brand based on door dimensions
+ * Select appropriate hinge hardware based on door dimensions.
+ *
+ * The real limits — and the fact that a third hinge changes them — live in
+ * configurator/rules.ts alongside the rest of the confirmed CRL data.
  */
 export function selectHingeForDoor(
     doorWidthMm: number,
     doorHeightMm: number,
     glassThickness: GlassThickness = 10
 ): HingeSelection {
-    const weight = calculateGlassWeight(doorWidthMm, doorHeightMm, glassThickness);
-    const brand = selectHingeBrand(doorWidthMm, weight);
-
-    let isUpgrade = brand !== 'geneva';
-    let reason = '';
-    let warning: string | null = null;
-
-    if (brand === 'geneva') {
-        reason = 'Standard Geneva hinge sufficient';
-    } else if (brand === 'vienna') {
-        reason = `Door size requires Vienna (${doorWidthMm}mm width or ${weight}kg weight exceeds Geneva limits)`;
-    } else if (brand === 'bellagio') {
-        reason = `Door size requires Bellagio (${doorWidthMm}mm width or ${weight}kg weight exceeds Vienna limits)`;
-
-        if (doorWidthMm > HINGE_LIMITS.bellagio.maxWidth || weight > HINGE_LIMITS.bellagio.maxWeight) {
-            warning = `Door exceeds maximum hinge capacity (${HINGE_LIMITS.bellagio.maxWidth}mm / ${HINGE_LIMITS.bellagio.maxWeight}kg)`;
-        }
-    }
-
+    const picked = selectHinge(doorWidthMm, doorHeightMm, glassThickness);
     return {
-        brand,
+        brand: picked.kitName,
+        hingeCount: picked.hingeCount,
+        weightKg: picked.weightKg,
         isAutoSelected: true,
-        isUpgrade,
-        reason,
-        warning
+        reason: picked.reason,
+        warnings: picked.warnings
     };
 }

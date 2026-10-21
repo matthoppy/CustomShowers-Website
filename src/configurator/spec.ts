@@ -23,8 +23,18 @@ import {
   type HingePlacement,
   type PanelDeductions,
 } from '@/lib/showerCalculations';
-import { calculateGlassWeight } from '@/types/square';
 import { derivePlanes, type Plane, totalRunWidthMm } from './geometry';
+import {
+  CUTOUTS,
+  checkDoorLimits,
+  checkGlassSpec,
+  checkPanelLimits,
+  glassWeightKg,
+  handleHoleHeightsMm,
+  hingeHeightsMm,
+  mateNotchHeightMm,
+  type LimitCheck,
+} from './rules';
 import type { ConfiguratorState } from './types';
 
 export interface PanelSpec {
@@ -41,6 +51,17 @@ export interface PanelSpec {
   weightKg: number;
   deductions: PanelDeductions;
   notches: { corner: string; widthMm: number; heightMm: number }[];
+  /**
+   * Where the holes and notches go, measured from the glass edges. The
+   * workshop cuts from these, so they travel with the panel rather than
+   * being re-derived at the far end.
+   */
+  cutouts: {
+    description: string;
+    /** Height above the bottom edge of this panel's glass. */
+    heightMm: number;
+    edge: 'hinge side' | 'handle side';
+  }[];
   /** Door-only. */
   door?: {
     hingeSide: 'left' | 'right';
@@ -48,9 +69,13 @@ export interface PanelSpec {
     sealType: string;
     swingDeductionMm: number;
     hingeBrand: string;
+    hingeCount: number;
     hingeReason: string;
+    /** Hinge centres above the bottom of the door glass. */
+    hingeHeightsMm: number[];
     hingePlacement: HingePlacement;
     handlePlacement: HandlePlacement;
+    handleHoleHeightsMm: { lowerMm: number; upperMm: number };
   };
 }
 
@@ -68,6 +93,13 @@ export interface ConfiguratorSpec {
   support: ReturnType<typeof checkSupportRequirements>;
   rakeNotes: string[];
   warnings: string[];
+  /**
+   * Things that stop the job rather than merely flag it — a door too wide for
+   * any hinge we hang, a panel too narrow to fabricate. Kept apart from
+   * warnings so the review screen can say "we can't build this as drawn"
+   * rather than burying it in a list the customer scrolls past.
+   */
+  blockingIssues: string[];
 }
 
 /** Bridge the configurator's panel shape into the fabrication library's. */
@@ -120,6 +152,17 @@ export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
   const support = checkSupportRequirements(panelModels, state.junctions.some((j) => j.angle_deg === 90));
 
   const warnings: string[] = [];
+  const blockingIssues: string[] = [];
+
+  /** Route a limit check to the right list, prefixed with the panel it is about. */
+  const record = (label: string, checks: LimitCheck[]) => {
+    for (const c of checks) {
+      (c.severity === 'blocking' ? blockingIssues : warnings).push(`${label}: ${c.message}`);
+    }
+  };
+
+  record('Glass', checkGlassSpec(state.glassThicknessMm));
+
   const panels: PanelSpec[] = state.panels.map((p, i) => {
     const plane = planes[i];
     const model = panelModels[i];
@@ -139,6 +182,7 @@ export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
         isLongPanel: plane === 'front' || plane === 'back',
         hasLeftCorner,
         hasRightCorner,
+        glassThicknessMm: state.glassThicknessMm,
       }
     );
 
@@ -159,9 +203,10 @@ export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
       tightHeightMm: state.heightMm,
       cutWidthMm: deductions.cutWidth,
       cutHeightMm: deductions.cutHeight,
-      weightKg: calculateGlassWeight(deductions.cutWidth, deductions.cutHeight, state.glassThicknessMm),
+      weightKg: glassWeightKg(deductions.cutWidth, deductions.cutHeight, state.glassThicknessMm),
       deductions,
       notches,
+      cutouts: [],
     };
 
     if (p.kind === 'door' && p.door) {
@@ -169,13 +214,24 @@ export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
         p.door.swing === 'both' ? 'bi-swing' : 'out-only',
         p.door.hinge_side
       );
-      const hinge = selectHingeForDoor(deductions.cutWidth, deductions.cutHeight, state.glassThicknessMm);
-      const hingePlacement = calculateHingePlacement(deductions.cutHeight);
+
+      // The swing deduction comes off the door leaf on top of the mounting
+      // deductions already applied above. Everything that follows is sized
+      // against the finished leaf, so it has to happen first — picking a
+      // hinge against the pre-deduction width is how a door ends up on
+      // hardware a few millimetres under-rated.
+      spec.cutWidthMm -= doorDeduction.deduction;
+      spec.weightKg = glassWeightKg(spec.cutWidthMm, spec.cutHeightMm, state.glassThicknessMm);
+
+      const hinge = selectHingeForDoor(spec.cutWidthMm, spec.cutHeightMm, state.glassThicknessMm);
+      const hingePlacement = calculateHingePlacement(spec.cutHeightMm);
       const handlePlacement = calculateHandlePlacement(
-        deductions.cutHeight,
+        spec.cutHeightMm,
         state.handleId === 'knob' ? 'knob' : 'pull_handle',
         hingePlacement
       );
+      const hingeHeights = hingeHeightsMm(spec.cutHeightMm, hinge.hingeCount);
+      const handleHoles = handleHoleHeightsMm(spec.cutHeightMm);
 
       spec.door = {
         hingeSide: p.door.hinge_side,
@@ -183,26 +239,81 @@ export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
         sealType: doorDeduction.sealType,
         swingDeductionMm: doorDeduction.deduction,
         hingeBrand: hinge.brand,
+        hingeCount: hinge.hingeCount,
         hingeReason: hinge.reason,
+        hingeHeightsMm: hingeHeights,
         hingePlacement,
         handlePlacement,
+        handleHoleHeightsMm: { lowerMm: handleHoles.lowerMm, upperMm: handleHoles.upperMm },
       };
 
-      // The swing deduction comes off the door leaf on top of the mounting
-      // deductions already applied above.
-      spec.cutWidthMm -= doorDeduction.deduction;
-      spec.weightKg = calculateGlassWeight(spec.cutWidthMm, spec.cutHeightMm, state.glassThicknessMm);
+      for (const h of hingeHeights) {
+        spec.cutouts.push({
+          description: `Hinge notch ${CUTOUTS.doorHingeNotch.widthMm} × ${CUTOUTS.doorHingeNotch.heightMm}, r${CUTOUTS.doorHingeNotch.radiusMm}`,
+          heightMm: h,
+          edge: 'hinge side',
+        });
+      }
+      if (state.handleId !== 'knob') {
+        for (const h of [handleHoles.lowerMm, handleHoles.upperMm]) {
+          spec.cutouts.push({
+            description: `Handle hole Ø${CUTOUTS.handleHole.diameterMm}, ${CUTOUTS.handleHole.insetMm}mm in from the edge`,
+            heightMm: h,
+            edge: 'handle side',
+          });
+        }
+      }
 
-      if (hinge.warning) warnings.push(`${spec.label}: ${hinge.warning}`);
+      for (const w of hinge.warnings) warnings.push(`${spec.label}: ${w}`);
       if (hingePlacement.warning) warnings.push(`${spec.label}: ${hingePlacement.warning}`);
       if (handlePlacement.warning) warnings.push(`${spec.label}: ${handlePlacement.warning}`);
+      record(spec.label, checkDoorLimits(spec.cutWidthMm, spec.cutHeightMm));
     }
+
+    record(
+      spec.label,
+      checkPanelLimits(
+        spec.cutWidthMm,
+        spec.cutHeightMm,
+        state.glassThicknessMm,
+        spec.cutouts.length > 0 || notches.length > 0
+      )
+    );
 
     if (spec.cutWidthMm <= 0 || spec.cutHeightMm <= 0) {
       warnings.push(`${spec.label}: deductions exceed the measured size — check the measurements.`);
     }
 
     return spec;
+  });
+
+  // Second pass: mating hinge notches in the fixed panel beside a door.
+  //
+  // These can only be worked out once every panel's bottom gap is known,
+  // because the notch is set at the door hinge's height *above the floor*,
+  // not at the same number measured from the fixed panel's own edge. The two
+  // panels sit on different gaps — a door 10mm clear of the floor beside a
+  // panel in a 7mm channel — so matching the printed numbers would put the
+  // hinge leaves 3mm out of line.
+  panels.forEach((doorSpec, i) => {
+    if (!doorSpec.door) return;
+    const neighbourIndex = doorSpec.door.hingeSide === 'left' ? i - 1 : i + 1;
+    const neighbour = panels[neighbourIndex];
+    // No neighbour means the door hangs off the wall on a wall-to-glass
+    // hinge, which needs no glass processing on the other side.
+    if (!neighbour || neighbour.kind !== 'fixed') return;
+
+    for (const h of doorSpec.door.hingeHeightsMm) {
+      neighbour.cutouts.push({
+        description: `Hinge notch ${CUTOUTS.fixedHingeNotch.widthMm} × ${CUTOUTS.fixedHingeNotch.heightMm}, r${CUTOUTS.fixedHingeNotch.radiusMm} — mates with ${doorSpec.label}`,
+        heightMm: mateNotchHeightMm(
+          h,
+          doorSpec.deductions.vertical.bottom,
+          neighbour.deductions.vertical.bottom
+        ),
+        edge: doorSpec.door.hingeSide === 'left' ? 'handle side' : 'hinge side',
+      });
+    }
   });
 
   // The channel runs along the bottom of every panel, and up the height of
@@ -279,5 +390,6 @@ export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
     support,
     rakeNotes,
     warnings,
+    blockingIssues,
   };
 }

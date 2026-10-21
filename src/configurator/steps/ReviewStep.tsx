@@ -297,15 +297,19 @@ export function ReviewStep({
                 <div className="mt-2 rounded bg-muted/50 px-3 py-2 text-xs">
                   <div className="flex justify-between">
                     <span>Hinges</span>
-                    <span className="font-medium capitalize">
-                      {p.door.hingeBrand} · {p.door.hingeSide} hand
+                    <span className="font-medium">
+                      {p.door.hingeCount} × {p.door.hingeBrand} · {p.door.hingeSide} hand
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Hinge offsets</span>
+                    <span>Hinge centres</span>
                     <span className="font-mono">
-                      {p.door.hingePlacement.bottomHingeOffset}mm from each edge
+                      {p.door.hingeHeightsMm.join(' / ')}mm from the bottom
                     </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Handle centre</span>
+                    <span className="font-mono">{p.door.handlePlacement.handleHeight}mm</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Opens</span>
@@ -324,6 +328,20 @@ export function ReviewStep({
                   {p.notches
                     .map((n) => `${n.corner.toLowerCase()} ${n.widthMm}×${n.heightMm}mm`)
                     .join(', ')}
+                </div>
+              )}
+
+              {p.cutouts.length > 0 && (
+                <div className="mt-2 space-y-0.5 text-xs text-muted-foreground">
+                  <div className="font-medium text-foreground/70">Cutouts</div>
+                  {p.cutouts.map((c) => (
+                    <div key={`${c.description}-${c.heightMm}`} className="flex justify-between gap-3">
+                      <span>{c.description}</span>
+                      <span className="shrink-0 font-mono">
+                        {c.heightMm}mm · {c.edge}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -365,6 +383,27 @@ export function ReviewStep({
             {spec.rakeNotes.map((n) => (
               <div key={n}>{n}</div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Blocking issues come before warnings and read differently: these are
+          not "worth checking", they are "we cannot build this as drawn". */}
+      {spec.blockingIssues.length > 0 && (
+        <div className="flex gap-3 rounded-lg border border-red-300 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950/40">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+          <div className="space-y-1 text-sm">
+            <div className="font-semibold text-red-900 dark:text-red-200">
+              This needs changing before we can make it
+            </div>
+            {spec.blockingIssues.map((w) => (
+              <div key={w} className="text-red-800 dark:text-red-300">
+                {w}
+              </div>
+            ))}
+            <div className="pt-1 text-red-800/80 dark:text-red-300/80">
+              Send it anyway if you like — we will come back with an alternative that works.
+            </div>
           </div>
         </div>
       )}
