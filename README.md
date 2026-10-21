@@ -39,10 +39,14 @@ A complete e-commerce platform for custom frameless glass shower enclosures with
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Session-based admin auth
 - **Payments**: Stripe (UK/GBP)
-- **Email**: Resend via Supabase Edge Functions
+- **Email**: Resend, called from a Cloudflare Worker
 - **Routing**: React Router
 - **State Management**: React Context API
-- **Deployment**: Netlify (frontend) + Supabase (backend)
+- **Deployment**: Cloudflare Pages (site) + Cloudflare Workers (enquiry handler)
+
+> The site moved off Netlify to Cloudflare Pages — see `CLOUDFLARE-DEPLOY.md`.
+> The shower configurator does **not** use Supabase: its enquiries go to the
+> `customshowers-design` Worker, which calls Resend directly.
 
 ## Project Structure
 
@@ -76,7 +80,7 @@ A complete e-commerce platform for custom frameless glass shower enclosures with
 │       ├── create-checkout-session/
 │       └── stripe-webhook/
 ├── public/                # Static assets
-└── netlify.toml          # Netlify configuration
+└── design-worker/         # Cloudflare Worker handling configurator enquiries
 ```
 
 ## Shower configurator
