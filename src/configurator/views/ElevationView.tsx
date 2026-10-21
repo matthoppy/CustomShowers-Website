@@ -13,10 +13,13 @@
 
 import { useMemo } from 'react';
 import {
+  HANDLE_HOLE_SPACING_MM,
   HINGE_CUTOUT_HEIGHT_MM,
+  KNOB_CENTER_TARGET_MM,
   calculateHingePlacement,
 } from '@/lib/showerCalculations';
 import { derivePlanes } from '../geometry';
+import { handleHoleHeightsMm } from '../rules';
 import type { ConfiguratorJunction, ConfiguratorPanel } from '../types';
 
 interface ElevationViewProps {
@@ -141,21 +144,22 @@ export function ElevationView({
                 />
               ))}
 
-            {/* Handle on the opposite edge to the hinges. */}
+            {/* Handle on the opposite edge to the hinges. A pull handle is
+                centred on the leaf; a knob keeps a fixed grab height. */}
             {isDoor &&
               (handleId === 'knob' ? (
                 <circle
                   cx={hingeOnLeft ? x + wPx - 22 : x + 22}
-                  cy={baselineY - 950 * scale}
+                  cy={baselineY - KNOB_CENTER_TARGET_MM * scale}
                   r={5}
                   fill={finishColor}
                 />
               ) : (
                 <rect
                   x={hingeOnLeft ? x + wPx - 25 : x + 20}
-                  y={baselineY - (850 + 203) * scale}
+                  y={baselineY - handleHoleHeightsMm(heightMm).upperMm * scale}
                   width={5}
-                  height={Math.max(6, 203 * scale)}
+                  height={Math.max(6, HANDLE_HOLE_SPACING_MM * scale)}
                   rx={2.5}
                   fill={finishColor}
                 />

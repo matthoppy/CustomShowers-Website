@@ -11,6 +11,9 @@
  */
 
 import type { GlassThickness } from '@/types/square';
+import { createOpeningMeasurements, type OpeningMeasurements } from './measure';
+
+export type { OpeningMeasurements };
 
 export type PanelKind = 'fixed' | 'door';
 
@@ -48,14 +51,6 @@ export interface ConfiguratorJunction {
   angle_deg: 90 | 180;
 }
 
-export type RakeDirection = 'none' | 'left' | 'right';
-export type WallRakeDirection = 'none' | 'in' | 'out';
-
-export interface Rakes {
-  floor: { amount_mm: number; direction: RakeDirection };
-  leftWall: { amount_mm: number; direction: WallRakeDirection };
-  rightWall: { amount_mm: number; direction: WallRakeDirection };
-}
 
 export interface ConfiguratorState {
   panels: ConfiguratorPanel[];
@@ -72,7 +67,12 @@ export interface ConfiguratorState {
   /** Keys into the tenant's hardware catalog. */
   finishId: string;
   handleId: string;
-  rakes: Rakes;
+  /**
+   * What the customer measured in their own bathroom. These are the numbers
+   * the glass is cut to — there is no site survey — so they carry more weight
+   * than anything else in this object. See measure.ts.
+   */
+  opening: OpeningMeasurements;
 }
 
 export interface CustomerDetails {
@@ -84,12 +84,6 @@ export interface CustomerDetails {
   /** Customer has confirmed they understand who is responsible for measurements. */
   measurementsAcknowledged: boolean;
 }
-
-export const DEFAULT_RAKES: Rakes = {
-  floor: { amount_mm: 0, direction: 'none' },
-  leftWall: { amount_mm: 0, direction: 'none' },
-  rightWall: { amount_mm: 0, direction: 'none' },
-};
 
 export function createInitialState(glassThicknessMm: GlassThickness = 10): ConfiguratorState {
   return {
@@ -112,7 +106,7 @@ export function createInitialState(glassThicknessMm: GlassThickness = 10): Confi
     glassCoating: 'none',
     finishId: 'chrome',
     handleId: 'pull',
-    rakes: structuredClone(DEFAULT_RAKES),
+    opening: createOpeningMeasurements([700]),
   };
 }
 

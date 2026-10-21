@@ -38,23 +38,32 @@ Glass that has been handled, stored incorrectly, or installed is not eligible fo
 
 This does not affect your statutory rights.
 
-7. Site Conditions & Measurements
-Measurements are taken to suit existing site conditions.
-The Customer acknowledges that:
-- Walls and floors are often not perfectly plumb or level
-- Minor rakes, out-of-plumb walls, and surface variations are normal in bathrooms
+7. Measurements & Site Conditions
+We supply glass made to the measurements you give us. We do not attend site to measure, and we do not check your measurements before manufacture.
 
-Glass is manufactured to suit the site as measured at the time.
-The Customer must ensure:
+Because the glass is made to your figures:
+- All measurements are supplied by the Customer, including any allowance for walls that are out of plumb or floors that are out of level
+- Toughened glass cannot be cut, drilled, trimmed or altered after manufacture - any change means a new panel
+- The Customer is responsible for the accuracy of the measurements supplied
+- Where glass does not fit because the measurements supplied were inaccurate or incomplete, a replacement is a new order at the Customer's cost
+
+Before measuring, the Customer must ensure:
 - Tiling and waterproofing are complete
 - Plumbing positions are final
 - Floors provide appropriate falls to waste
 - Safe and clear access is provided
 
+The Customer also acknowledges that:
+- Walls and floors are often not perfectly plumb or level
+- Minor rakes, out-of-plumb walls, and surface variations are normal in bathrooms
+- Where these are not recorded at the time of measuring, the glass will be made square and gaps may result
+
 We are not responsible for:
-- Changes to site conditions after measurement
+- Changes to site conditions after the measurements were supplied
 - Building movement or settlement
-- Variations caused by uneven or non-plumb surfaces
+- Variations caused by uneven or non-plumb surfaces that were not recorded
+
+Nothing in this section affects your statutory rights in respect of goods that are faulty, not as described, or not made to the measurements you supplied.
 
 Minor visual gaps do not constitute a defect.
 
@@ -228,10 +237,13 @@ const TermsContent = () => (
       <p className="mt-2">This does not affect your statutory rights.</p>
     </section>
     <section>
-      <h2 className="text-base font-semibold mb-1">7. Site Conditions &amp; Measurements</h2>
-      <p>Measurements are taken to suit existing site conditions. The Customer acknowledges that walls and floors are often not perfectly plumb or level, and minor rakes and surface variations are normal in bathrooms.</p>
-      <p className="mt-2">The Customer must ensure tiling and waterproofing are complete, plumbing positions are final, floors provide appropriate falls to waste, and safe access is provided.</p>
-      <p className="mt-2">We are not responsible for changes to site conditions after measurement, building movement or settlement, or variations caused by uneven surfaces. Minor visual gaps do not constitute a defect.</p>
+      <h2 className="text-base font-semibold mb-1">7. Measurements &amp; Site Conditions</h2>
+      <p className="font-semibold">We supply glass made to the measurements you give us. We do not attend site to measure, and we do not check your measurements before manufacture.</p>
+      <p className="mt-2">All measurements are supplied by the Customer, including any allowance for walls that are out of plumb or floors that are out of level. Toughened glass cannot be cut, drilled, trimmed or altered after manufacture. The Customer is responsible for the accuracy of the measurements supplied, and where glass does not fit because those measurements were inaccurate or incomplete, a replacement is a new order at the Customer&apos;s cost.</p>
+      <p className="mt-2">Before measuring, the Customer must ensure tiling and waterproofing are complete, plumbing positions are final, floors provide appropriate falls to waste, and safe access is provided.</p>
+      <p className="mt-2">Walls and floors are often not perfectly plumb or level, and minor rakes and surface variations are normal in bathrooms. Where these are not recorded at the time of measuring, the glass will be made square and gaps may result.</p>
+      <p className="mt-2">We are not responsible for changes to site conditions after the measurements were supplied, building movement or settlement, or variations caused by uneven surfaces that were not recorded. Minor visual gaps do not constitute a defect.</p>
+      <p className="mt-2">Nothing in this section affects your statutory rights in respect of goods that are faulty, not as described, or not made to the measurements you supplied.</p>
     </section>
     <section>
       <h2 className="text-base font-semibold mb-1">8. Payment Terms</h2>

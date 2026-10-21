@@ -16,7 +16,7 @@
  */
 
 /** Bump when the code changes, so a browser visit shows which paste is live. */
-const WORKER_VERSION = "v7";
+const WORKER_VERSION = "v12";
 
 /**
  * CORS configuration. Allow production domain and Cloudflare Pages preview origins.
@@ -71,6 +71,11 @@ const TENANT_INBOXES = {
  * recycles them, so this is a burst brake rather than a hard quota. A WAF rate
  * limiting rule in front of the worker is the upgrade path if abuse gets real.
  */
+/** Two drawings, up to five measurement photos, up to four of the room. */
+const MAX_ATTACHMENTS = 12;
+/** Well inside Resend's limit, and inside what an inbox will accept. */
+const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 const MAX_PER_IP = 5;
 const hits = new Map();
@@ -191,10 +196,27 @@ export default {
       const businessEmail = TENANT_INBOXES[tenantId] || env.BUSINESS_EMAIL || "sales@customshowers.uk";
       const fromAddress = env.FROM_EMAIL || "Custom Showers <noreply@customshowers.uk>";
 
-      const mailAttachments = (attachments || [])
-        .filter((a) => a && a.content && a.filename)
-        .slice(0, 4)
-        .map((a) => ({ filename: a.filename, content: a.content }));
+      // Drawings first, then up to four customer photos. The client sends them
+      // in that order and this keeps it: if anything has to be dropped for
+      // size it should be a photo, never the panel schedule.
+      //
+      // The cap is a total size rather than a count. Photos are downscaled in
+      // the browser to roughly 200-400KB each, but a browser that could not
+      // run the canvas step falls back to sending what it has, and an email
+      // Resend refuses helps nobody.
+      const mailAttachments = [];
+      let attachmentBytes = 0;
+      for (const a of (attachments || []).slice(0, MAX_ATTACHMENTS)) {
+        if (!a || !a.content || !a.filename) continue;
+        // base64 carries 3 bytes in every 4 characters.
+        const bytes = Math.ceil((a.content.length * 3) / 4);
+        if (attachmentBytes + bytes > MAX_ATTACHMENT_BYTES) {
+          console.warn("Attachment skipped, over size budget", { filename: a.filename, bytes });
+          continue;
+        }
+        attachmentBytes += bytes;
+        mailAttachments.push({ filename: a.filename, content: a.content });
+      }
 
       const specTable = buildSpecTable(spec?.panels || []);
 
@@ -221,7 +243,10 @@ export default {
           to: [customer.email],
           subject: "Your shower design — Custom Showers",
           html: customerHtml({ customer, summary, disclaimer, specTable }),
-          attachments: mailAttachments,
+          // Drawings only, which are the PNGs. Posting the customer's own
+          // photos of their bathroom back to them adds megabytes and tells
+          // them nothing.
+          attachments: mailAttachments.filter((a) => a.filename.endsWith(".png")),
         });
       }
 
@@ -337,6 +362,11 @@ const SUMMARY_LABELS = {
   finish: "Finish",
   handle: "Handle",
   glass: "Glass",
+  glassType: "Glass type",
+  glassCoating: "Coating",
+  openingWidths: "Opening measured",
+  openingCondition: "Walls and floor",
+  measuredBy: "Checked with",
 };
 
 function summaryRows(summary) {
@@ -353,24 +383,36 @@ function buildSpecTable(panels) {
     .map((p) => {
       const detail = [];
       if (p.door) {
+        const count = p.door.hingeCount ? `${esc(p.door.hingeCount)} × ` : "";
         detail.push(
-          `${esc(p.door.hingeBrand)} hinges, ${esc(p.door.hingeSide)} hand`,
+          `${count}${esc(p.door.hingeBrand)} hinges, ${esc(p.door.hingeSide)} hand`,
           `opens ${p.door.swing === "both" ? "both ways" : "outwards only"}`,
           esc(p.door.sealType)
         );
-        if (p.door.hingePlacement?.bottomHingeOffset) {
-          detail.push(`hinges ${esc(p.door.hingePlacement.bottomHingeOffset)}mm from each edge`);
+        if (p.door.hingeHeightsMm?.length) {
+          detail.push(
+            `hinge centres ${p.door.hingeHeightsMm.map(esc).join(" / ")}mm from the bottom`
+          );
         }
       }
       for (const n of p.notches || []) {
         detail.push(`notch ${esc(n.corner)} ${esc(n.widthMm)}×${esc(n.heightMm)}mm`);
       }
+      // Cutouts carry their own height, so they are listed rather than folded
+      // into the run-on detail line — the workshop reads these one at a time.
+      const cutouts = (p.cutouts || [])
+        .map((c) => `<div>${esc(c.description)} — ${esc(c.heightMm)}mm, ${esc(c.edge)}</div>`)
+        .join("");
 
       return `
         <tr>
           <td ${TD}><strong>${esc(p.label)}</strong>${
             detail.length
               ? `<div style="color:#64748b;font-size:12px;margin-top:4px;">${detail.join(" · ")}</div>`
+              : ""
+          }${
+            cutouts
+              ? `<div style="color:#64748b;font-size:12px;margin-top:4px;">${cutouts}</div>`
               : ""
           }</td>
           <td ${TD} align="right">${esc(p.tightWidthMm)} × ${esc(p.tightHeightMm)}</td>
@@ -396,12 +438,25 @@ function buildSpecTable(panels) {
 
 function businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast, challengeSkipped, antispam, mailAttachments }) {
   const warnings = spec?.warnings || [];
+  const blockingIssues = spec?.blockingIssues || [];
   const rakeNotes = spec?.rakeNotes || [];
 
   return `
     <div style="font-family:Arial,sans-serif;max-width:680px;margin:0 auto;color:#0f172a;">
       <h2 style="margin:0 0 4px;">New shower design</h2>
       <p style="margin:0 0 20px;color:#64748b;">Sent from the online configurator.</p>
+
+      ${
+        blockingIssues.length
+          ? `<div style="margin:0 0 20px;padding:12px 14px;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;color:#991b1b;font-size:13px;">
+               <strong>Cannot be made as drawn.</strong> The customer was told this and sent it anyway,
+               so they are expecting an alternative:
+               <ul style="margin:8px 0 0;padding-left:18px;">
+                 ${blockingIssues.map((w) => `<li>${esc(w)}</li>`).join("")}
+               </ul>
+             </div>`
+          : ""
+      }
 
       ${
         tooFast
@@ -470,7 +525,21 @@ function businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast,
       </p>
       ${
         mailAttachments.length
-          ? `<p style="color:#64748b;font-size:12px;">Drawings attached: ${mailAttachments.map((a) => esc(a.filename)).join(", ")}.</p>`
+          ? (() => {
+              const drawings = mailAttachments.filter((a) => a.filename.endsWith(".png"));
+              const shots = mailAttachments.filter((a) => !a.filename.endsWith(".png"));
+              return `<p style="color:#64748b;font-size:12px;">Drawings: ${
+                drawings.map((a) => esc(a.filename)).join(", ") || "none"
+              }.${
+                shots.length
+                  ? ` Customer photos: ${shots
+                      .map((a) => esc(a.filename))
+                      .join(
+                        ", "
+                      )} — the <strong>measured-</strong> ones were taken at the wall and show the tape in place for that measurement, so they can be checked against the figures above.`
+                  : ""
+              }</p>`;
+            })()
           : `<p style="color:#b45309;font-size:12px;">No drawings were attached — work from the panel schedule above.</p>`
       }
     </div>`;

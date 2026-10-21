@@ -1,5 +1,9 @@
 /**
- * Sizes step — how big is each panel, and how tall.
+ * Layout step — how the opening is divided into panels.
+ *
+ * The overall size and the condition of the walls and floor are settled in the
+ * Measure step before this one. What is left is the arrangement: how wide each
+ * panel is, which one is the door, and which way it opens.
  *
  * The template has already set the shape, so the default view is nothing but
  * labelled width boxes. Everything that lets you change the shape itself lives
@@ -20,10 +24,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { CornerUpRight, Plus, Trash2 } from 'lucide-react';
 import { derivePlanes } from '../geometry';
 import { createPanel, type ConfiguratorPanel, type PanelKind } from '../types';
-import type { RakeDirection, WallRakeDirection } from '../types';
 import type { StepProps } from './types';
-
-const HEIGHT_PRESETS = [1500, 1850, 2000, 2100];
 
 /** Name a panel the way a customer would point at it, not by index. */
 function panelLabels(panels: ConfiguratorPanel[], junctions: { angle_deg: 90 | 180 }[]): string[] {
@@ -84,53 +85,8 @@ export function SizesStep({ state, update }: StepProps) {
     patchPanel(id, { notches: { ...base, ...patch } });
   };
 
-  const setRake = (
-    key: 'floor' | 'leftWall' | 'rightWall',
-    patch: Partial<{ amount_mm: number; direction: string }>
-  ) => update({ rakes: { ...state.rakes, [key]: { ...state.rakes[key], ...patch } } });
-
   return (
     <div className="space-y-6">
-      {/* Height. */}
-      <div className="space-y-3">
-        <Label htmlFor="height">How tall should the glass be? (mm)</Label>
-        <Input
-          id="height"
-          type="number"
-          value={state.heightMm}
-          onChange={(e) => update({ heightMm: parseInt(e.target.value, 10) || 0 })}
-        />
-        <div className="flex flex-wrap gap-2">
-          {HEIGHT_PRESETS.map((h) => (
-            <Button
-              key={h}
-              size="sm"
-              variant={state.heightMm === h ? 'default' : 'outline'}
-              onClick={() => update({ heightMm: h })}
-            >
-              {h}
-            </Button>
-          ))}
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Measure from the tray or floor up to a tile grout line above the shower head. Most
-          enclosures are 2000–2100mm; a screen over a bath is usually around 1500mm.
-        </p>
-        
-        <label className="flex cursor-pointer items-center gap-3 rounded-lg border p-3">
-          <Checkbox
-            checked={state.isFloorToCeiling}
-            onCheckedChange={(v) => update({ isFloorToCeiling: v === true })}
-          />
-          <div className="flex-1">
-            <div className="text-sm font-medium">To ceiling</div>
-            <div className="text-xs text-muted-foreground">
-              Glass extends from floor to ceiling
-            </div>
-          </div>
-        </label>
-      </div>
-
       {/* Widths. */}
       <div className="space-y-3">
         <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -351,69 +307,6 @@ export function SizesStep({ state, update }: StepProps) {
           </AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="rakes" className="border-b-0">
-          <AccordionTrigger className="text-sm">Floor or walls out of true</AccordionTrigger>
-          <AccordionContent className="space-y-4 pb-4">
-            <p className="text-xs text-muted-foreground">
-              Leave these alone unless you know the floor slopes or a wall leans. Skip it and we
-              will check on survey.
-            </p>
-
-            <div className="space-y-2">
-              <Label htmlFor="floor-rake" className="text-sm">
-                Floor falls
-              </Label>
-              <div className="flex flex-wrap gap-2">
-                <Input
-                  id="floor-rake"
-                  type="number"
-                  value={state.rakes.floor.amount_mm}
-                  onChange={(e) => setRake('floor', { amount_mm: parseInt(e.target.value, 10) || 0 })}
-                  className="w-24"
-                />
-                {(['none', 'left', 'right'] as RakeDirection[]).map((d) => (
-                  <Button
-                    key={d}
-                    size="sm"
-                    variant={state.rakes.floor.direction === d ? 'default' : 'outline'}
-                    onClick={() => setRake('floor', { direction: d })}
-                    className="capitalize"
-                  >
-                    {d === 'none' ? 'Level' : d}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {(['leftWall', 'rightWall'] as const).map((key) => (
-              <div key={key} className="space-y-2">
-                <Label htmlFor={`${key}-rake`} className="text-sm">
-                  {key === 'leftWall' ? 'Left wall leans' : 'Right wall leans'}
-                </Label>
-                <div className="flex flex-wrap gap-2">
-                  <Input
-                    id={`${key}-rake`}
-                    type="number"
-                    value={state.rakes[key].amount_mm}
-                    onChange={(e) => setRake(key, { amount_mm: parseInt(e.target.value, 10) || 0 })}
-                    className="w-24"
-                  />
-                  {(['none', 'in', 'out'] as WallRakeDirection[]).map((d) => (
-                    <Button
-                      key={d}
-                      size="sm"
-                      variant={state.rakes[key].direction === d ? 'default' : 'outline'}
-                      onClick={() => setRake(key, { direction: d })}
-                      className="capitalize"
-                    >
-                      {d === 'none' ? 'Plumb' : d}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </AccordionContent>
-        </AccordionItem>
       </Accordion>
     </div>
   );

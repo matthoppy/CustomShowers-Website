@@ -7,8 +7,10 @@
  * HTML table that survives even when images are blocked.
  */
 
+import { describeOpening, describeWidths, METHOD_LABELS } from './measure';
 import { buildSpec, type ConfiguratorSpec } from './spec';
 import { finishLabel, handleLabel, type TenantConfig } from './tenant';
+import { openingContext } from './geometry';
 import type { ConfiguratorState, CustomerDetails } from './types';
 
 export interface EnquiryAttachment {
@@ -37,6 +39,14 @@ export interface EnquiryPayload {
     glass: string;
     glassType: string;
     glassCoating: string;
+    /**
+     * How the opening was checked, and what the customer found. There is no
+     * site survey, so the workshop is cutting to these numbers — whoever
+     * reads the email should know whether they came off a laser or a guess.
+     */
+    measuredBy: string;
+    openingCondition: string;
+    openingWidths: string;
   };
   spec: ConfiguratorSpec;
   disclaimer: string;
@@ -132,6 +142,11 @@ export function buildEnquiryPayload(
       glass: `${state.glassThicknessMm}mm toughened`,
       glassType: state.glassType.charAt(0).toUpperCase() + state.glassType.slice(1).replace('-', ' '),
       glassCoating: state.glassCoating === 'easy-clean' ? 'Easy-clean' : 'None',
+      measuredBy: state.opening.method
+        ? METHOD_LABELS[state.opening.method]
+        : 'Not stated',
+      openingCondition: describeOpening(state.opening, openingContext(state)),
+      openingWidths: describeWidths(state.opening, openingContext(state)),
     },
     spec,
     disclaimer: tenant.measurementDisclaimer,

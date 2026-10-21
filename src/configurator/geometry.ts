@@ -13,6 +13,7 @@
  */
 
 import type { ConfiguratorJunction, ConfiguratorPanel } from './types';
+import type { OpeningContext } from './measure';
 
 export interface Segment {
   id: string;
@@ -156,7 +157,92 @@ export function derivePlanes(
   });
 }
 
+/**
+ * Name each straight run the way the customer sees it.
+ *
+ * Deliberately derived from the traced geometry rather than from chain order.
+ * Templates do not all start at the same end — "Corner, door and side" lists
+ * the side panel first, so its run 0 is the *return*, not the front. Labelling
+ * by position would have sent someone to measure the wrong wall.
+ */
+export function runLabelsFor(
+  panels: ConfiguratorPanel[],
+  junctions: ConfiguratorJunction[]
+): string[] {
+  const runs = runPanelIndices(panels, junctions);
+  if (runs.length <= 1) return ['The opening'];
+
+  const planes = derivePlanes(panels, junctions);
+  const named: Record<Plane, string> = {
+    front: 'Front',
+    return_left: 'Left return',
+    return_right: 'Right return',
+    back: 'Back',
+  };
+
+  // A run is one straight segment, so every panel in it shares a plane; take
+  // the first. Where two runs somehow land on the same name, number them so
+  // the customer can still tell which is which.
+  const labels = runs.map((indices) => named[planes[indices[0]] ?? 'front']);
+  return labels.map((label, i) =>
+    labels.filter((l) => l === label).length > 1
+      ? `${label} ${labels.slice(0, i + 1).filter((l) => l === label).length}`
+      : label
+  );
+}
+
+/** What the shape tells the measurement checks. */
+export function openingContext(state: {
+  panels: ConfiguratorPanel[];
+  junctions: ConfiguratorJunction[];
+  leftWall: boolean;
+  rightWall: boolean;
+  heightMm: number;
+}): OpeningContext {
+  return {
+    // Only the two ends of the whole chain can meet a wall; everything
+    // between them is a glass-to-glass corner.
+    hasStartWall: state.leftWall,
+    hasEndWall: state.rightWall,
+    glassHeightMm: state.heightMm,
+    labels: runLabelsFor(state.panels, state.junctions),
+  };
+}
+
 /** Straight-line width of the run, ignoring corners. */
+/**
+ * Split the chain into straight runs at every 90° corner.
+ *
+ * A customer measures one wall-to-wall (or wall-to-corner) distance per
+ * straight run, so this is the unit the Measure step works in: an inline
+ * shower is one run, an L-shaped corner is two, a three-sided enclosure is
+ * three. Returns the panel indices making up each run.
+ */
+export function runPanelIndices(
+  panels: ConfiguratorPanel[],
+  junctions: ConfiguratorJunction[]
+): number[][] {
+  if (panels.length === 0) return [];
+  const runs: number[][] = [[]];
+  panels.forEach((_, i) => {
+    runs[runs.length - 1].push(i);
+    // A junction after this panel that turns a corner starts a new run.
+    if (i < junctions.length && junctions[i].angle_deg !== 180) runs.push([]);
+  });
+  // A trailing corner with no panel after it leaves an empty run behind.
+  return runs.filter((r) => r.length > 0);
+}
+
+/** Tight width of each straight run, in chain order. */
+export function runWidthsMm(
+  panels: ConfiguratorPanel[],
+  junctions: ConfiguratorJunction[]
+): number[] {
+  return runPanelIndices(panels, junctions).map((indices) =>
+    indices.reduce((sum, i) => sum + panels[i].width_mm, 0)
+  );
+}
+
 export function totalRunWidthMm(panels: ConfiguratorPanel[]): number {
   return panels.reduce((sum, p) => sum + p.width_mm, 0);
 }
