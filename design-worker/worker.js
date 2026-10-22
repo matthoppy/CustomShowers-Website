@@ -16,7 +16,7 @@
  */
 
 /** Bump when the code changes, so a browser visit shows which paste is live. */
-const WORKER_VERSION = "v13";
+const WORKER_VERSION = "v14";
 
 /**
  * CORS configuration: the production domain, plus Cloudflare Pages preview
@@ -542,7 +542,7 @@ function businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast,
                       .map((a) => esc(a.filename))
                       .join(
                         ", "
-                      )} — the <strong>measured-</strong> ones were taken at the wall and show the tape in place for that measurement, so they can be checked against the figures above.`
+                      )} — the <strong>measured-</strong> ones were taken at the wall and show the tape in place for that measurement, so they can be checked against the figures above. A width photo may also contain a sheet of A4 (210 &times; 297mm) taped up as a scale reference: measure against it if a figure looks wrong.`
                   : ""
               }</p>`;
             })()

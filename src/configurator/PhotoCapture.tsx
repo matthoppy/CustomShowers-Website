@@ -15,12 +15,15 @@ import { createPhoto, releasePhoto, type Photo, type PhotoSlot } from './photos'
 export function PhotoCapture({
   slot,
   prompt,
+  hint,
   photo,
   onChange,
 }: {
   slot: PhotoSlot;
   /** What the photo should show, in one short line. */
   prompt: string;
+  /** An optional extra that makes the photo more useful, not a requirement. */
+  hint?: React.ReactNode;
   photo?: Photo;
   onChange: (photo: Photo | null) => void;
 }) {
@@ -76,6 +79,7 @@ export function PhotoCapture({
       ) : (
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">{prompt}</p>
+          {hint}
           <Button
             type="button"
             variant="outline"
