@@ -81,6 +81,31 @@ const METHODS: {
   },
 ];
 
+/**
+ * The A4 trick, offered on the width photos.
+ *
+ * A sheet of A4 is 210 x 297mm everywhere, so a photo with one taped up in it
+ * carries its own ruler. It is nowhere near accurate enough to cut from —
+ * perspective alone costs a percent or two — but it does not need to be. It
+ * catches the mistakes that actually reach a workshop: a digit dropped,
+ * centimetres typed as millimetres, the wrong wall measured. Those are the
+ * ones that cost a panel, and they are obvious the moment there is something
+ * of known size in the frame.
+ *
+ * Framed as a bonus rather than a step, because a customer who does not have
+ * a sheet to hand should not feel stopped.
+ */
+function A4Hint() {
+  return (
+    <p className="rounded bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+      <strong className="text-foreground">Worth doing if you can:</strong> tape a sheet of A4
+      paper to the wall where it will be in the photo. It is exactly 210 × 297mm, so it gives us
+      something of known size to check your measurement against — the quickest way for us to
+      spot a slip before anything is cut.
+    </p>
+  );
+}
+
 /** A diagram with its caption underneath, where the text can wrap. */
 function Figure({ figure }: { figure: MeasureFigure }) {
   return (
@@ -373,7 +398,8 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
         <p className="text-muted-foreground">
           Toughened glass cannot be trimmed once it is made, so take your time over this part.
           You will need a tape measure, and ideally a laser or a spirit level to check the walls.
-          It takes about ten minutes.
+          A sheet of A4 paper is worth having too — we will explain why. It takes about ten
+          minutes.
           {runs.length > 1 &&
             ' Your shower turns a corner, so there are two walls to measure — each one separately.'}
         </p>
@@ -543,6 +569,7 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
           <PhotoCapture
             slot={`width-floor-${i}` as PhotoSlot}
             prompt="Show the tape flat on the floor, with both ends in place."
+            hint={<A4Hint />}
             photo={photoFor(`width-floor-${i}` as PhotoSlot)}
             onChange={(p) => setPhotoFor(`width-floor-${i}` as PhotoSlot, p)}
           />

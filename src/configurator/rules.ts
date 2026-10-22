@@ -289,6 +289,30 @@ export const HANDLE_HOLE_DIAMETER_MM = 12;
 export const MIN_HOLE_EDGE_DISTANCE_MM = 25;
 
 /**
+ * [TRADE] A hole's clearances scale with the hole, not with a flat number.
+ *
+ * SW Glass publishes both as 2x the diameter — so a 16mm clamp hole wants
+ * 32mm to the edge rather than the flat 25mm CRL's server enforces. The flat
+ * figure is right for the 12mm handle holes we drill most often and wrong for
+ * anything larger, which is the direction that breaks glass.
+ */
+export const HOLE_EDGE_DISTANCE_MULTIPLIER = 2;
+export const HOLE_SPACING_MULTIPLIER = 2;
+
+/** The larger of the flat minimum and the diameter-scaled one. */
+export function minHoleEdgeDistanceMm(holeDiameterMm: number): number {
+  return Math.max(
+    MIN_HOLE_EDGE_DISTANCE_MM,
+    Math.round(holeDiameterMm * HOLE_EDGE_DISTANCE_MULTIPLIER)
+  );
+}
+
+/** Minimum centre-to-centre spacing between two holes of a given diameter. */
+export function minHoleSpacingMm(holeDiameterMm: number): number {
+  return Math.round(holeDiameterMm * HOLE_SPACING_MULTIPLIER);
+}
+
+/**
  * Handle hole heights, measured up from the bottom of the door glass.
  *
  * [CONFIRMED] The handle is centred vertically on the leaf. Smart Glazier can
@@ -324,7 +348,15 @@ export const CUTOUTS = {
   doorHingeNotch: { widthMm: 58, heightMm: 47, radiusMm: 8 },
   /** Edge notch in the fixed panel that mates with it. */
   fixedHingeNotch: { widthMm: 52, heightMm: 33, radiusMm: 8 },
-  /** Through-hole for a wall clamp. */
+  /**
+   * Through-hole for a wall clamp.
+   *
+   * [CONFIRMED] CRL specify 25mm to the centre for this clamp. Note that the
+   * general trade rule of twice the diameter would want 32mm, so this sits
+   * inside it — a manufacturer's figure for a tested fitting beats a rule of
+   * thumb, but it is worth knowing which way the difference runs if a
+   * toughener ever queries it.
+   */
   clampHole: { diameterMm: 16, insetMm: 25 },
   /** Through-hole pair for a pull handle. */
   handleHole: {
@@ -359,10 +391,26 @@ export const LIMITS = {
   minDoorHeightMm: 1400,
   /** [OURS] */
   minPanelWidthMm: 150,
+  /** [TRADE] Below this a piece is offcut rather than panel. */
+  minPanelHeightMm: 150,
+  /**
+   * [TRADE] SW Glass will not cut a piece narrower than this at all. That is
+   * their commercial floor rather than a law of glass, and two of our own
+   * templates sit on 300mm, so it asks rather than blocks — but a toughener
+   * who shares the policy would reject the job, which is worth knowing before
+   * the order goes in than after.
+   */
+  narrowPanelAdviceMm: 300,
   /** [CONFIRMED] A panel carrying any cutout must be at least this wide. */
   minPanelWidthWithCutoutsMm: 120,
-  /** [CONFIRMED] Hole centre to the far edge. */
+  /** [CONFIRMED] Hole centre to the far edge, before the diameter scaling. */
   minHoleEdgeDistanceMm: MIN_HOLE_EDGE_DISTANCE_MM,
+  /**
+   * [TRADE] Toughening limit. A pane longer than ten times its width warps or
+   * shatters in the furnace, so the toughener refuses it outright — and a
+   * narrow return beside a door is exactly where a shower run hits this.
+   */
+  maxAspectRatio: 10,
   /** [OURS] A two-person lift, and the hinge limit. */
   maxPanelWeightKg: 50,
 } as const;
@@ -424,6 +472,34 @@ export function checkPanelLimits(
       message: hasCutouts
         ? `Panel is ${widthMm}mm wide. A panel with a hinge or clamp cutout must be at least ${LIMITS.minPanelWidthWithCutoutsMm}mm — there is not enough glass around the cutout otherwise.`
         : `Panel is ${widthMm}mm wide, below our ${LIMITS.minPanelWidthMm}mm minimum.`,
+    });
+  } else if (widthMm < LIMITS.narrowPanelAdviceMm) {
+    out.push({
+      code: 'panel-narrow',
+      severity: 'warning',
+      message: `Panel is ${widthMm}mm wide. Some toughening shops will not cut below ${LIMITS.narrowPanelAdviceMm}mm — worth confirming with ours before the order goes in.`,
+    });
+  }
+
+  if (heightMm > 0 && heightMm < LIMITS.minPanelHeightMm) {
+    out.push({
+      code: 'panel-too-short',
+      severity: 'blocking',
+      message: `Panel is ${heightMm}mm high, below the ${LIMITS.minPanelHeightMm}mm minimum we can cut.`,
+    });
+  }
+
+  // Toughening, not handling: this one is refused at the furnace rather than
+  // flagged on site, so there is no point sending it and finding out.
+  const longest = Math.max(widthMm, heightMm);
+  const shortest = Math.min(widthMm, heightMm);
+  if (shortest > 0 && longest / shortest > LIMITS.maxAspectRatio) {
+    const ratio = Math.round((longest / shortest) * 10) / 10;
+    const minShort = Math.ceil(longest / LIMITS.maxAspectRatio);
+    out.push({
+      code: 'panel-too-slender',
+      severity: 'blocking',
+      message: `Panel is ${widthMm} × ${heightMm}mm, a ratio of ${ratio}:1. Toughened glass cannot be more than ${LIMITS.maxAspectRatio}:1 — it distorts in the furnace — so at ${longest}mm long the narrow side has to be at least ${minShort}mm.`,
     });
   }
 
