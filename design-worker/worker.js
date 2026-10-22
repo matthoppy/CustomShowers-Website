@@ -16,17 +16,23 @@
  */
 
 /** Bump when the code changes, so a browser visit shows which paste is live. */
-const WORKER_VERSION = "v12";
+const WORKER_VERSION = "v13";
 
 /**
- * CORS configuration. Allow production domain and Cloudflare Pages preview origins.
- * Preview origins follow the pattern: *.customshowers-website-bfs.pages.dev
+ * CORS configuration: the production domain, plus Cloudflare Pages preview
+ * branches.
+ *
+ * This is an allow-list in front of a mail relay, so it names only the Pages
+ * project that exists today. It used to name customshowers-website-bfs, which
+ * was retired — and a pages.dev subdomain belonging to no project can be
+ * claimed by another Cloudflare account, which is not something to leave
+ * standing in front of something that sends email.
  */
 const ALLOWED_ORIGINS = [
   "https://customshowers.uk",
   "https://www.customshowers.uk",
-  // Cloudflare Pages preview branches (regex pattern)
-  /^https:\/\/[a-z0-9-]+\.customshowers-website-bfs\.pages\.dev$/,
+  // Cloudflare Pages preview branches of the customshowers-website project.
+  /^https:\/\/[a-z0-9-]+\.customshowers-website\.pages\.dev$/,
 ];
 
 function getCorsHeaders(request) {
@@ -66,16 +72,16 @@ const TENANT_INBOXES = {
   "custom-showers": "sales@customshowers.uk",
 };
 
-/**
- * Rate limiting. Per-isolate and in memory: Cloudflare runs many isolates and
- * recycles them, so this is a burst brake rather than a hard quota. A WAF rate
- * limiting rule in front of the worker is the upgrade path if abuse gets real.
- */
 /** Two drawings, up to five measurement photos, up to four of the room. */
 const MAX_ATTACHMENTS = 12;
 /** Well inside Resend's limit, and inside what an inbox will accept. */
 const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
 
+/**
+ * Rate limiting. Per-isolate and in memory: Cloudflare runs many isolates and
+ * recycles them, so this is a burst brake rather than a hard quota. A WAF rate
+ * limiting rule in front of the worker is the upgrade path if abuse gets real.
+ */
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 const MAX_PER_IP = 5;
 const hits = new Map();

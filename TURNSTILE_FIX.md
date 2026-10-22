@@ -1,5 +1,13 @@
 # Turnstile Configuration Fix for Preview Domains
 
+> **Note (22 Oct 2026):** the Pages project `customshowers-website-bfs` named
+> throughout this document has been retired. The current project is
+> `customshowers-website`, so preview domains are now
+> `*.customshowers-website.pages.dev`. The worker's CORS allow-list was updated
+> to match; **the Turnstile widget's allowed-hostnames list in the Cloudflare
+> dashboard still needs checking**, or previews will fail the security check
+> even though CORS now passes. Production (`customshowers.uk`) is unaffected.
+
 ## Issue
 The Review step shows a Turnstile "security check could not load" error on Cloudflare Pages preview domains (e.g., `*.customshowers-website-bfs.pages.dev`).
 
