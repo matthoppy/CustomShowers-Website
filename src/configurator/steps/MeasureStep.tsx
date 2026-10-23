@@ -11,7 +11,7 @@
  * other than the thing we asked for.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -34,16 +34,26 @@ import {
   type WallMeasurement,
 } from '../measure';
 import { openingContext, runPanelIndices } from '../geometry';
-import type { ConfiguratorPanel } from '../types';
+import type { ConfiguratorJunction, ConfiguratorPanel } from '../types';
 import {
   FIGURE_CAPTIONS,
   MeasureDiagram,
   OpeningPreview,
   type MeasureFigure,
 } from '../views/MeasureDiagram';
+import { RunsPlan } from '../views/RunsPlan';
 import type { StepProps } from './types';
 
 const HEIGHT_PRESETS = [1500, 1850, 2000, 2100];
+
+/** The door openings people actually ask for. 700 is the usual one. */
+const DOOR_PRESETS = [600, 650, 700, 750, 800];
+
+/**
+ * Narrowest fixed panel we will put beside a door. Below this a panel is a
+ * sliver that is hard to fix and easy to break.
+ */
+const MIN_FIXED_BESIDE_DOOR_MM = 200;
 
 /**
  * Each method gets its own drawing, because what the customer does with their
@@ -56,9 +66,15 @@ const METHODS: {
   figure: MeasureFigure | null;
 }[] = [
   {
+    id: 'laser',
+    label: 'Laser line',
+    blurb: 'The one to use. A self-levelling laser gives a true vertical the full height of the wall — the same laser you marked the glass line with.',
+    figure: 'wall-laser',
+  },
+  {
     id: 'packers',
     label: 'Level and packers',
-    blurb: 'A level held against the wall, then glazing packers pushed into the gap until snug. The easiest to get right, because you are matching a thickness rather than reading a tape.',
+    blurb: 'No laser? A level held against the wall, then glazing packers pushed into the gap until snug. You match a thickness rather than read a tape.',
     figure: 'wall-packers',
   },
   {
@@ -66,12 +82,6 @@ const METHODS: {
     label: 'Spirit level',
     blurb: 'A long level held against the wall, measuring the gap at the loose end. The longer the level the better — a short one on a tall wall will miss a gentle lean.',
     figure: 'wall-level',
-  },
-  {
-    id: 'laser',
-    label: 'Laser line',
-    blurb: 'A self-levelling laser gives a true vertical the full height of the wall. The most accurate of the three if you have one.',
-    figure: 'wall-laser',
   },
   {
     id: 'assumed-square',
@@ -98,15 +108,19 @@ function Measurement({
   number,
   title,
   figure,
+  diagram,
   help,
   children,
 }: {
   number: number;
   title: string;
   figure?: MeasureFigure;
+  /** A drawing of the customer's own shower, used instead of a stock figure. */
+  diagram?: JSX.Element;
   help?: string;
   children: React.ReactNode;
 }) {
+  const hasPicture = Boolean(figure || diagram);
   return (
     <section className="rounded-lg border">
       <div className="flex items-center gap-3 border-b px-4 py-3">
@@ -116,8 +130,8 @@ function Measurement({
         <h3 className="text-sm font-semibold">{title}</h3>
       </div>
       <div className="grid gap-4 p-4 sm:grid-cols-2">
-        {figure && <Figure figure={figure} />}
-        <div className={figure ? 'space-y-3' : 'space-y-3 sm:col-span-2'}>
+        {figure ? <Figure figure={figure} /> : diagram}
+        <div className={hasPicture ? 'space-y-3' : 'space-y-3 sm:col-span-2'}>
           {children}
           {help && <p className="text-xs text-muted-foreground">{help}</p>}
         </div>
@@ -224,15 +238,36 @@ function WallGaps({
 }
 
 /**
+ * The door's run, when the door shares it with fixed glass.
+ *
+ * Only then is the opening a choice: a door on its own fills the wall-to-wall
+ * width, and there is nothing to ask.
+ */
+function doorChoice(
+  panels: ConfiguratorPanel[],
+  junctions: ConfiguratorJunction[]
+): { doorIndex: number; runIndex: number; others: number[] } | null {
+  const doorIndex = panels.findIndex((p) => p.kind === 'door');
+  if (doorIndex < 0) return null;
+  const runs = runPanelIndices(panels, junctions);
+  const runIndex = runs.findIndex((r) => r.includes(doorIndex));
+  if (runIndex < 0) return null;
+  const others = runs[runIndex].filter((i) => i !== doorIndex);
+  return others.length > 0 ? { doorIndex, runIndex, others } : null;
+}
+
+/**
  * How many cards the phone layout walks through for a given shape.
  *
- * Height, then a pair of width cards per straight run, then the walls, the
- * floor and the confirmation. A corner shower is two runs and so four width
- * cards — the customer really does have to walk to the other wall and
- * measure it, and pretending otherwise is how a return panel comes out wrong.
+ * Mark the glass line, height, the floor widths (every run on one top-down
+ * drawing), the door opening when there is one to choose, then the walls,
+ * the floor and the confirmation.
  */
-export function measureCardCount(runCount: number): number {
-  return 4 + Math.max(1, runCount);
+export function measureCardCount(state: {
+  panels: ConfiguratorPanel[];
+  junctions: ConfiguratorJunction[];
+}): number {
+  return 6 + (doorChoice(state.panels, state.junctions) ? 1 : 0);
 }
 
 /**
@@ -242,9 +277,14 @@ export function measureCardCount(runCount: number): number {
  */
 function scaleRunPanels(
   panels: ConfiguratorPanel[],
-  indices: number[],
-  targetMm: number
+  allIndices: number[],
+  runTargetMm: number,
+  /** A panel whose width is the customer's choice, left as it is. */
+  keepIndex?: number
 ): ConfiguratorPanel[] {
+  const kept = keepIndex !== undefined && allIndices.includes(keepIndex) && allIndices.length > 1;
+  const indices = kept ? allIndices.filter((i) => i !== keepIndex) : allIndices;
+  const targetMm = kept ? runTargetMm - panels[keepIndex!].width_mm : runTargetMm;
   const total = indices.reduce((sum, i) => sum + panels[i].width_mm, 0);
   if (total <= 0 || targetMm <= 0) return panels;
 
@@ -273,8 +313,14 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
   const runs = m.runs;
   const labels = ctx.labels ?? runLabels(runs.length);
   const runIndices = runPanelIndices(state.panels, state.junctions);
-  const cardCount = measureCardCount(runs.length);
+  const cardCount = measureCardCount(state);
   const cardIndex = Math.min(measureCard ?? 0, cardCount - 1);
+  const door = doorChoice(state.panels, state.junctions);
+
+  // Neither of these is part of the design: one only changes which drawing
+  // explains marking out, the other which run's tape is animating.
+  const [floorType, setFloorType] = useState<'tray' | 'tiles'>('tray');
+  const [activeRun, setActiveRun] = useState(0);
 
   const patch = (p: Partial<OpeningMeasurements>) => update({ opening: { ...m, ...p } });
 
@@ -291,7 +337,9 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
    */
   const setRunFloorWidth = (i: number, widthMm: number) =>
     update({
-      panels: scaleRunPanels(state.panels, runIndices[i] ?? [], widthMm),
+      // The door opening is the customer's choice, so a new wall width goes
+      // into the fixed glass beside it rather than stretching the door.
+      panels: scaleRunPanels(state.panels, runIndices[i] ?? [], widthMm, door?.doorIndex),
       opening: {
         ...m,
         runs: runs.map((r, j) => (j === i ? { ...r, widthAtFloorMm: widthMm } : r)),
@@ -336,18 +384,19 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
    * checked the walls is noise about a question they have not been asked yet
    * — and noise is how a real contradiction gets scrolled past.
    */
+  const WIDTHS_CARD = 2;
+  const WALLS_CARD = door ? 4 : 3;
+  const FLOOR_CARD = WALLS_CARD + 1;
   const checkCardIndex = (check: (typeof allChecks)[number]): number => {
     const { code, runIndex } = check;
     if (runIndex !== undefined) {
-      const floorCard = 1 + runIndex * 2;
-      if (code.includes('widthAtFloor')) return floorCard;
-      if (code.includes('widthAtTop')) return floorCard + 1;
+      if (code.includes('widthAtFloor') || code.includes('widthAtTop')) return WIDTHS_CARD;
       // A mismatch is only fixable once the wall leans have been asked for.
-      if (code.includes('cross-check')) return 1 + runs.length * 2;
-      if (code.includes('floor-')) return 2 + runs.length * 2;
+      if (code.includes('cross-check')) return WALLS_CARD;
+      if (code.includes('floor-')) return FLOOR_CARD;
     }
-    if (code.startsWith('startWall') || code.startsWith('endWall')) return 1 + runs.length * 2;
-    if (code === 'no-method' || code === 'assumed-square') return 1 + runs.length * 2;
+    if (code.startsWith('startWall') || code.startsWith('endWall')) return WALLS_CARD;
+    if (code === 'no-method' || code === 'assumed-square') return WALLS_CARD;
     if (code === 'shape-unconfirmed') return cardCount - 1;
     return 0;
   };
@@ -428,8 +477,64 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
   /** How a run is referred to in a sentence. */
   const runPhrase = (i: number) => (runs.length > 1 ? ` — ${labels[i].toLowerCase()}` : '');
 
-  type Card = { title: string; figure?: MeasureFigure; help?: string; body: JSX.Element };
+  type Card = {
+    title: string;
+    figure?: MeasureFigure;
+    diagram?: JSX.Element;
+    help?: string;
+    body: JSX.Element;
+  };
   const cards: Card[] = [
+    {
+      title: 'First, mark where the glass will stand',
+      figure: floorType === 'tray' ? 'mark-tray' : 'mark-tiles',
+      help: 'Every measurement after this is taken along your line, so it is worth getting straight.',
+      body: (
+        <>
+          <Label className="text-sm">What is the glass standing on?</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {(
+              [
+                ['tray', 'A shower tray'],
+                ['tiles', 'A tiled floor'],
+              ] as const
+            ).map(([id, label]) => (
+              <Button
+                key={id}
+                type="button"
+                variant={floorType === id ? 'default' : 'outline'}
+                aria-pressed={floorType === id}
+                onClick={() => setFloorType(id)}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+          {floorType === 'tray' ? (
+            <ol className="list-decimal space-y-1.5 pl-5 text-sm">
+              <li>Run masking tape along the front of the tray.</li>
+              <li>
+                Draw a sharpie line <strong>10mm in from the edge</strong>. The channel and door
+                sit on this line.
+              </li>
+              <li>Set your laser so its line sits right on your sharpie line.</li>
+            </ol>
+          ) : (
+            <ol className="list-decimal space-y-1.5 pl-5 text-sm">
+              <li>
+                Pick the <strong>grout line</strong> the glass will cover, so the channel hides it.
+              </li>
+              <li>Put masking tape at each end and mark the line with a sharpie.</li>
+              <li>Set your laser so its line sits right on your marks.</li>
+            </ol>
+          )}
+          <p className="text-xs text-muted-foreground">
+            You will need a laser, a tape measure, masking tape and a sharpie. No laser? A long
+            straight edge and a spirit level will do — we will show you how.
+          </p>
+        </>
+      ),
+    },
     {
       title: 'How tall should the glass be?',
       figure: 'height',
@@ -474,82 +579,199 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
     },
   ];
 
-  // Two cards per run: along the floor, then at the top. The customer
-  // physically walks to a different wall for each run, so they get their own
-  // screens rather than being crammed into one.
-  runs.forEach((run, i) => {
-    const endsAtCorner = i < runs.length - 1;
-    const startsAtCorner = i > 0;
-    const between =
-      runs.length === 1
-        ? 'from wall to wall'
-        : `from ${startsAtCorner ? 'the corner' : 'the wall'} to ${
-            endsAtCorner ? 'the corner' : 'the wall'
-          }`;
-
-    cards.push({
-      title: `Width at the floor${runPhrase(i)}`,
-      figure: 'width-floor',
-      help: `Measure ${between}, to the tiles or finished surface rather than the plaster behind them.`,
-      body: (
-        <>
-          <Label htmlFor={`w-floor-${i}`}>Width at the floor (mm)</Label>
+  /** The width box for one run, numbered to match the drawing. */
+  const widthInputs = (run: RunMeasurement, i: number) => (
+    <div key={i} className="space-y-2">
+      <Label htmlFor={`w-floor-${i}`} className="flex items-center gap-2">
+        {runs.length > 1 && (
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
+            {i + 1}
+          </span>
+        )}
+        {runs.length > 1 ? `${labels[i]} (mm)` : 'Width along your line (mm)'}
+      </Label>
+      <Input
+        id={`w-floor-${i}`}
+        type="number"
+        inputMode="numeric"
+        value={run.widthAtFloorMm}
+        onFocus={() => setActiveRun(i)}
+        onChange={(e) => setRunFloorWidth(i, parseInt(e.target.value, 10) || 0)}
+      />
+      {/* Offered, not asked for. Someone who measured the top anyway gets
+          it checked against the derived figure; everyone else is not sent
+          up a ladder for a number we can already work out. */}
+      <details className="rounded border px-3 py-2">
+        <summary className="cursor-pointer text-xs font-medium">
+          Measured the top as well? Let us check it
+        </summary>
+        <div className="mt-2 space-y-1.5">
+          <Label htmlFor={`w-top-${i}`} className="text-xs text-muted-foreground">
+            Width at the top (mm) — optional
+          </Label>
           <Input
-            id={`w-floor-${i}`}
+            id={`w-top-${i}`}
             type="number"
             inputMode="numeric"
-            value={run.widthAtFloorMm}
-            onChange={(e) => setRunFloorWidth(i, parseInt(e.target.value, 10) || 0)}
+            placeholder="Leave blank if you did not measure it"
+            value={run.widthAtTopCheckMm ?? ''}
+            onChange={(e) => {
+              const raw = e.target.value.trim();
+              patchRun(i, {
+                widthAtTopCheckMm: raw === '' ? null : parseInt(raw, 10) || 0,
+              });
+            }}
           />
-          {runs.length > 1 && (
-            <p className="rounded bg-muted/60 px-3 py-2 text-xs">
-              This is the <strong>{labels[i].toLowerCase()}</strong>, measured {between}. At a
-              corner, measure to the outside face of the glass on the other run.
-            </p>
-          )}
+        </div>
+      </details>
+    </div>
+  );
 
+  if (runs.length === 1) {
+    cards.push({
+      title: 'Width along your line',
+      figure: 'width-floor',
+      help: 'Measure along your sharpie line from wall to wall, to the tiles or finished surface rather than the plaster behind them.',
+      body: (
+        <>
+          {widthInputs(runs[0], 0)}
           <p className="text-xs text-muted-foreground">
             You do not need to measure the top. We work that out from this width and how far the
             walls lean, which you will tell us in a moment.
           </p>
-
-          {/* Offered, not asked for. Someone who measured the top anyway gets
-              it checked against the derived figure; everyone else is not sent
-              up a ladder for a number we can already work out. */}
-          <details className="rounded border px-3 py-2">
-            <summary className="cursor-pointer text-xs font-medium">
-              Measured the top as well? Let us check it
-            </summary>
-            <div className="mt-2 space-y-1.5">
-              <Label htmlFor={`w-top-${i}`} className="text-xs text-muted-foreground">
-                Width at the top (mm) — optional
-              </Label>
-              <Input
-                id={`w-top-${i}`}
-                type="number"
-                inputMode="numeric"
-                placeholder="Leave blank if you did not measure it"
-                value={run.widthAtTopCheckMm ?? ''}
-                onChange={(e) => {
-                  const raw = e.target.value.trim();
-                  patchRun(i, {
-                    widthAtTopCheckMm: raw === '' ? null : parseInt(raw, 10) || 0,
-                  });
-                }}
-              />
-            </div>
-          </details>
-
           <PhotoCapture
-            slot={`width-floor-${i}` as PhotoSlot}
-            prompt="Show the tape flat on the floor, with both ends in place."
-            photo={photoFor(`width-floor-${i}` as PhotoSlot)}
-            onChange={(p) => setPhotoFor(`width-floor-${i}` as PhotoSlot, p)}
+            slot={'width-floor-0' as PhotoSlot}
+            prompt="Show the tape along your line, with both ends in place."
+            photo={photoFor('width-floor-0' as PhotoSlot)}
+            onChange={(p) => setPhotoFor('width-floor-0' as PhotoSlot, p)}
           />
         </>
       ),
     });
-  });
+  } else {
+    // A shower with a return: every floor measurement on one drawing from
+    // above, so the customer can see which side each number belongs to before
+    // walking over to it.
+    cards.push({
+      title: `The ${runs.length} measurements along the floor`,
+      diagram: (
+        <figure className="space-y-2">
+          <RunsPlan
+            panels={state.panels}
+            junctions={state.junctions}
+            leftWall={state.leftWall}
+            rightWall={state.rightWall}
+            labels={labels}
+            values={runs.map((r) => r.widthAtFloorMm || null)}
+            activeRun={Math.min(activeRun, runs.length - 1)}
+            className="w-full rounded bg-muted/40 p-2"
+          />
+          <figcaption className="text-xs text-muted-foreground">
+            Your shower from above. Measure each side along your sharpie line — to the wall, or to
+            the corner where the glass will meet.
+          </figcaption>
+        </figure>
+      ),
+      help: 'At a corner, measure to the outside face of where the other glass will be. Tiles, not plaster.',
+      body: (
+        <>
+          {runs.map((run, i) => widthInputs(run, i))}
+          <p className="text-xs text-muted-foreground">
+            You do not need to measure the top. We work that out from these and how far the walls
+            lean, which you will tell us in a moment.
+          </p>
+          {runs.map((_, i) => (
+            <PhotoCapture
+              key={i}
+              slot={`width-floor-${i}` as PhotoSlot}
+              prompt={`Show the tape along the ${labels[i].toLowerCase()}, with both ends in place.`}
+              photo={photoFor(`width-floor-${i}` as PhotoSlot)}
+              onChange={(p) => setPhotoFor(`width-floor-${i}` as PhotoSlot, p)}
+            />
+          ))}
+        </>
+      ),
+    });
+  }
+
+  if (door) {
+    const doorPanel = state.panels[door.doorIndex];
+    const runWidth = runs[door.runIndex]?.widthAtFloorMm ?? 0;
+    const leftForFixed = runWidth - doorPanel.width_mm;
+    const tooTight =
+      runWidth > 0 && leftForFixed < MIN_FIXED_BESIDE_DOOR_MM * door.others.length;
+    /** Set the door and hand whatever is left of the wall to the fixed glass. */
+    const setDoorWidth = (widthMm: number) => {
+      const withDoor = state.panels.map((p, i) =>
+        i === door.doorIndex ? { ...p, width_mm: widthMm } : p
+      );
+      update({
+        panels:
+          runWidth > 0
+            ? scaleRunPanels(withDoor, runIndices[door.runIndex] ?? [], runWidth, door.doorIndex)
+            : withDoor,
+      });
+    };
+    cards.push({
+      title: 'How wide do you want the door opening?',
+      diagram: (
+        <figure className="space-y-2">
+          <RunsPlan
+            panels={state.panels}
+            junctions={state.junctions}
+            leftWall={state.leftWall}
+            rightWall={state.rightWall}
+            labels={labels}
+            door
+            className="w-full rounded bg-muted/40 p-2"
+          />
+          <figcaption className="text-xs text-muted-foreground">
+            The gap you walk through. The rest of the {runs.length > 1 ? labels[door.runIndex].toLowerCase() : 'width'}{' '}
+            becomes fixed glass.
+          </figcaption>
+        </figure>
+      ),
+      help: '700mm suits most people. Under 600mm starts to feel tight; over 800mm makes a heavy door.',
+      body: (
+        <>
+          <div className="flex flex-wrap gap-2">
+            {DOOR_PRESETS.map((w) => (
+              <Button
+                key={w}
+                type="button"
+                size="sm"
+                variant={doorPanel.width_mm === w ? 'default' : 'outline'}
+                aria-pressed={doorPanel.width_mm === w}
+                onClick={() => setDoorWidth(w)}
+              >
+                {w}
+              </Button>
+            ))}
+          </div>
+          <Label htmlFor="door-opening">Or type your own (mm)</Label>
+          <Input
+            id="door-opening"
+            type="number"
+            inputMode="numeric"
+            value={doorPanel.width_mm}
+            onChange={(e) => setDoorWidth(parseInt(e.target.value, 10) || 0)}
+          />
+          {runWidth > 0 && !tooTight && (
+            <p className="rounded bg-muted/60 px-3 py-2 text-xs">
+              That leaves <strong>{leftForFixed}mm</strong> of fixed glass beside the door.
+            </p>
+          )}
+          {tooTight && (
+            <p className="rounded bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+              That only leaves {Math.max(0, leftForFixed)}mm for the fixed glass — it needs at
+              least {MIN_FIXED_BESIDE_DOOR_MM}mm{door.others.length > 1 ? ' per panel' : ''}. Try a
+              narrower door.
+            </p>
+          )}
+        </>
+      ),
+    });
+  }
 
   const startWallName =
     runs.length === 1 ? 'Left wall' : `Wall at the open end of the ${labels[0].toLowerCase()}`;
@@ -587,7 +809,7 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
             of scroll on a phone, and only one of them is what they are about
             to do. Before they choose, show the most likely. */}
         <div className="sm:max-w-sm">
-          <Figure figure={METHODS.find((x) => x.id === m.method)?.figure ?? 'wall-packers'} />
+          <Figure figure={METHODS.find((x) => x.id === m.method)?.figure ?? 'wall-laser'} />
         </div>
 
         {m.method && m.method !== 'assumed-square' && (
@@ -827,7 +1049,13 @@ function MobileCards({
   topRef: React.RefObject<HTMLDivElement>;
   intro: JSX.Element;
   alerts: JSX.Element;
-  card: { title: string; figure?: MeasureFigure; help?: string; body: JSX.Element };
+  card: {
+    title: string;
+    figure?: MeasureFigure;
+    diagram?: JSX.Element;
+    help?: string;
+    body: JSX.Element;
+  };
   cardIndex: number;
   total: number;
   isFinal: boolean;
@@ -865,7 +1093,13 @@ function MobileCards({
         </div>
       </div>
 
-      <Measurement number={cardIndex + 1} title={card.title} figure={card.figure} help={card.help}>
+      <Measurement
+        number={cardIndex + 1}
+        title={card.title}
+        figure={card.figure}
+        diagram={card.diagram}
+        help={card.help}
+      >
         {card.body}
       </Measurement>
 
