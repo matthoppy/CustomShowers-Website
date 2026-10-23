@@ -488,7 +488,7 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
     {
       title: 'First, mark where the glass will stand',
       figure: floorType === 'tray' ? 'mark-tray' : 'mark-tiles',
-      help: 'Every measurement after this is taken along your line, so it is worth getting straight.',
+      help: 'Every width after this is taken along your marks, so they are worth getting right. You will put one more piece of tape on the wall for the height.',
       body: (
         <>
           <Label className="text-sm">What is the glass standing on?</Label>
@@ -512,20 +512,27 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
           </div>
           {floorType === 'tray' ? (
             <ol className="list-decimal space-y-1.5 pl-5 text-sm">
-              <li>Run masking tape along the front of the tray.</li>
               <li>
-                Draw a sharpie line <strong>10mm in from the edge</strong>. The channel and door
-                sit on this line.
+                Stick a small piece of masking tape at each end of where the glass will go
+                {runs.length > 1 ? ', and at each corner' : ''}.
               </li>
-              <li>Set your laser so its line sits right on your sharpie line.</li>
+              <li>
+                On each piece, mark <strong>10mm in from the edge of the tray</strong> with a
+                sharpie. The channel and door sit on that line.
+              </li>
+              <li>Set your laser so its line runs through your marks.</li>
             </ol>
           ) : (
             <ol className="list-decimal space-y-1.5 pl-5 text-sm">
               <li>
                 Pick the <strong>grout line</strong> the glass will cover, so the channel hides it.
               </li>
-              <li>Put masking tape at each end and mark the line with a sharpie.</li>
-              <li>Set your laser so its line sits right on your marks.</li>
+              <li>
+                Stick a small piece of masking tape at each end
+                {runs.length > 1 ? ' and at each corner' : ''}, and mark the grout line on it with
+                a sharpie.
+              </li>
+              <li>Set your laser so its line runs through your marks.</li>
             </ol>
           )}
           <p className="text-xs text-muted-foreground">

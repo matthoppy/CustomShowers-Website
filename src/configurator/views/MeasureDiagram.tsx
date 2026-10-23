@@ -40,9 +40,9 @@ interface MeasureDiagramProps {
  */
 export const FIGURE_CAPTIONS: Record<MeasureFigure, string> = {
   'mark-tray':
-    'Run masking tape along the front of the tray and draw a sharpie line 10mm in from the edge. That is where the channel and door will stand. Set your laser to the line.',
+    'A small piece of masking tape at each end, with a sharpie mark 10mm in from the edge of the tray. That is where the channel and door will stand. Set your laser to the marks.',
   'mark-tiles':
-    'Pick the grout line the glass will cover, put masking tape at each end and mark the line with a sharpie. Set your laser to it.',
+    'Pick the grout line the glass will cover, put a small piece of masking tape at each end and mark the line with a sharpie. Set your laser to the marks.',
   'width-floor': 'Along your sharpie line, wall to wall — to the tiles, not the plaster behind them.',
   'width-top': 'The same measurement again, at the height the glass will reach.',
   height:
@@ -387,14 +387,19 @@ const FIGURES: Record<MeasureFigure, JSX.Element> = {
         edge of the tray
       </text>
 
+      {/* A small piece of masking tape at each end of the glass line, each
+          with its own sharpie mark 10mm in from the edge of the tray. */}
       <g className="md-step-1">
-        <rect x={42} y={146} width={236} height={24} fill={TAPE} stroke={TAPE_EDGE} strokeWidth={0.75} />
-        <text x={50} y={141} fontSize={11} fontWeight={600} fill={INK}>
+        <rect x={42} y={146} width={40} height={24} fill={TAPE} stroke={TAPE_EDGE} strokeWidth={0.75} />
+        <rect x={238} y={146} width={40} height={24} fill={TAPE} stroke={TAPE_EDGE} strokeWidth={0.75} />
+        <text x={88} y={152} fontSize={11} fontWeight={600} fill={INK}>
           masking tape
         </text>
       </g>
-      {/* 10mm, drawn much wider than 10mm so there is something to see. */}
-      <line className="md-draw" x1={44} y1={160} x2={276} y2={160} stroke="hsl(var(--foreground))" strokeWidth={2.5} strokeLinecap="round" />
+      <g className="md-step-2">
+        <line x1={46} y1={160} x2={78} y2={160} stroke="hsl(var(--foreground))" strokeWidth={2.5} strokeLinecap="round" />
+        <line x1={242} y1={160} x2={274} y2={160} stroke="hsl(var(--foreground))" strokeWidth={2.5} strokeLinecap="round" />
+      </g>
       <g className="md-step-3">
         <line x1={44} y1={160} x2={276} y2={160} stroke={LASER} strokeWidth={1.5} />
         <rect x={250} y={120} width={22} height={16} rx={3} fill="hsl(var(--foreground))" />
