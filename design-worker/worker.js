@@ -11,12 +11,13 @@
  * Secrets (Workers & Pages → customshowers-design → Settings → Variables):
  *   RESEND_API_KEY        required
  *   TURNSTILE_SECRET_KEY  required in production; skipped if unset
+ *   GEMINI_API_KEY        optional, for photo recognition features
  *   BUSINESS_EMAIL        optional, defaults to sales@customshowers.uk
  *   FROM_EMAIL            optional, defaults to noreply@customshowers.uk
  */
 
 /** Bump when the code changes, so a browser visit shows which paste is live. */
-const WORKER_VERSION = "v13";
+const WORKER_VERSION = "v14";
 
 /**
  * CORS configuration: the production domain, plus Cloudflare Pages preview
@@ -77,6 +78,13 @@ const MAX_ATTACHMENTS = 12;
 /** Well inside Resend's limit, and inside what an inbox will accept. */
 const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
 
+/** Gemini API configuration for photo recognition */
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
+const GEMINI_TIMEOUT_MS = 20000;
+const MAX_GEMINI_IMAGES = 4;
+const MAX_GEMINI_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_GEMINI_MIMES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+
 /**
  * Rate limiting. Per-isolate and in memory: Cloudflare runs many isolates and
  * recycles them, so this is a burst brake rather than a hard quota. A WAF rate
@@ -97,10 +105,13 @@ const SUSPICIOUS_ELAPSED_MS = 10000;
 export default {
   async fetch(request, env) {
     const corsHeaders = getCorsHeaders(request);
-    
+
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders });
     }
+
+    const url = new URL(request.url);
+
     // A browser GET lands here. Return the version so opening the URL in a tab
     // confirms which paste is actually live — otherwise "did the deploy take?"
     // is only answerable by triggering a failure and reading the logs.
@@ -109,6 +120,14 @@ export default {
         `customshowers-design ${WORKER_VERSION} — this endpoint only accepts POST from the configurator.`,
         { status: 405, headers: { "Content-Type": "text/plain", ...corsHeaders } }
       );
+    }
+
+    // Route to Gemini endpoints
+    if (url.pathname === "/analyse") {
+      return handleAnalyse(request, env, corsHeaders);
+    }
+    if (url.pathname === "/suggest") {
+      return handleSuggest(request, env, corsHeaders);
     }
 
     try {
@@ -567,4 +586,429 @@ function customerHtml({ customer, summary, disclaimer, specTable }) {
       </p>
       <p style="font-size:14px;">Questions? Just reply to this email.</p>
     </div>`;
+}
+
+// ── Gemini Photo Recognition ────────────────────────────────────────────────
+
+/**
+ * Exported for testing: validate images array for Gemini API.
+ */
+export function validateGeminiImages(images) {
+  const errors = [];
+
+  if (!Array.isArray(images)) {
+    errors.push("images must be an array");
+    return { valid: false, errors };
+  }
+
+  if (images.length === 0) {
+    errors.push("at least one image is required");
+  }
+
+  if (images.length > MAX_GEMINI_IMAGES) {
+    errors.push(`maximum ${MAX_GEMINI_IMAGES} images allowed, received ${images.length}`);
+  }
+
+  for (let i = 0; i < images.length; i++) {
+    const img = images[i];
+    if (!img || typeof img !== "object") {
+      errors.push(`image ${i}: must be an object`);
+      continue;
+    }
+
+    if (!img.mimeType || typeof img.mimeType !== "string") {
+      errors.push(`image ${i}: mimeType is required`);
+    } else if (!ALLOWED_GEMINI_MIMES.includes(img.mimeType)) {
+      errors.push(`image ${i}: mimeType must be one of ${ALLOWED_GEMINI_MIMES.join(", ")}`);
+    }
+
+    if (!img.data || typeof img.data !== "string") {
+      errors.push(`image ${i}: data (base64) is required`);
+    } else {
+      const bytes = Math.ceil((img.data.length * 3) / 4);
+      if (bytes > MAX_GEMINI_IMAGE_BYTES) {
+        errors.push(`image ${i}: size ${bytes} bytes exceeds ${MAX_GEMINI_IMAGE_BYTES} bytes limit`);
+      }
+    }
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+/**
+ * Exported for testing: parse and validate Gemini API response.
+ */
+export function parseGeminiResponse(rawResponse, type) {
+  try {
+    if (!rawResponse || typeof rawResponse !== "object") {
+      return { valid: false, error: "Invalid response format" };
+    }
+
+    const candidate = rawResponse.candidates?.[0];
+    if (!candidate) {
+      return { valid: false, error: "No candidates in response" };
+    }
+
+    const content = candidate.content?.parts?.[0]?.text;
+    if (!content) {
+      return { valid: false, error: "No text content in response" };
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(content);
+    } catch (e) {
+      return { valid: false, error: "Response is not valid JSON" };
+    }
+
+    // Validate structure based on type
+    if (type === "analyse") {
+      if (!Array.isArray(parsed.readings)) {
+        return { valid: false, error: "readings must be an array" };
+      }
+
+      // Validate and clamp each reading
+      const validatedReadings = parsed.readings.map((r) => ({
+        value: typeof r.value === "number" ? r.value : null,
+        unit: typeof r.unit === "string" ? r.unit : "",
+        confidence: clampConfidence(r.confidence),
+        source: typeof r.source === "string" ? r.source : "",
+      }));
+
+      return {
+        valid: true,
+        data: {
+          readings: validatedReadings,
+          notes: typeof parsed.notes === "string" ? parsed.notes : "",
+        },
+      };
+    } else if (type === "suggest") {
+      return {
+        valid: true,
+        data: {
+          config: parsed.config || {},
+          notes: typeof parsed.notes === "string" ? parsed.notes : "",
+        },
+      };
+    }
+
+    return { valid: false, error: "Unknown response type" };
+  } catch (err) {
+    return { valid: false, error: `Parse error: ${err.message}` };
+  }
+}
+
+/**
+ * Exported for testing: clamp confidence to 0-1 range.
+ */
+export function clampConfidence(value) {
+  if (typeof value !== "number" || isNaN(value)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(1, value));
+}
+
+/**
+ * Call Gemini API with timeout and error handling.
+ */
+async function callGeminiAPI(apiKey, prompt, images, schema) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+
+  try {
+    const parts = [{ text: prompt }];
+
+    // Add images as inline data
+    for (const img of images) {
+      parts.push({
+        inline_data: {
+          mime_type: img.mimeType,
+          data: img.data,
+        },
+      });
+    }
+
+    const response = await fetch(GEMINI_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        contents: [{ parts }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: schema,
+        },
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      return {
+        success: false,
+        error: `Gemini API returned ${response.status}`,
+        detail: errorText.slice(0, 200),
+      };
+    }
+
+    const data = await response.json();
+    return { success: true, data };
+  } catch (err) {
+    clearTimeout(timeoutId);
+
+    if (err.name === "AbortError") {
+      return { success: false, error: "Request timed out" };
+    }
+
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Verify Turnstile token (shared by both Gemini endpoints).
+ */
+async function verifyTurnstile(token, secretKey) {
+  if (!token) {
+    return { success: false, error: "Security check required" };
+  }
+
+  const verifyRes = await fetch(
+    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `secret=${secretKey}&response=${token}`,
+    }
+  );
+
+  const verify = await verifyRes.json();
+
+  if (!verify.success) {
+    const codes = verify["error-codes"] || [];
+    return {
+      success: false,
+      error: "Security check failed",
+      codes,
+    };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Handler for /analyse endpoint: analyse measurement photos.
+ */
+async function handleAnalyse(request, env, corsHeaders) {
+  try {
+    const body = await request.json();
+    const { images, turnstileToken } = body || {};
+
+    // Verify Turnstile if configured
+    if (env.TURNSTILE_SECRET_KEY) {
+      const verification = await verifyTurnstile(turnstileToken, env.TURNSTILE_SECRET_KEY);
+      if (!verification.success) {
+        return json(
+          { available: false, reason: verification.error },
+          200,
+          corsHeaders
+        );
+      }
+    }
+
+    // Check if Gemini API key is configured
+    if (!env.GEMINI_API_KEY) {
+      return json(
+        { available: false, reason: "Feature not configured" },
+        200,
+        corsHeaders
+      );
+    }
+
+    // Validate images
+    const validation = validateGeminiImages(images);
+    if (!validation.valid) {
+      return json(
+        { available: false, reason: validation.errors.join("; ") },
+        200,
+        corsHeaders
+      );
+    }
+
+    // Call Gemini API
+    const prompt = `Analyse these shower measurement photos. Extract visible measurements including:
+- Opening height (height of the shower opening)
+- Floor width (width at floor level)
+- Wall lean or out-of-plumb (any deviation from vertical)
+- Tape measure or laser readings visible in the photos
+
+For each measurement found, provide:
+- value: the numeric measurement
+- unit: the unit (mm, cm, m, inches, etc.)
+- confidence: your confidence level (0.0 to 1.0)
+- source: brief description of what you observed (e.g., "tape measure showing 1850mm on left wall")
+
+Include a notes field with any observations about measurement quality, visibility, or conditions.`;
+
+    const schema = {
+      type: "object",
+      properties: {
+        readings: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              value: { type: "number" },
+              unit: { type: "string" },
+              confidence: { type: "number" },
+              source: { type: "string" },
+            },
+            required: ["value", "unit", "confidence", "source"],
+          },
+        },
+        notes: { type: "string" },
+      },
+      required: ["readings", "notes"],
+    };
+
+    const result = await callGeminiAPI(env.GEMINI_API_KEY, prompt, images, schema);
+
+    if (!result.success) {
+      return json(
+        { available: false, reason: result.error },
+        200,
+        corsHeaders
+      );
+    }
+
+    // Parse and validate response
+    const parsed = parseGeminiResponse(result.data, "analyse");
+    if (!parsed.valid) {
+      return json(
+        { available: false, reason: parsed.error },
+        200,
+        corsHeaders
+      );
+    }
+
+    return json(
+      { available: true, ...parsed.data },
+      200,
+      corsHeaders
+    );
+  } catch (err) {
+    console.error("Gemini /analyse error:", err);
+    return json(
+      { available: false, reason: "Internal error" },
+      200,
+      corsHeaders
+    );
+  }
+}
+
+/**
+ * Handler for /suggest endpoint: suggest shower configuration from room photo.
+ */
+async function handleSuggest(request, env, corsHeaders) {
+  try {
+    const body = await request.json();
+    const { images, turnstileToken } = body || {};
+
+    // Verify Turnstile if configured
+    if (env.TURNSTILE_SECRET_KEY) {
+      const verification = await verifyTurnstile(turnstileToken, env.TURNSTILE_SECRET_KEY);
+      if (!verification.success) {
+        return json(
+          { available: false, reason: verification.error },
+          200,
+          corsHeaders
+        );
+      }
+    }
+
+    // Check if Gemini API key is configured
+    if (!env.GEMINI_API_KEY) {
+      return json(
+        { available: false, reason: "Feature not configured" },
+        200,
+        corsHeaders
+      );
+    }
+
+    // Validate images
+    const validation = validateGeminiImages(images);
+    if (!validation.valid) {
+      return json(
+        { available: false, reason: validation.errors.join("; ") },
+        200,
+        corsHeaders
+      );
+    }
+
+    // Call Gemini API
+    const prompt = `Analyse this bathroom/shower area photo and suggest a shower configuration. Consider:
+- Available space and opening dimensions
+- Wall conditions and mounting options
+- Suitable panel count and arrangement
+- Appropriate glass type and finish
+- Handle placement recommendations
+
+Provide a suggested configuration with relevant fields (panelCount, mounting, finish, handle, glass, etc.) and notes explaining your recommendations.`;
+
+    const schema = {
+      type: "object",
+      properties: {
+        config: {
+          type: "object",
+          properties: {
+            panelCount: { type: "number" },
+            mounting: { type: "string" },
+            finish: { type: "string" },
+            handle: { type: "string" },
+            glass: { type: "string" },
+            openingWidthMm: { type: "number" },
+            heightMm: { type: "number" },
+          },
+        },
+        notes: { type: "string" },
+      },
+      required: ["config", "notes"],
+    };
+
+    const result = await callGeminiAPI(env.GEMINI_API_KEY, prompt, images, schema);
+
+    if (!result.success) {
+      return json(
+        { available: false, reason: result.error },
+        200,
+        corsHeaders
+      );
+    }
+
+    // Parse and validate response
+    const parsed = parseGeminiResponse(result.data, "suggest");
+    if (!parsed.valid) {
+      return json(
+        { available: false, reason: parsed.error },
+        200,
+        corsHeaders
+      );
+    }
+
+    return json(
+      { available: true, ...parsed.data },
+      200,
+      corsHeaders
+    );
+  } catch (err) {
+    console.error("Gemini /suggest error:", err);
+    return json(
+      { available: false, reason: "Internal error" },
+      200,
+      corsHeaders
+    );
+  }
 }

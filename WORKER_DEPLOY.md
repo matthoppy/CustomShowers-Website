@@ -16,21 +16,14 @@ no build step and no bundler — `design-worker/worker.js` is the whole thing.
 | Worker name | `customshowers-design` (exact — the configurator posts to it by name) |
 | URL | `https://customshowers-design.vcwvk4sm9m.workers.dev` |
 | File to paste | `design-worker/worker.js` from this repository |
-| Currently live | **v7** |
-| This file | **v12** |
+| Currently live | Check the URL to see the version |
+| This file | **v14** |
 
-The live version is five behind. Until it is updated:
+## New in v14
 
-- **Attachments are capped at 4.** Two of those are the plan and elevation
-  drawings, so only the first two customer photos arrive. Anything after that
-  is dropped silently — no error, no note in the email.
-- The measurement summary rows (`openingWidths`, `openingCondition`,
-  `measuredBy`) render as raw field names instead of labels.
-- Blocking issues the customer was warned about are not shown.
-- Cutout positions are missing from the panel table.
-
-Nothing breaks — v7 degrades rather than erroring — but the photos backing up
-each measurement are the point of the new flow, and most of them never arrive.
+Version 14 adds **Gemini photo recognition** endpoints for optional AI-powered
+measurement analysis and configuration suggestions. The main enquiry flow is
+unchanged.
 
 ---
 
@@ -57,14 +50,14 @@ https://customshowers-design.vcwvk4sm9m.workers.dev
 It should answer:
 
 ```
-customshowers-design v12 — this endpoint only accepts POST from the configurator.
+customshowers-design v14 — this endpoint only accepts POST from the configurator.
 ```
 
-A **405 Method Not Allowed** page showing **v12** is the correct, healthy
+A **405 Method Not Allowed** page showing **v14** is the correct, healthy
 response — the Worker only accepts POST from the configurator, and the version
 string is there precisely so a browser visit confirms which paste is live.
 
-If it still says **v7**, the deploy did not take. Repeat from step 4.
+If it still says an older version, the deploy did not take. Repeat from step 4.
 
 ---
 
@@ -76,6 +69,7 @@ The Worker already has these set, and they are **not** in the file:
 | --- | --- |
 | `RESEND_API_KEY` | Sends the email. Without it every enquiry fails. |
 | `TURNSTILE_SECRET_KEY` | Pairs with the site key in `src/configurator/tenant.ts`. |
+| `GEMINI_API_KEY` | Optional. Enables photo recognition features (/analyse and /suggest endpoints). |
 | `BUSINESS_EMAIL` | Optional. Defaults to sales@customshowers.uk. |
 | `FROM_EMAIL` | Optional. Defaults to noreply@customshowers.uk. |
 
@@ -83,6 +77,9 @@ Pasting the code does not affect them. **Do not delete and recreate the
 Worker** — that loses the secrets, and the Turnstile key in particular must be
 the exact pair of the site key the page uses, or every submission is rejected
 with "Security check failed".
+
+For detailed instructions on the Gemini endpoints and deployment, see
+`design-worker/PASTE-DEPLOY.md`.
 
 ---
 
