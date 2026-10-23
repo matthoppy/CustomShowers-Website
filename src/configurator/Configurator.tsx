@@ -146,7 +146,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
 
   // How many measurement cards this shape needs: a corner shower is two
   // straight runs and so two more pairs of widths than an inline one.
-  const cardTotal = measureCardCount(state.opening.runs.length);
+  const cardTotal = measureCardCount(state);
   const inMeasureCards = isMobile && stepId === 'measure';
   const onLastMeasureCard = measureCard >= cardTotal - 1;
 

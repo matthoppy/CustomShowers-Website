@@ -91,7 +91,7 @@ export function createInitialState(glassThicknessMm: GlassThickness = 10): Confi
       {
         id: 'panel-1',
         kind: 'door',
-        width_mm: 700,
+        width_mm: 650,
         door: { hinge_side: 'right', swing: 'out' },
       },
     ],
@@ -106,7 +106,7 @@ export function createInitialState(glassThicknessMm: GlassThickness = 10): Confi
     glassCoating: 'none',
     finishId: 'chrome',
     handleId: 'pull',
-    opening: createOpeningMeasurements([700]),
+    opening: createOpeningMeasurements([650]),
   };
 }
 
@@ -114,7 +114,7 @@ export function createPanel(kind: PanelKind, index: number): ConfiguratorPanel {
   const panel: ConfiguratorPanel = {
     id: `panel-${index}`,
     kind,
-    width_mm: kind === 'door' ? 700 : 600,
+    width_mm: kind === 'door' ? 650 : 600,
   };
   if (kind === 'door') {
     panel.door = { hinge_side: 'right', swing: 'out' };
