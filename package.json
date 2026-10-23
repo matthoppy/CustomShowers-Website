@@ -10,7 +10,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node design-worker/worker.test.js"
+    "test": "node design-worker/worker.test.js && node src/configurator/mapGeminiToTemplate.test.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
