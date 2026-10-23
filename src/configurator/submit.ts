@@ -12,6 +12,7 @@ import { buildSpec, type ConfiguratorSpec } from './spec';
 import { finishLabel, handleLabel, type TenantConfig } from './tenant';
 import { openingContext } from './geometry';
 import type { ConfiguratorState, CustomerDetails } from './types';
+import type { PhotoLayoutRecord } from './photoLayout';
 
 export interface EnquiryAttachment {
   filename: string;
@@ -53,6 +54,8 @@ export interface EnquiryPayload {
   attachments: EnquiryAttachment[];
   turnstileToken: string | null;
   antispam: AntiSpamSignals;
+  /** What the layout was based on, when the customer started from a photo. */
+  photoLayout: PhotoLayoutRecord | null;
 }
 
 export interface AntiSpamSignals {
@@ -121,7 +124,8 @@ export function buildEnquiryPayload(
   customer: CustomerDetails,
   attachments: EnquiryAttachment[],
   turnstileToken: string | null,
-  antispam: AntiSpamSignals
+  antispam: AntiSpamSignals,
+  photoLayout: PhotoLayoutRecord | null = null
 ): EnquiryPayload {
   const spec = buildSpec(state);
   return {
@@ -153,6 +157,7 @@ export function buildEnquiryPayload(
     attachments,
     turnstileToken,
     antispam,
+    photoLayout,
   };
 }
 

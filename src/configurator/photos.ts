@@ -23,6 +23,7 @@ export type PhotoSlot =
   | `width-floor-${number}`
   | 'walls'
   | 'floor'
+  | 'space'
   | 'extra';
 
 export interface Photo {
@@ -56,6 +57,7 @@ export function slotFilename(slot: PhotoSlot): string {
   if (slot === 'height') return 'measured-height';
   if (slot === 'walls') return 'measured-wall-lean';
   if (slot === 'floor') return 'measured-floor-level';
+  if (slot === 'space') return 'shower-space';
   return 'photo';
 }
 
@@ -67,6 +69,7 @@ export function slotLabel(slot: PhotoSlot): string {
   if (slot === 'height') return 'Height';
   if (slot === 'walls') return 'Wall lean';
   if (slot === 'floor') return 'Floor level';
+  if (slot === 'space') return 'The shower space (layout photo)';
   return 'The opening';
 }
 
@@ -76,6 +79,8 @@ export function slotLabel(slot: PhotoSlot): string {
  */
 export function slotSortKey(slot: PhotoSlot): number {
   const run = slotRunNumber(slot) ?? 0;
+  // The whole space first: it is what makes sense of everything after it.
+  if (slot === 'space') return -1;
   if (slot === 'height') return 0;
   if (slot.startsWith('width-floor')) return 1 + run;
   if (slot === 'walls') return 1000;
