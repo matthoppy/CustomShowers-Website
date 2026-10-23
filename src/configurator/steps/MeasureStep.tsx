@@ -46,7 +46,7 @@ import type { StepProps } from './types';
 
 const HEIGHT_PRESETS = [1500, 1850, 2000, 2100];
 
-/** The door openings people actually ask for. 700 is the usual one. */
+/** The door openings people actually ask for. 650 is our default. */
 const DOOR_PRESETS = [600, 650, 700, 750, 800];
 
 /**
@@ -738,7 +738,7 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
           </figcaption>
         </figure>
       ),
-      help: '700mm suits most people. Under 600mm starts to feel tight; over 800mm makes a heavy door.',
+      help: 'We default to 650mm. Under 600mm starts to feel tight; over 800mm makes a heavy door.',
       body: (
         <>
           <div className="flex flex-wrap gap-2">
