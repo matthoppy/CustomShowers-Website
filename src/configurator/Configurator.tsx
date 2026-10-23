@@ -24,6 +24,8 @@ import { createInitialState, type ConfiguratorState, type CustomerDetails } from
 import { getTenant, type TenantConfig } from './tenant';
 import { TEMPLATES, type ShowerTemplate } from './templates';
 import { slotSortKey, type Photo } from './photos';
+import { PhotoStart } from './PhotoStart';
+import type { PhotoLayoutRecord } from './photoLayout';
 import {
   buildEnquiryPayload,
   submitEnquiry,
@@ -80,6 +82,8 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
   const [customer, setCustomerState] = useState<CustomerDetails>(EMPTY_CUSTOMER);
   const [activePanelId, setActivePanelId] = useState<string | null>(state.panels[0]?.id ?? null);
   const [photos, setPhotos] = useState<Photo[]>([]);
+  /** Set when the shape came from a photo, so the workshop can see why. */
+  const [photoLayout, setPhotoLayout] = useState<PhotoLayoutRecord | null>(null);
   const [measureCard, setMeasureCard] = useState(0);
   const isMobile = useIsMobile();
   const [submitting, setSubmitting] = useState(false);
@@ -236,10 +240,15 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
       attachments.push({ filename: photo.filename, content: photo.content });
     }
 
-    const payload = buildEnquiryPayload(tenant, state, customer, attachments, turnstileToken, {
-      honeypot,
-      elapsedMs: Date.now() - startedAtRef.current,
-    });
+    const payload = buildEnquiryPayload(
+      tenant,
+      state,
+      customer,
+      attachments,
+      turnstileToken,
+      { honeypot, elapsedMs: Date.now() - startedAtRef.current },
+      photoLayout
+    );
     const result = await submitEnquiry(tenant.enquiryEndpoint, payload);
 
     setSubmitting(false);
@@ -258,6 +267,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     setTemplateId(TEMPLATES[0].id);
     setState(fresh);
     setCustomerState(EMPTY_CUSTOMER);
+    setPhotoLayout(null);
     setActivePanelId(fresh.panels[0]?.id ?? null);
     setStepId('shape');
     setSubmitted(false);
@@ -345,7 +355,29 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                 <ShapeStep
                   {...stepProps}
                   selectedTemplateId={templateId}
+                  photoStart={
+                    tenant.layoutEndpoint ? (
+                      <PhotoStart
+                        endpoint={tenant.layoutEndpoint}
+                        accent={tenant.brand.primary}
+                        state={state}
+                        photo={photos.find((p) => p.slot === 'space')}
+                        record={photoLayout}
+                        onPhoto={(p) =>
+                          setPhotos((list) => [...list.filter((x) => x.slot !== 'space'), ...(p ? [p] : [])])
+                        }
+                        onApply={(t, record) => {
+                          setTemplateId(null);
+                          setPhotoLayout(record);
+                          setState((s) => applyTemplate(s, t));
+                          setActivePanelId(t.panels[0].id);
+                        }}
+                      />
+                    ) : undefined
+                  }
                   onSelectTemplate={(t) => {
+                    // A stock shape replaces whatever the photo suggested.
+                    setPhotoLayout(null);
                     setTemplateId(t.id);
                     setState((s) => applyTemplate(s, t));
                     setActivePanelId(t.panels[0].id);

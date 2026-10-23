@@ -14,6 +14,8 @@ interface ShapeStepProps extends StepProps {
   selectedTemplateId: string | null;
   onSelectTemplate: (template: ShowerTemplate) => void;
   onStartFromScratch: () => void;
+  /** The photo start, when the tenant has it switched on. */
+  photoStart?: JSX.Element;
 }
 
 export function ShapeStep({
@@ -21,9 +23,11 @@ export function ShapeStep({
   selectedTemplateId,
   onSelectTemplate,
   onStartFromScratch,
+  photoStart,
 }: ShapeStepProps) {
   return (
     <div className="space-y-4">
+      {photoStart}
       <div className="grid gap-3 sm:grid-cols-2">
         {TEMPLATES.map((t) => {
           const selected = t.id === selectedTemplateId;

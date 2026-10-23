@@ -44,6 +44,11 @@ export interface TenantConfig {
    * than by whatever the browser sends.
    */
   enquiryEndpoint: string;
+  /**
+   * The layout worker that reads a photo of the space and suggests shapes.
+   * Leave it out and the photo start is simply not offered.
+   */
+  layoutEndpoint?: string;
   /** Reply-to shown on the enquiry, usually the customer's own address. */
   fromName: string;
   finishes: HardwareFinish[];
@@ -85,6 +90,9 @@ export const CUSTOM_SHOWERS: TenantConfig = {
   },
   destinationEmail: 'sales@customshowers.uk',
   enquiryEndpoint: 'https://customshowers-design.vcwvk4sm9m.workers.dev',
+  // Set this to the deployed customshowers-layout worker to switch on the
+  // photo start, e.g. 'https://customshowers-layout.vcwvk4sm9m.workers.dev'.
+  layoutEndpoint: import.meta.env.VITE_LAYOUT_ENDPOINT || undefined,
   fromName: 'Custom Showers Design Tool',
   // Matches HARDWARE_FINISH_NAMES in lib/constants.ts, which is the list this
   // project already orders hinges against. Swatches are approximations for the

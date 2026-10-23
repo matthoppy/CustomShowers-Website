@@ -1,0 +1,15 @@
+name = "customshowers-layout"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+# Secrets are set in the Cloudflare dashboard, never here:
+#   Workers & Pages → customshowers-layout → Settings → Variables and Secrets
+#
+#   ANTHROPIC_API_KEY   required — from console.anthropic.com
+#   ANTHROPIC_MODEL     optional — defaults to claude-sonnet-5-5
+#
+# Before going live, add a Cloudflare rate limiting rule on this worker's
+# route as well: every request here is a paid model call.
+#
+# Deploy:
+#   cd layout-worker && npx wrangler deploy

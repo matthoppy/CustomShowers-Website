@@ -16,7 +16,7 @@
  */
 
 /** Bump when the code changes, so a browser visit shows which paste is live. */
-const WORKER_VERSION = "v13";
+const WORKER_VERSION = "v14";
 
 /**
  * CORS configuration: the production domain, plus Cloudflare Pages preview
@@ -113,7 +113,7 @@ export default {
 
     try {
       const body = await request.json();
-      const { tenantId, customer, summary, spec, disclaimer, attachments, turnstileToken, antispam } =
+      const { tenantId, customer, summary, spec, disclaimer, attachments, turnstileToken, antispam, photoLayout } =
         body || {};
 
       if (!customer?.name || !customer?.email) {
@@ -234,7 +234,7 @@ export default {
         subject: `${suspicious ? "[Check] " : ""}Shower design from ${customer.name}${
           customer.postcode ? ` (${customer.postcode})` : ""
         }`,
-        html: businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast, challengeSkipped, antispam, mailAttachments }),
+        html: businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast, challengeSkipped, antispam, mailAttachments, photoLayout }),
         attachments: mailAttachments,
       });
 
@@ -442,7 +442,7 @@ function buildSpecTable(panels) {
     </table>`;
 }
 
-function businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast, challengeSkipped, antispam, mailAttachments }) {
+function businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast, challengeSkipped, antispam, mailAttachments, photoLayout }) {
   const warnings = spec?.warnings || [];
   const blockingIssues = spec?.blockingIssues || [];
   const rakeNotes = spec?.rakeNotes || [];
@@ -520,6 +520,8 @@ function businessHtml({ customer, summary, spec, disclaimer, specTable, tooFast,
           : ""
       }
 
+      ${photoLayoutHtml(photoLayout)}
+
       ${
         customer.notes
           ? `<h3 style="margin:24px 0 8px;">Customer notes</h3><p style="font-size:14px;white-space:pre-wrap;">${esc(customer.notes)}</p>`
@@ -566,5 +568,28 @@ function customerHtml({ customer, summary, disclaimer, specTable }) {
         ${esc(disclaimer)}
       </p>
       <p style="font-size:14px;">Questions? Just reply to this email.</p>
+    </div>`;
+}
+
+/**
+ * The shape came from a photo: say what we read in it and what the customer
+ * asked to change, so whoever prices it can check the layout against the
+ * shower-space photo attached.
+ */
+function photoLayoutHtml(photoLayout) {
+  if (!photoLayout || typeof photoLayout !== "object") return "";
+  const list = (items) =>
+    (Array.isArray(items) ? items : [])
+      .filter((x) => typeof x === "string" && x.trim())
+      .slice(0, 10)
+      .map((x) => `<li>${esc(x.slice(0, 500))}</li>`)
+      .join("");
+  const notes = list(photoLayout.notes);
+  const requests = list(photoLayout.requests);
+  return `<div style="margin:24px 0;padding:14px 16px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;">
+      <strong style="color:#075985;">Layout suggested from the customer's photo: ${esc(String(photoLayout.title || "").slice(0, 120))}</strong>
+      ${notes ? `<p style="margin:10px 0 4px;font-size:13px;color:#075985;">What we read in the photo</p><ul style="margin:0;padding-left:18px;font-size:14px;color:#0c4a6e;">${notes}</ul>` : ""}
+      ${requests ? `<p style="margin:10px 0 4px;font-size:13px;color:#075985;">Changes the customer asked for</p><ul style="margin:0;padding-left:18px;font-size:14px;color:#0c4a6e;">${requests}</ul>` : ""}
+      <p style="margin:10px 0 0;font-size:12px;color:#64748b;">Suggested automatically — check it against shower-space.jpg before pricing.</p>
     </div>`;
 }
