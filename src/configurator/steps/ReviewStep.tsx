@@ -522,23 +522,11 @@ export function ReviewStep({
           {/* Manual Turnstile widget container - rendered via window.turnstile.render() */}
           <div id="turnstile-widget" className="flex justify-center" />
 
-          {/* Without this, a blocked or slow challenge leaves the send button
-              disabled with nothing on screen to explain why. */}
           {challenge === 'failed' && (
-            <div className="flex gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-4">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-              <div className="text-sm">
-                <div className="font-semibold">Security check required</div>
-                <p className="mt-1 text-foreground">
-                  The security check must load before you can send your design. This is usually 
-                  caused by an ad blocker or privacy extension.
-                </p>
-                <p className="mt-2 font-medium">To fix:</p>
-                <ul className="mt-1 list-disc space-y-1 pl-5">
-                  <li>Allow <code className="rounded bg-muted px-1 font-mono text-xs">challenges.cloudflare.com</code></li>
-                  <li>Disable ad blockers for this site</li>
-                  <li>Refresh the page</li>
-                </ul>
+            <div className="flex gap-3 rounded-lg border bg-muted/40 p-4">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+              <div className="text-sm text-muted-foreground">
+                The security check couldn't load. You can still send your design.
               </div>
             </div>
           )}

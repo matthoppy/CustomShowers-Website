@@ -69,6 +69,11 @@ export interface TenantConfig {
    * enquiry endpoint is reachable from anywhere.
    */
   turnstileSiteKey?: string;
+  /**
+   * Design worker URL for Gemini photo analysis endpoints.
+   * Optional: falls back to default worker URL if not set.
+   */
+  designWorkerUrl?: string;
 }
 
 const DEFAULT_HANDLES: HandleOption[] = [
@@ -119,6 +124,7 @@ export const CUSTOM_SHOWERS: TenantConfig = {
   // needs no code change — the last swap took a deploy and a debugging round
   // purely because this was hardcoded.
   turnstileSiteKey: import.meta.env.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAACmVMi3ZDLDzTYwv',
+  designWorkerUrl: 'https://customshowers-design.vcwvk4sm9m.workers.dev',
 };
 
 export const TENANTS: Record<string, TenantConfig> = {

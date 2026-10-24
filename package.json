@@ -9,7 +9,8 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node design-worker/worker.test.js && node design-worker/worker.routes.test.js && node src/configurator/mapGeminiToTemplate.test.js && node src/configurator/canSendReview.test.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

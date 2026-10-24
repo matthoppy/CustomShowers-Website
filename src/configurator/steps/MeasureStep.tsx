@@ -42,6 +42,8 @@ import {
   type MeasureFigure,
 } from '../views/MeasureDiagram';
 import type { StepProps } from './types';
+import { GeminiSuggestions } from '../GeminiSuggestions';
+import type { GeminiReading } from '../gemini';
 
 const HEIGHT_PRESETS = [1500, 1850, 2000, 2100];
 
@@ -325,6 +327,54 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
     } else if (check.code.includes('widthAtTopCheck')) {
       patchRun(check.runIndex, { widthAtTopCheckMm: check.suggestionMm });
     }
+  };
+
+  /**
+   * Apply a Gemini AI reading to the appropriate measurement field.
+   * Only sets the value when user explicitly clicks Accept - never auto-fills.
+   */
+  const handleGeminiReading = (reading: GeminiReading) => {
+    // Convert reading to mm if needed
+    let valueMm = reading.value;
+    if (reading.unit === 'cm') {
+      valueMm = reading.value * 10;
+    } else if (reading.unit === 'm') {
+      valueMm = reading.value * 1000;
+    } else if (reading.unit === 'inches' || reading.unit === 'in') {
+      valueMm = reading.value * 25.4;
+    }
+
+    // Round to nearest mm
+    valueMm = Math.round(valueMm);
+
+    // Try to match to a measurement field based on the source description
+    const source = reading.source.toLowerCase();
+
+    // Height measurement
+    if (source.includes('height') || source.includes('opening height')) {
+      patch({ heightMm: valueMm });
+      return;
+    }
+
+    // Floor width for first run (most common case)
+    if (source.includes('width') || source.includes('floor width') || source.includes('floor')) {
+      setRunFloorWidth(0, valueMm);
+      return;
+    }
+
+    // Wall lean measurements
+    if (source.includes('lean') || source.includes('plumb') || source.includes('wall')) {
+      // Apply to first wall that doesn't have a measurement
+      if (!wallMeasured(m.startWall)) {
+        patchWall('startWall', { method: 'level', gapMm: valueMm });
+      } else if (!wallMeasured(m.endWall)) {
+        patchWall('endWall', { method: 'level', gapMm: valueMm });
+      }
+      return;
+    }
+
+    // Default: apply to first run floor width if nothing else matches
+    setRunFloorWidth(0, valueMm);
   };
 
   /**
@@ -870,6 +920,10 @@ function MobileCards({
       </Measurement>
 
       {alerts}
+
+      {isFinal && photos.length > 0 && (
+        <GeminiSuggestions photos={photos} onApplyReading={handleGeminiReading} />
+      )}
 
       {isFinal && (
         <p className="text-xs text-muted-foreground">

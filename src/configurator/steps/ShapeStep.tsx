@@ -8,6 +8,7 @@
 import { Pencil } from 'lucide-react';
 import { TEMPLATES, type ShowerTemplate } from '../templates';
 import { TemplateThumbnail } from '../views/TemplateThumbnail';
+import { ShapeConfigSuggestion } from '../ShapeConfigSuggestion';
 import type { StepProps } from './types';
 
 interface ShapeStepProps extends StepProps {
@@ -24,6 +25,8 @@ export function ShapeStep({
 }: ShapeStepProps) {
   return (
     <div className="space-y-4">
+      <ShapeConfigSuggestion onAcceptTemplate={onSelectTemplate} />
+
       <div className="grid gap-3 sm:grid-cols-2">
         {TEMPLATES.map((t) => {
           const selected = t.id === selectedTemplateId;
