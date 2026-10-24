@@ -30,6 +30,7 @@ import {
   svgToPngBase64,
   type EnquiryAttachment,
 } from './submit';
+import { canSendReview } from './canSendReview';
 
 const EMPTY_CUSTOMER: CustomerDetails = {
   name: '',
@@ -39,8 +40,6 @@ const EMPTY_CUSTOMER: CustomerDetails = {
   notes: '',
   measurementsAcknowledged: false,
 };
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * Drop a template's shape into the current state, keeping anything the
@@ -187,19 +186,15 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
       case 'hardware':
         return true;
       case 'review':
-        return (
-          customer.name.trim().length > 1 &&
-          EMAIL_PATTERN.test(customer.email) &&
-          customer.measurementsAcknowledged &&
-          // Turnstile required: must have BOTH a valid token AND ready state.
-          // State can only become 'ready' after onSuccess callback with token.
-          // This ensures the button stays disabled until a real token exists.
-          (!tenant.turnstileSiteKey || (challengeState === 'ready' && !!turnstileToken && turnstileToken.length > 20))
-        );
+        return canSendReview({
+          name: customer.name,
+          email: customer.email,
+          measurementsAcknowledged: customer.measurementsAcknowledged,
+        });
       default:
         return false;
     }
-  }, [stepId, state, customer, tenant.turnstileSiteKey, turnstileToken, challengeState, isMobile, measureCard, cardTotal]);
+  }, [stepId, state, customer, isMobile, measureCard, cardTotal]);
 
   const stepProps: StepProps = {
     tenant,
