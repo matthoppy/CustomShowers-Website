@@ -5,7 +5,13 @@
 
 import { test } from "node:test";
 import assert from "node:assert";
-import { validateGeminiImages, parseGeminiResponse, clampConfidence } from "./worker.js";
+import {
+  validateGeminiImages,
+  parseGeminiResponse,
+  clampConfidence,
+  evaluateEnquiryChallenge,
+  buildGeminiUrl,
+} from "./worker.js";
 
 // ── clampConfidence ──────────────────────────────────────────────────────────
 
@@ -339,6 +345,58 @@ test("parseGeminiResponse: rejects unknown response type", () => {
   const result = parseGeminiResponse(response, "unknown");
   assert.strictEqual(result.valid, false);
   assert.ok(result.error.includes("Unknown response type"));
+});
+
+// ── evaluateEnquiryChallenge ─────────────────────────────────────────────────
+
+test("evaluateEnquiryChallenge: no secret key -> allow, not skipped", () => {
+  const result = evaluateEnquiryChallenge("some-token", null);
+  assert.strictEqual(result.allow, true);
+  assert.strictEqual(result.challengeSkipped, false);
+  assert.strictEqual(result.needsVerification, undefined);
+});
+
+test("evaluateEnquiryChallenge: no secret key, no token -> allow, not skipped", () => {
+  const result = evaluateEnquiryChallenge(null, null);
+  assert.strictEqual(result.allow, true);
+  assert.strictEqual(result.challengeSkipped, false);
+});
+
+test("evaluateEnquiryChallenge: secret key set, no token -> allow, skipped", () => {
+  const result = evaluateEnquiryChallenge(null, "secret-key");
+  assert.strictEqual(result.allow, true);
+  assert.strictEqual(result.challengeSkipped, true);
+});
+
+test("evaluateEnquiryChallenge: secret key set, empty token -> allow, skipped", () => {
+  const result = evaluateEnquiryChallenge("", "secret-key");
+  assert.strictEqual(result.allow, true);
+  assert.strictEqual(result.challengeSkipped, true);
+});
+
+test("evaluateEnquiryChallenge: secret key and token -> needs verification", () => {
+  const result = evaluateEnquiryChallenge("valid-token", "secret-key");
+  assert.strictEqual(result.allow, true);
+  assert.strictEqual(result.challengeSkipped, false);
+  assert.strictEqual(result.needsVerification, true);
+});
+
+// ── buildGeminiUrl ───────────────────────────────────────────────────────────
+
+test("buildGeminiUrl: builds URL from model name", () => {
+  const url = buildGeminiUrl("gemini-3.8-flash");
+  assert.strictEqual(
+    url,
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent"
+  );
+});
+
+test("buildGeminiUrl: handles different model names", () => {
+  const url = buildGeminiUrl("gemini-pro");
+  assert.strictEqual(
+    url,
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
+  );
 });
 
 console.log("All tests passed!");

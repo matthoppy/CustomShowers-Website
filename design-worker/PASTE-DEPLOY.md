@@ -16,7 +16,7 @@ no build step and no bundler — `design-worker/worker.paste.js` is the whole th
 | Worker name | `customshowers-design` (exact — the configurator posts to it by name) |
 | URL | `https://customshowers-design.vcwvk4sm9m.workers.dev` |
 | File to paste | `design-worker/worker.paste.js` from this repository |
-| Current version | **v14** |
+| Current version | **v14.1** |
 
 ---
 
@@ -42,10 +42,10 @@ https://customshowers-design.vcwvk4sm9m.workers.dev
 It should answer:
 
 ```
-customshowers-design v14 — this endpoint only accepts POST from the configurator.
+customshowers-design v14.1 — this endpoint only accepts POST from the configurator.
 ```
 
-A **405 Method Not Allowed** page showing **v14** is the correct, healthy
+A **405 Method Not Allowed** page showing **v14.1** is the correct, healthy
 response — the Worker only accepts POST from the configurator, and the version
 string is there precisely so a browser visit confirms which paste is live.
 
@@ -73,6 +73,12 @@ does not affect them.
 | `BUSINESS_EMAIL` | Destination for workshop notifications. | sales@customshowers.uk |
 | `FROM_EMAIL` | Sender address for emails. | noreply@customshowers.uk |
 
+### Optional Environment Variables
+
+| Variable | Type | Purpose | Default |
+| --- | --- | --- | --- |
+| `GEMINI_MODEL` | Plain text Variable | Gemini model to use for photo recognition. | gemini-3.8-flash |
+
 ### Adding GEMINI_API_KEY
 
 If you want to enable Gemini photo recognition:
@@ -87,11 +93,30 @@ If you want to enable Gemini photo recognition:
 The `/analyse` and `/suggest` endpoints will now respond with
 `{ "available": true, ... }` instead of `{ "available": false, "reason": "Feature not configured" }`.
 
+### Changing the Gemini model
+
+The worker uses `gemini-3.8-flash` by default. To use a different model:
+
+1. In the Worker page, click **Settings** → **Variables and Secrets**.
+2. Under **Environment Variables**, click **Add**.
+3. Select **Variable** (plain text, not a secret).
+4. Name: `GEMINI_MODEL`
+5. Value: The model name (e.g., `gemini-pro`, `gemini-3.8-flash-thinking`)
+6. Click **Deploy** to save.
+
+**Note:** If the model is not available on your API key, photo recognition features will return `{ "available": false }`, but the main enquiry path continues to work normally.
+
 **Do not delete and recreate the Worker** — that loses all secrets, and the
 Turnstile key in particular must be the exact pair of the site key the page
 uses, or every submission is rejected with "Security check failed".
 
 ---
+
+## Changes in v14.1
+
+- **Restored v5 Turnstile behavior for enquiry path**: Missing challenge tokens are now allowed through with a warning (logged as "Challenge skipped"), matching the pre-v14 lenient behavior. This fixes the regression where users with ad blockers were rejected. The workshop email shows "Security check did not run" and the subject line includes `[Check]` for suspicious submissions (fast completion or skipped challenge).
+- **Strict Turnstile on Gemini endpoints**: The `/analyse` and `/suggest` endpoints still require a valid token (missing or invalid tokens return 403), unchanged from v14.
+- **Configurable Gemini model**: The Gemini model can now be overridden via the `GEMINI_MODEL` environment variable (plain text Variable). Defaults to `gemini-3.8-flash`.
 
 ## New Endpoints in v14
 
@@ -180,7 +205,7 @@ Suggests shower configuration from a room photo:
 
 ## Rollback
 
-If v14 causes problems, you can roll back by pasting an older version of the
+If v14.1 causes problems, you can roll back by pasting an older version of the
 worker from git history:
 
 1. Find the previous version in the repository:
@@ -203,7 +228,7 @@ Alternatively, use Cloudflare's built-in rollback:
 
 ## Testing
 
-After deploying v14:
+After deploying v14.1:
 
 1. **Test the main enquiry flow:**
    - Go to customshowers.uk/design-shower

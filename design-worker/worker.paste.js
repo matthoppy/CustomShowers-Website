@@ -17,7 +17,7 @@
  */
 
 /** Bump when the code changes, so a browser visit shows which paste is live. */
-const WORKER_VERSION = "v14";
+const WORKER_VERSION = "v14.1";
 
 /**
  * CORS configuration: the production domain, plus Cloudflare Pages preview
@@ -79,7 +79,7 @@ const MAX_ATTACHMENTS = 12;
 const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
 
 /** Gemini API configuration for photo recognition */
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
+const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
 const GEMINI_TIMEOUT_MS = 20000;
 const MAX_GEMINI_IMAGES = 4;
 const MAX_GEMINI_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -101,6 +101,32 @@ const hits = new Map();
  * costs seconds to delete.
  */
 const SUSPICIOUS_ELAPSED_MS = 10000;
+
+/**
+ * Build Gemini API URL from model name.
+ */
+function buildGeminiUrl(model) {
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+}
+
+/**
+ * Evaluate enquiry Turnstile challenge decision.
+ * Returns { allow: boolean, challengeSkipped: boolean, errorResponse?: object }.
+ */
+function evaluateEnquiryChallenge(turnstileToken, secretKey) {
+  // No secret configured: always allow, challenge not skipped (no challenge exists)
+  if (!secretKey) {
+    return { allow: true, challengeSkipped: false };
+  }
+
+  // Secret configured but no token: allow with warning, mark as skipped
+  if (!turnstileToken) {
+    return { allow: true, challengeSkipped: true };
+  }
+
+  // Token present: will verify server-side (handled by caller)
+  return { allow: true, challengeSkipped: false, needsVerification: true };
+}
 
 export default {
   async fetch(request, env) {
@@ -156,22 +182,12 @@ export default {
         );
       }
 
-      // Verify Turnstile token when the secret key is configured. Unlike the
-      // previous lenient approach, missing tokens are now rejected to prevent
-      // spam while ensuring legitimate users can complete the security check.
-      if (env.TURNSTILE_SECRET_KEY) {
-        if (!turnstileToken) {
-          console.warn("Rejected: no challenge token", { ip: clientIp(request), tenantId });
-          return json(
-            {
-              error: "Security check required. Please allow challenges.cloudflare.com, disable ad blockers, and refresh the page.",
-            },
-            403,
-            corsHeaders
-          );
-        }
-        
-        // Verify the token server-side
+      // Evaluate Turnstile challenge for enquiry path (v5 lenient behaviour).
+      const challengeDecision = evaluateEnquiryChallenge(turnstileToken, env.TURNSTILE_SECRET_KEY);
+      let challengeSkipped = challengeDecision.challengeSkipped;
+
+      if (challengeDecision.needsVerification) {
+        // Token present: verify server-side
         const verifyRes = await fetch(
           "https://challenges.cloudflare.com/turnstile/v0/siteverify",
           {
@@ -205,9 +221,10 @@ export default {
             corsHeaders
           );
         }
+      } else if (challengeSkipped) {
+        // Secret key set but no token: log warning
+        console.warn("Challenge skipped: no token provided", { ip: clientIp(request), tenantId });
       }
-
-      const challengeSkipped = false;
       const tooFast =
         typeof antispam?.elapsedMs === "number" && antispam.elapsedMs < SUSPICIOUS_ELAPSED_MS;
       if (tooFast) {
@@ -711,7 +728,7 @@ function clampConfidence(value) {
 /**
  * Call Gemini API with timeout and error handling.
  */
-async function callGeminiAPI(apiKey, prompt, images, schema) {
+async function callGeminiAPI(apiKey, model, prompt, images, schema) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
 
@@ -728,7 +745,7 @@ async function callGeminiAPI(apiKey, prompt, images, schema) {
       });
     }
 
-    const response = await fetch(GEMINI_API_URL, {
+    const response = await fetch(buildGeminiUrl(model), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -770,10 +787,11 @@ async function callGeminiAPI(apiKey, prompt, images, schema) {
 
 /**
  * Verify Turnstile token (shared by both Gemini endpoints).
+ * Strict mode: missing token returns success: false.
  */
 async function verifyTurnstile(token, secretKey) {
   if (!token) {
-    return { success: false, error: "Security check required" };
+    return { success: false, error: "Security check required", status: 403 };
   }
 
   const verifyRes = await fetch(
@@ -807,13 +825,13 @@ async function handleAnalyse(request, env, corsHeaders) {
     const body = await request.json();
     const { images, turnstileToken } = body || {};
 
-    // Verify Turnstile if configured
+    // Verify Turnstile if configured (strict: missing/invalid token -> 403)
     if (env.TURNSTILE_SECRET_KEY) {
       const verification = await verifyTurnstile(turnstileToken, env.TURNSTILE_SECRET_KEY);
       if (!verification.success) {
         return json(
           { available: false, reason: verification.error },
-          200,
+          verification.status || 403,
           corsHeaders
         );
       }
@@ -874,7 +892,8 @@ Include a notes field with any observations about measurement quality, visibilit
       required: ["readings", "notes"],
     };
 
-    const result = await callGeminiAPI(env.GEMINI_API_KEY, prompt, images, schema);
+    const model = env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+    const result = await callGeminiAPI(env.GEMINI_API_KEY, model, prompt, images, schema);
 
     if (!result.success) {
       return json(
@@ -917,13 +936,13 @@ async function handleSuggest(request, env, corsHeaders) {
     const body = await request.json();
     const { images, turnstileToken } = body || {};
 
-    // Verify Turnstile if configured
+    // Verify Turnstile if configured (strict: missing/invalid token -> 403)
     if (env.TURNSTILE_SECRET_KEY) {
       const verification = await verifyTurnstile(turnstileToken, env.TURNSTILE_SECRET_KEY);
       if (!verification.success) {
         return json(
           { available: false, reason: verification.error },
-          200,
+          verification.status || 403,
           corsHeaders
         );
       }
@@ -978,7 +997,8 @@ Provide a suggested configuration with relevant fields (panelCount, mounting, fi
       required: ["config", "notes"],
     };
 
-    const result = await callGeminiAPI(env.GEMINI_API_KEY, prompt, images, schema);
+    const model = env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+    const result = await callGeminiAPI(env.GEMINI_API_KEY, model, prompt, images, schema);
 
     if (!result.success) {
       return json(
