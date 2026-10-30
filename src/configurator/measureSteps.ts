@@ -8,10 +8,13 @@
  *
  * Design principles:
  * - Bottom width first (customer is at floor level)
- * - Height second (finish height matters for glass spec)
- * - Wall measurements if method requires (tape vs laser)
+ * - Height to chosen finish reference (grout line / door frame top / ceiling)
+ * - Shower head check (soft warning if finish height too low, skip for bath screens)
+ * - Top/middle widths for cross-check
+ * - Wall measurements if method requires (laser: gaps show computed rake)
  * - Returns/side panels get their own steps
- * - Bath screens skip shower-tray-specific checks
+ * - Floor level measurements
+ * - Bath screens skip shower-specific checks
  */
 
 import type { ShowerTemplate } from './templates.js';
@@ -20,7 +23,10 @@ import { runPanelIndices, runLabelsFor } from './geometry.js';
 export type MeasureStepType =
   | 'width-floor'
   | 'width-top'
+  | 'width-middle'
   | 'height'
+  | 'height-reference'
+  | 'shower-head-check'
   | 'wall-start'
   | 'wall-end'
   | 'floor-level'
@@ -80,24 +86,9 @@ export function getMeasureSteps(
     return steps;
   }
 
-  // Step 2: Height (finish height for glass spec)
-  steps.push({
-    id: 'height',
-    type: 'height',
-    runIndex: null,
-    title: 'Height',
-    instruction: isBathScreen
-      ? 'Measure from the top of the bath to where the glass will finish.'
-      : 'Measure from the shower tray (or floor) to where the glass will finish.',
-    diagram: `${template.id}-height`,
-    required: true,
-  });
-
-  // Steps 3+: Width measurements for each run
+  // Step 2: Bottom width for each run (customer starts at floor level)
   runs.forEach((_, runIndex) => {
     const runLabel = runLabels[runIndex] || `Run ${runIndex + 1}`;
-
-    // Bottom width (always required)
     steps.push({
       id: `run-${runIndex}-width-floor`,
       type: 'width-floor',
@@ -107,8 +98,49 @@ export function getMeasureSteps(
       diagram: `${template.id}-run-${runIndex}-width-floor`,
       required: true,
     });
+  });
 
-    // Top width (optional cross-check for tape, not shown for laser)
+  // Step 3: Height to chosen finish reference
+  steps.push({
+    id: 'height-reference',
+    type: 'height-reference',
+    runIndex: null,
+    title: 'Finish height',
+    instruction: 'Choose where the top of the glass will finish: grout line, door frame top, or ceiling.',
+    diagram: `${template.id}-height-reference`,
+    required: true,
+  });
+
+  steps.push({
+    id: 'height',
+    type: 'height',
+    runIndex: null,
+    title: 'Height',
+    instruction: isBathScreen
+      ? 'Measure from the top of the bath to the finish reference you chose.'
+      : 'Measure from the shower tray (or floor) to the finish reference you chose.',
+    diagram: `${template.id}-height`,
+    required: true,
+  });
+
+  // Step 4: Shower head check (soft warning, skip for bath screens)
+  if (!isBathScreen) {
+    steps.push({
+      id: 'shower-head-check',
+      type: 'shower-head-check',
+      runIndex: null,
+      title: 'Shower head',
+      instruction: 'Check that the finish height is suitable above the shower head.',
+      diagram: `${template.id}-shower-head`,
+      required: false,
+    });
+  }
+
+  // Step 5: Top/middle widths for cross-check
+  runs.forEach((_, runIndex) => {
+    const runLabel = runLabels[runIndex] || `Run ${runIndex + 1}`;
+
+    // Top width (optional cross-check for tape, not shown for laser - derived from wall gaps)
     if (method === 'tape') {
       steps.push({
         id: `run-${runIndex}-width-top`,
@@ -119,32 +151,44 @@ export function getMeasureSteps(
         diagram: `${template.id}-run-${runIndex}-width-top`,
         required: false,
       });
+
+      steps.push({
+        id: `run-${runIndex}-width-middle`,
+        type: 'width-middle',
+        runIndex,
+        title: `${runLabel} middle`,
+        instruction: `Optional: measure the width at mid-height to detect bowing.`,
+        diagram: `${template.id}-run-${runIndex}-width-middle`,
+        required: false,
+      });
     }
   });
 
-  // Wall measurements (laser method requires gaps, tape may skip)
-  if (method === 'laser' && template.leftWall) {
-    steps.push({
-      id: 'wall-start',
-      type: 'wall-start',
-      runIndex: null,
-      title: 'Start wall',
-      instruction: 'Measure gaps from the laser line to the start wall at bottom and top.',
-      diagram: `${template.id}-wall-start`,
-      required: true,
-    });
-  }
+  // Step 6: Wall measurements (laser method: gaps show computed rake)
+  if (method === 'laser') {
+    if (template.leftWall) {
+      steps.push({
+        id: 'wall-start',
+        type: 'wall-start',
+        runIndex: null,
+        title: 'Start wall',
+        instruction: 'Set vertical laser line. Measure gap from line to wall at bottom and top. Middle optional.',
+        diagram: `${template.id}-wall-start`,
+        required: true,
+      });
+    }
 
-  if (method === 'laser' && template.rightWall) {
-    steps.push({
-      id: 'wall-end',
-      type: 'wall-end',
-      runIndex: null,
-      title: 'End wall',
-      instruction: 'Measure gaps from the laser line to the end wall at bottom and top.',
-      diagram: `${template.id}-wall-end`,
-      required: true,
-    });
+    if (template.rightWall) {
+      steps.push({
+        id: 'wall-end',
+        type: 'wall-end',
+        runIndex: null,
+        title: 'End wall',
+        instruction: 'Measure gap from laser line to wall at bottom and top. We compute rake from these.',
+        diagram: `${template.id}-wall-end`,
+        required: true,
+      });
+    }
   }
 
   // Floor level for each run (skip for bath screens - bath is level)

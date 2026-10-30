@@ -97,7 +97,7 @@ const TEMPLATES = [
   },
 ];
 
-// Mock the getMeasureSteps function with simplified logic
+// Mock the getMeasureSteps function with simplified logic matching new ordering
 function getMeasureSteps(template, method) {
   const runCount = countRuns(template.panels, template.junctions);
   const isBathScreen = template.id === 'over-bath';
@@ -108,24 +108,35 @@ function getMeasureSteps(template, method) {
     return steps;
   }
 
-  // Height first
-  steps.push({ id: 'height', type: 'height', title: 'Height', required: true, instruction: 'Measure height', diagram: `${template.id}-height`, runIndex: null });
-
-  // Width for each run
+  // Bottom widths first (customer at floor level)
   for (let i = 0; i < runCount; i++) {
     steps.push({ id: `run-${i}-width-floor`, type: 'width-floor', title: `Run ${i} width`, required: true, instruction: 'Measure width', diagram: `${template.id}-run-${i}-width-floor`, runIndex: i });
+  }
+
+  // Height with finish reference
+  steps.push({ id: 'height-reference', type: 'height-reference', title: 'Finish height', required: true, instruction: 'Choose finish reference', diagram: `${template.id}-height-reference`, runIndex: null });
+  steps.push({ id: 'height', type: 'height', title: 'Height', required: true, instruction: 'Measure height', diagram: `${template.id}-height`, runIndex: null });
+
+  // Shower head check (skip for bath screens)
+  if (!isBathScreen) {
+    steps.push({ id: 'shower-head-check', type: 'shower-head-check', title: 'Shower head', required: false, instruction: 'Check height', diagram: `${template.id}-shower-head`, runIndex: null });
+  }
+
+  // Top/middle widths for cross-check
+  for (let i = 0; i < runCount; i++) {
     if (method === 'tape') {
       steps.push({ id: `run-${i}-width-top`, type: 'width-top', title: `Run ${i} top`, required: false, instruction: 'Optional top width', diagram: `${template.id}-run-${i}-width-top`, runIndex: i });
+      steps.push({ id: `run-${i}-width-middle`, type: 'width-middle', title: `Run ${i} middle`, required: false, instruction: 'Optional middle width', diagram: `${template.id}-run-${i}-width-middle`, runIndex: i });
     }
   }
 
   // Walls for laser
   if (method === 'laser') {
     if (template.leftWall) {
-      steps.push({ id: 'wall-start', type: 'wall-start', title: 'Start wall', required: true, instruction: 'Measure wall', diagram: `${template.id}-wall-start`, runIndex: null });
+      steps.push({ id: 'wall-start', type: 'wall-start', title: 'Start wall', required: true, instruction: 'Measure wall gaps', diagram: `${template.id}-wall-start`, runIndex: null });
     }
     if (template.rightWall) {
-      steps.push({ id: 'wall-end', type: 'wall-end', title: 'End wall', required: true, instruction: 'Measure wall', diagram: `${template.id}-wall-end`, runIndex: null });
+      steps.push({ id: 'wall-end', type: 'wall-end', title: 'End wall', required: true, instruction: 'Measure wall gaps', diagram: `${template.id}-wall-end`, runIndex: null });
     }
   }
 
@@ -197,7 +208,7 @@ test('height measurement is included for all templates', () => {
   });
 });
 
-test('height comes before width measurements', () => {
+test('width-floor comes before height measurements', () => {
   TEMPLATES.forEach((template) => {
     const tapeSteps = getMeasureSteps(template, 'tape');
     const laserSteps = getMeasureSteps(template, 'laser');
@@ -208,8 +219,8 @@ test('height comes before width measurements', () => {
 
       if (heightIndex !== -1 && firstWidthIndex !== -1) {
         assert.ok(
-          heightIndex < firstWidthIndex,
-          `${template.id} height (${heightIndex}) should come before width (${firstWidthIndex})`
+          firstWidthIndex < heightIndex,
+          `${template.id} width-floor (${firstWidthIndex}) should come before height (${heightIndex})`
         );
       }
     });
@@ -331,21 +342,28 @@ test('step count matches actual step array length', () => {
   });
 });
 
-test('tape method includes optional top-width cross-check', () => {
+test('tape method includes optional top-width and middle-width cross-checks', () => {
   const alcoveDoor = TEMPLATES.find((t) => t.id === 'alcove-door');
   const tapeSteps = getMeasureSteps(alcoveDoor, 'tape');
 
   const topWidthSteps = tapeSteps.filter((s) => s.type === 'width-top');
+  const middleWidthSteps = tapeSteps.filter((s) => s.type === 'width-middle');
+
   assert.ok(topWidthSteps.length > 0, 'tape method should include top-width step');
   assert.strictEqual(topWidthSteps[0].required, false, 'top-width should be optional');
+  assert.ok(middleWidthSteps.length > 0, 'tape method should include middle-width step');
+  assert.strictEqual(middleWidthSteps[0].required, false, 'middle-width should be optional');
 });
 
-test('laser method does not include top-width step', () => {
+test('laser method does not include top-width or middle-width steps', () => {
   const alcoveDoor = TEMPLATES.find((t) => t.id === 'alcove-door');
   const laserSteps = getMeasureSteps(alcoveDoor, 'laser');
 
   const topWidthSteps = laserSteps.filter((s) => s.type === 'width-top');
+  const middleWidthSteps = laserSteps.filter((s) => s.type === 'width-middle');
+
   assert.strictEqual(topWidthSteps.length, 0, 'laser method should not include top-width (derives from wall gaps)');
+  assert.strictEqual(middleWidthSteps.length, 0, 'laser method should not include middle-width (derives from wall gaps)');
 });
 
 test('three-sided template has three runs', () => {
