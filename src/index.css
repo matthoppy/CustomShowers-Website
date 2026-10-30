@@ -103,6 +103,126 @@ All colors MUST be HSL.
   }
 }
 
+/*
+ * How-to-measure animations (configurator/views/MeasureDiagram.tsx).
+ *
+ * Each figure plays its instruction as a short loop: the tape goes down, the
+ * line gets marked, the tape runs out, then the number to write down appears.
+ * Every loop ends with a beat where everything fades, so the restart reads as
+ * "again" rather than as a glitch.
+ *
+ * Anyone who has asked their device for less motion gets the finished frame —
+ * which is exactly the old static drawing — and nothing moves.
+ */
+.md-anim .md-extend-x {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: md-extend-x 6s ease-in-out infinite;
+}
+.md-anim .md-extend-y {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: md-extend-y 6s ease-in-out infinite;
+}
+.md-anim .md-step-1 { animation: md-step-1 6s ease-in-out infinite; }
+.md-anim .md-step-2 { animation: md-step-2 6s ease-in-out infinite; }
+.md-anim .md-step-3 { animation: md-step-3 6s ease-in-out infinite; }
+.md-anim .md-result { animation: md-result 6s ease-in-out infinite; }
+.md-anim .md-draw {
+  stroke-dasharray: 240;
+  animation: md-draw 6s ease-in-out infinite;
+}
+.md-anim .md-slide-in { animation: md-slide-in 6s ease-out infinite; }
+.md-anim .md-laser-in { animation: md-laser-in 6s ease-in-out infinite; }
+.md-anim .md-settle {
+  transform-box: fill-box;
+  animation: md-settle 6s ease-out infinite;
+}
+.md-anim .md-packer { animation: md-packer 6s ease-out infinite; }
+.md-anim .md-packer:nth-of-type(2) { animation-delay: 0.25s; }
+.md-anim .md-packer:nth-of-type(3) { animation-delay: 0.5s; }
+.md-anim .md-lift {
+  transform-box: view-box;
+  transform-origin: 44px 174px;
+  animation: md-lift 6s ease-in-out infinite;
+}
+.md-anim .md-swing {
+  transform-box: view-box;
+  animation: md-swing 4s ease-in-out infinite;
+}
+
+/* Marking out: masking tape, then the sharpie line, then the laser onto it. */
+@keyframes md-step-1 {
+  0%, 4% { opacity: 0; transform: translateY(-6px); }
+  14%, 90% { opacity: 1; transform: none; }
+  100% { opacity: 0; }
+}
+@keyframes md-step-2 {
+  0%, 18% { opacity: 0; }
+  28%, 90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes md-step-3 {
+  0%, 34% { opacity: 0; }
+  46%, 90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes md-result {
+  0%, 52% { opacity: 0; }
+  62%, 90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes md-draw {
+  0%, 18% { stroke-dashoffset: 240; opacity: 1; }
+  32%, 90% { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+@keyframes md-extend-x {
+  0%, 30% { transform: scaleX(0); opacity: 1; }
+  56%, 90% { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+@keyframes md-extend-y {
+  0%, 30% { transform: scaleY(0); opacity: 1; }
+  56%, 90% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+@keyframes md-slide-in {
+  0% { opacity: 0; transform: translateX(44px); }
+  22%, 90% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: none; }
+}
+@keyframes md-laser-in {
+  0%, 12% { opacity: 0; transform: translateX(60px); }
+  20% { opacity: 1; transform: translateX(60px); }
+  40%, 90% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: none; }
+}
+@keyframes md-settle {
+  0%, 14% { transform: translateY(-8px); }
+  34%, 100% { transform: none; }
+}
+@keyframes md-packer {
+  0%, 30% { opacity: 0; transform: translateX(-14px); }
+  44%, 90% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: none; }
+}
+@keyframes md-lift {
+  0%, 24% { transform: rotate(6deg); }
+  46%, 100% { transform: none; }
+}
+@keyframes md-swing {
+  0%, 15% { transform: rotate(0deg); }
+  45%, 65% { transform: rotate(var(--md-swing-to, 60deg)); }
+  95%, 100% { transform: rotate(0deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-anim * {
+    animation: none !important;
+  }
+}
+
 @layer utilities {
   .animate-fade-in {
     animation: fadeIn 0.8s ease-out;
