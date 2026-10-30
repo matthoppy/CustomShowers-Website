@@ -11,12 +11,12 @@
  * other than the thing we asked for.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AlertTriangle, Check, Info } from 'lucide-react';
+import { AlertTriangle, Check, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { PhotoCapture } from '../PhotoCapture';
 import { releasePhoto, type Photo, type PhotoSlot } from '../photos';
@@ -44,6 +44,8 @@ import {
 import type { StepProps } from './types';
 import { GeminiSuggestions } from '../GeminiSuggestions';
 import type { GeminiReading } from '../gemini';
+import { MeasureWizard } from './MeasureWizard';
+import { TEMPLATES } from '../templates';
 
 const HEIGHT_PRESETS = [1500, 1850, 2000, 2100];
 
@@ -271,6 +273,7 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
   const ctx = openingContext(state);
   const isMobile = useIsMobile();
   const topRef = useRef<HTMLDivElement>(null);
+  const [showAllMeasurements, setShowAllMeasurements] = useState(false);
 
   const runs = m.runs;
   const labels = ctx.labels ?? runLabels(runs.length);
@@ -820,36 +823,119 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
     ),
   });
 
+  // Find the current template
+  const currentTemplate = TEMPLATES.find((t) =>
+    t.panels.length === state.panels.length &&
+    t.junctions.length === state.junctions.length &&
+    t.leftWall === state.leftWall &&
+    t.rightWall === state.rightWall
+  ) || TEMPLATES[0];
+
   if (!isMobile) {
     return (
       <div className="space-y-5">
         {intro}
-        {cards.slice(0, -1).map((card, i) => (
-          <Measurement key={card.title} number={i + 1} {...card}>
-            {card.body}
-          </Measurement>
-        ))}
-        {alerts}
-        {!anyBlocking && (
-          <Measurement number={cards.length} title={cards[cards.length - 1].title}>
-            {cards[cards.length - 1].body}
-          </Measurement>
+
+        {/* Measurement wizard */}
+        <MeasureWizard
+          template={currentTemplate}
+          method={m.method === 'assumed-square' ? null : (m.method as 'tape' | 'laser' | null)}
+          onMethodChange={(method) => patch({ method, shapeConfirmed: false })}
+          measurements={m}
+          heightMm={state.heightMm}
+          onChange={(p) => {
+            if ('heightMm' in p) {
+              update({ heightMm: p.heightMm });
+              delete p.heightMm;
+            }
+            if (Object.keys(p).length > 0) {
+              patch(p);
+            }
+          }}
+        />
+
+        {/* Toggle for all measurements */}
+        <button
+          type="button"
+          onClick={() => setShowAllMeasurements(!showAllMeasurements)}
+          className="flex w-full items-center justify-between rounded-lg border bg-card p-3 text-sm font-medium transition-colors hover:bg-muted/50"
+        >
+          <span>Show all measurements</span>
+          {showAllMeasurements ? (
+            <ChevronUp className="h-4 w-4" />
+          ) : (
+            <ChevronDown className="h-4 w-4" />
+          )}
+        </button>
+
+        {showAllMeasurements && (
+          <>
+            {cards.slice(0, -1).map((card, i) => (
+              <Measurement key={card.title} number={i + 1} {...card}>
+                {card.body}
+              </Measurement>
+            ))}
+            {alerts}
+            {!anyBlocking && (
+              <Measurement number={cards.length} title={cards[cards.length - 1].title}>
+                {cards[cards.length - 1].body}
+              </Measurement>
+            )}
+          </>
         )}
       </div>
     );
   }
 
   return (
-    <MobileCards
-      topRef={topRef}
-      intro={intro}
-      alerts={alerts}
-      card={cards[cardIndex]}
-      cardIndex={cardIndex}
-      total={cards.length}
-      isFinal={cardIndex === cards.length - 1}
-      done={!anyBlocking && m.shapeConfirmed}
-    />
+    <div ref={topRef} className="space-y-4">
+      {cardIndex === 0 && intro}
+
+      {/* Measurement wizard */}
+      <MeasureWizard
+        template={currentTemplate}
+        method={m.method === 'assumed-square' ? null : (m.method as 'tape' | 'laser' | null)}
+        onMethodChange={(method) => patch({ method, shapeConfirmed: false })}
+        measurements={m}
+        heightMm={state.heightMm}
+        onChange={(p) => {
+          if ('heightMm' in p) {
+            update({ heightMm: p.heightMm });
+            delete p.heightMm;
+          }
+          if (Object.keys(p).length > 0) {
+            patch(p);
+          }
+        }}
+      />
+
+      {/* Toggle for all measurements */}
+      <button
+        type="button"
+        onClick={() => setShowAllMeasurements(!showAllMeasurements)}
+        className="flex w-full items-center justify-between rounded-lg border bg-card p-3 text-sm font-medium transition-colors hover:bg-muted/50"
+      >
+        <span>Show all measurements</span>
+        {showAllMeasurements ? (
+          <ChevronUp className="h-4 w-4" />
+        ) : (
+          <ChevronDown className="h-4 w-4" />
+        )}
+      </button>
+
+      {showAllMeasurements && (
+        <MobileCards
+          topRef={topRef}
+          intro={intro}
+          alerts={alerts}
+          card={cards[cardIndex]}
+          cardIndex={cardIndex}
+          total={cards.length}
+          isFinal={cardIndex === cards.length - 1}
+          done={!anyBlocking && m.shapeConfirmed}
+        />
+      )}
+    </div>
   );
 }
 
