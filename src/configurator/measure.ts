@@ -112,6 +112,15 @@ export interface RunMeasurement {
   /** Wall (or corner) to wall (or corner), measured along the floor. */
   widthAtFloorMm: number;
   /**
+   * The same width taken in two halves, to a laser line or a taped mark in
+   * the middle. Two short tape pulls are more accurate than one long one, and
+   * the customer never has to do the adding up: when both halves are in,
+   * widthAtFloorMm is their sum. Optional so designs saved before this field
+   * existed still load.
+   */
+  halfAMm?: number | null;
+  halfBMm?: number | null;
+  /**
    * Optional. The top width is derived from the floor width and the wall
    * leans, so this is only here for someone who measured it anyway and wants
    * it checked. When it is set, it has to agree.
@@ -152,6 +161,8 @@ export interface OpeningContext {
 function createRun(widthMm: number): RunMeasurement {
   return {
     widthAtFloorMm: widthMm,
+    halfAMm: null,
+    halfBMm: null,
     widthAtTopCheckMm: null,
     floorFallMm: 0,
     floorLowEnd: null,
@@ -188,6 +199,24 @@ export function syncRuns(
     // to what they are now looking at.
     shapeConfirmed: false,
   };
+}
+
+/**
+ * The width from its two halves, or null until both are in.
+ *
+ * Zero is a real reading here (a line set right against one end), so only a
+ * missing half counts as missing.
+ */
+export function halvesTotalMm(run: RunMeasurement): number | null {
+  const a = run.halfAMm ?? null;
+  const b = run.halfBMm ?? null;
+  if (a === null || b === null) return null;
+  return Math.round(a + b);
+}
+
+/** True when the customer has started the two-halves method on this run. */
+export function measuredInHalves(run: RunMeasurement): boolean {
+  return (run.halfAMm ?? null) !== null || (run.halfBMm ?? null) !== null;
 }
 
 /** Names a customer would use for each run, given how many there are. */
@@ -321,6 +350,18 @@ export function checkMeasurements(
   m.runs.forEach((run, i) => {
     const name = `${named(i)}width at the floor`;
     const value = run.widthAtFloorMm;
+
+    // Half a two-halves reading is not a width. Without this the template's
+    // default width would quietly stand in for the half they never measured.
+    if (measuredInHalves(run) && halvesTotalMm(run) === null) {
+      checks.push({
+        code: `run${i}-widthAtFloor-half-missing`,
+        level: 'blocking',
+        message: `We still need the other half of the ${name}. Measure from the line to the other end too, and we will add the two together.`,
+        runIndex: i,
+      });
+      return;
+    }
 
     if (!value) {
       checks.push({
@@ -551,7 +592,9 @@ export function describeWidths(
       const top = topWidthMm(m, i, ctx);
       const checked =
         run.widthAtTopCheckMm !== null ? `, customer also measured ${run.widthAtTopCheckMm}mm` : '';
-      return `${labels[i]}: ${run.widthAtFloorMm}mm measured at the floor, ${top}mm derived at the top${checked}`;
+      const halves =
+        halvesTotalMm(run) !== null ? ` (in two halves: ${run.halfAMm} + ${run.halfBMm})` : '';
+      return `${labels[i]}: ${run.widthAtFloorMm}mm measured at the floor${halves}, ${top}mm derived at the top${checked}`;
     })
     .join('; ');
 }

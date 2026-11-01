@@ -11,7 +11,7 @@
  * other than the thing we asked for.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,8 @@ import { PhotoCapture } from '../PhotoCapture';
 import { releasePhoto, type Photo, type PhotoSlot } from '../photos';
 import {
   checkMeasurements,
+  halvesTotalMm,
+  measuredInHalves,
   runLabels,
   signedLeanMm,
   topWidthMm,
@@ -271,6 +273,8 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
   const ctx = openingContext(state);
   const isMobile = useIsMobile();
   const topRef = useRef<HTMLDivElement>(null);
+  /** Runs where the customer chose one long tape pull over two halves. */
+  const [singlePull, setSinglePull] = useState<Record<number, boolean>>({});
 
   const runs = m.runs;
   const labels = ctx.labels ?? runLabels(runs.length);
@@ -296,10 +300,43 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
       panels: scaleRunPanels(state.panels, runIndices[i] ?? [], widthMm),
       opening: {
         ...m,
-        runs: runs.map((r, j) => (j === i ? { ...r, widthAtFloorMm: widthMm } : r)),
+        // A width typed in directly replaces any halves, so the two can never
+        // disagree.
+        runs: runs.map((r, j) =>
+          j === i ? { ...r, widthAtFloorMm: widthMm, halfAMm: null, halfBMm: null } : r
+        ),
         shapeConfirmed: false,
       },
     });
+
+  /**
+   * The width in two halves. Once both are in, their sum becomes the floor
+   * width and the panels follow it, exactly as if it had been typed whole.
+   */
+  const setRunHalves = (i: number, a: number | null, b: number | null) => {
+    const total = a !== null && b !== null ? Math.round(a + b) : null;
+    update({
+      panels: total ? scaleRunPanels(state.panels, runIndices[i] ?? [], total) : state.panels,
+      opening: {
+        ...m,
+        runs: runs.map((r, j) =>
+          j === i
+            ? { ...r, halfAMm: a, halfBMm: b, widthAtFloorMm: total ?? r.widthAtFloorMm }
+            : r
+        ),
+        shapeConfirmed: false,
+      },
+    });
+  };
+
+  /**
+   * Runs with a door in them are measured in two halves by default: they are
+   * the long runs, and the door opening is the size that matters most.
+   */
+  const runHasDoor = (i: number) =>
+    (runIndices[i] ?? []).some((idx) => state.panels[idx]?.kind === 'door');
+  const halvesFor = (i: number) =>
+    measuredInHalves(runs[i]) || (runHasDoor(i) && !singlePull[i]);
 
   const patchWall = (key: 'startWall' | 'endWall', p: Partial<WallMeasurement>) =>
     patch({ [key]: { ...m[key], ...p }, shapeConfirmed: false } as Partial<OpeningMeasurements>);
@@ -352,7 +389,7 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
 
     // Height measurement
     if (source.includes('height') || source.includes('opening height')) {
-      patch({ heightMm: valueMm });
+      update({ heightMm: valueMm });
       return;
     }
 
@@ -362,14 +399,11 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
       return;
     }
 
-    // Wall lean measurements
+    // Wall lean readings are not applied. A wall is two readings (bottom and
+    // top) and one number from a photo cannot say which end it belongs to;
+    // guessing gets the lean backwards, which puts a panel out by twice the
+    // lean. The customer types these in on the walls card.
     if (source.includes('lean') || source.includes('plumb') || source.includes('wall')) {
-      // Apply to first wall that doesn't have a measurement
-      if (!wallMeasured(m.startWall)) {
-        patchWall('startWall', { method: 'level', gapMm: valueMm });
-      } else if (!wallMeasured(m.endWall)) {
-        patchWall('endWall', { method: 'level', gapMm: valueMm });
-      }
       return;
     }
 
@@ -388,16 +422,19 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
    */
   const checkCardIndex = (check: (typeof allChecks)[number]): number => {
     const { code, runIndex } = check;
+    // Card order: height, one width card per run, walls, floor, confirm.
+    const wallsCard = 1 + runs.length;
+    const floorCard = 2 + runs.length;
     if (runIndex !== undefined) {
-      const floorCard = 1 + runIndex * 2;
-      if (code.includes('widthAtFloor')) return floorCard;
-      if (code.includes('widthAtTop')) return floorCard + 1;
+      const widthCard = 1 + runIndex;
+      // The optional top width lives on the same card as the floor width.
+      if (code.includes('widthAtFloor') || code.includes('widthAtTop')) return widthCard;
       // A mismatch is only fixable once the wall leans have been asked for.
-      if (code.includes('cross-check')) return 1 + runs.length * 2;
-      if (code.includes('floor-')) return 2 + runs.length * 2;
+      if (code.includes('cross-check')) return wallsCard;
+      if (code.includes('floor-')) return floorCard;
     }
-    if (code.startsWith('startWall') || code.startsWith('endWall')) return 1 + runs.length * 2;
-    if (code === 'no-method' || code === 'assumed-square') return 1 + runs.length * 2;
+    if (code.startsWith('startWall') || code.startsWith('endWall')) return wallsCard;
+    if (code === 'no-method' || code === 'assumed-square') return wallsCard;
     if (code === 'shape-unconfirmed') return cardCount - 1;
     return 0;
   };
@@ -537,20 +574,74 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
             endsAtCorner ? 'the corner' : 'the wall'
           }`;
 
+    const halves = halvesFor(i);
+    const startEnd = runs.length === 1 ? 'left wall' : startsAtCorner ? 'corner' : 'wall';
+    const endEnd = runs.length === 1 ? 'right wall' : endsAtCorner ? 'corner' : 'wall';
+    const halfTotal = halvesTotalMm(run);
+
     cards.push({
       title: `Width at the floor${runPhrase(i)}`,
-      figure: 'width-floor',
-      help: `Measure ${between}, to the tiles or finished surface rather than the plaster behind them.`,
+      figure: halves ? 'width-split' : 'width-floor',
+      help: halves
+        ? 'With a laser, set it up in the middle and measure from each end to the laser line. No laser? Put a piece of masking tape in the middle, draw a line on it and measure to that. Measure to the tiles or finished surface, not the plaster behind them.'
+        : `Measure ${between}, to the tiles or finished surface rather than the plaster behind them.`,
       body: (
         <>
-          <Label htmlFor={`w-floor-${i}`}>Width at the floor (mm)</Label>
-          <Input
-            id={`w-floor-${i}`}
-            type="number"
-            inputMode="numeric"
-            value={run.widthAtFloorMm}
-            onChange={(e) => setRunFloorWidth(i, parseInt(e.target.value, 10) || 0)}
-          />
+          {halves ? (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <GapInput
+                  label={`A: ${startEnd} to the line`}
+                  value={run.halfAMm ?? null}
+                  onChange={(v) => setRunHalves(i, v, run.halfBMm ?? null)}
+                />
+                <GapInput
+                  label={`B: line to the ${endEnd}`}
+                  value={run.halfBMm ?? null}
+                  onChange={(v) => setRunHalves(i, run.halfAMm ?? null, v)}
+                />
+              </div>
+              <p className="rounded bg-muted/60 px-3 py-2 text-sm">
+                {halfTotal !== null ? (
+                  <>
+                    Width: {run.halfAMm} + {run.halfBMm} = <strong>{halfTotal}mm</strong>
+                  </>
+                ) : (
+                  'Enter both halves and we will add them together.'
+                )}
+              </p>
+              <button
+                type="button"
+                className="text-xs text-muted-foreground underline underline-offset-2"
+                onClick={() => {
+                  setSinglePull((s) => ({ ...s, [i]: true }));
+                  if (measuredInHalves(run)) setRunFloorWidth(i, halfTotal ?? run.widthAtFloorMm);
+                }}
+              >
+                Measured it in one go? Enter the whole width instead
+              </button>
+            </>
+          ) : (
+            <>
+              <Label htmlFor={`w-floor-${i}`}>Width at the floor (mm)</Label>
+              <Input
+                id={`w-floor-${i}`}
+                type="number"
+                inputMode="numeric"
+                value={run.widthAtFloorMm}
+                onChange={(e) => setRunFloorWidth(i, parseInt(e.target.value, 10) || 0)}
+              />
+              {runHasDoor(i) && (
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground underline underline-offset-2"
+                  onClick={() => setSinglePull((s) => ({ ...s, [i]: false }))}
+                >
+                  Measure it in two halves instead (more accurate)
+                </button>
+              )}
+            </>
+          )}
           {runs.length > 1 && (
             <p className="rounded bg-muted/60 px-3 py-2 text-xs">
               This is the <strong>{labels[i].toLowerCase()}</strong>, measured {between}. At a
@@ -849,6 +940,8 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
       total={cards.length}
       isFinal={cardIndex === cards.length - 1}
       done={!anyBlocking && m.shapeConfirmed}
+      photos={photos}
+      onApplyReading={handleGeminiReading}
     />
   );
 }
@@ -873,6 +966,8 @@ function MobileCards({
   total,
   isFinal,
   done,
+  photos,
+  onApplyReading,
 }: {
   topRef: React.RefObject<HTMLDivElement>;
   intro: JSX.Element;
@@ -882,6 +977,8 @@ function MobileCards({
   total: number;
   isFinal: boolean;
   done: boolean;
+  photos: Photo[];
+  onApplyReading: (reading: GeminiReading) => void;
 }) {
   // A new measurement should start at its own heading, not wherever the last
   // one left the page.
@@ -922,7 +1019,7 @@ function MobileCards({
       {alerts}
 
       {isFinal && photos.length > 0 && (
-        <GeminiSuggestions photos={photos} onApplyReading={handleGeminiReading} />
+        <GeminiSuggestions photos={photos} onApplyReading={onApplyReading} />
       )}
 
       {isFinal && (
