@@ -33,6 +33,19 @@
  * run's top width should equal its floor width.
  */
 
+/**
+ * [OURS] How far off the wall the laser line is set before taking readings.
+ * The bottom reading should come back as this number; the top reading is what
+ * tells us the lean. Installers can change it.
+ */
+export const LASER_OFFSET_DEFAULT_MM = 50;
+
+/**
+ * [OURS] A walk-in gap narrower than this still works, but is awkward to walk
+ * through. A suggestion, never a reason to stop someone.
+ */
+export const WALK_IN_RECOMMENDED_MM = 650;
+
 /** Which way the top of a wall leans, from the point of view of the shower. */
 export type WallLeanDirection = 'in' | 'out';
 
@@ -139,6 +152,13 @@ export interface OpeningMeasurements {
   /** The wall at the end of the last run. */
   endWall: WallMeasurement;
   method: MeasureMethod | null;
+  /** Where the laser was set off each wall. Optional for older saved designs. */
+  laserOffsetMm?: number;
+  /**
+   * Walk-in screens only: the whole width of the tray or opening, wall to the
+   * open end. With the glass length it gives the walk-through gap.
+   */
+  walkInOpeningMm?: number | null;
   /** Set once the customer has confirmed the drawn-back shape looks right. */
   shapeConfirmed: boolean;
 }
@@ -175,8 +195,32 @@ export function createOpeningMeasurements(runWidthsMm: number[] = [1000]): Openi
     startWall: createWallMeasurement(),
     endWall: createWallMeasurement(),
     method: null,
+    laserOffsetMm: LASER_OFFSET_DEFAULT_MM,
+    walkInOpeningMm: null,
     shapeConfirmed: false,
   };
+}
+
+/**
+ * The walk-through gap beside a walk-in screen: the whole opening less the
+ * glass. Null until the customer has given the whole opening.
+ */
+export function walkInGapMm(m: OpeningMeasurements): number | null {
+  const opening = m.walkInOpeningMm ?? null;
+  if (opening === null || m.runs.length !== 1) return null;
+  return Math.round(opening - m.runs[0].widthAtFloorMm);
+}
+
+/**
+ * Carry the customer's set-up answers across a change of shape. Picking a
+ * different template resets the measurements, but not whether they own a
+ * laser.
+ */
+export function keepSetup(
+  from: OpeningMeasurements,
+  to: OpeningMeasurements
+): OpeningMeasurements {
+  return { ...to, method: from.method, laserOffsetMm: from.laserOffsetMm ?? LASER_OFFSET_DEFAULT_MM };
 }
 
 /**
@@ -306,6 +350,9 @@ const CROSS_CHECK_TOLERANCE_MM = 3;
  */
 const LARGE_LEAN_MM = 20;
 
+/** How far a laser bottom reading may stray from where the laser was set. */
+const LASER_REFERENCE_TOLERANCE_MM = 10;
+
 /**
  * Catch the slip where someone types the right number in the wrong unit.
  *
@@ -430,6 +477,21 @@ export function checkMeasurements(
       continue;
     }
 
+    // With a laser the bottom reading is the distance it was set off the wall,
+    // so a big difference means a reading was taken from something else.
+    const offset = m.laserOffsetMm ?? LASER_OFFSET_DEFAULT_MM;
+    if (
+      m.method === 'laser' &&
+      wall.gapBottomMm !== null &&
+      Math.abs(wall.gapBottomMm - offset) > LASER_REFERENCE_TOLERANCE_MM
+    ) {
+      checks.push({
+        code: `${key}-laser-reference`,
+        level: 'confirm',
+        message: `You set the laser ${offset}mm off the ${name}, but the reading at the bottom is ${wall.gapBottomMm}mm. Those should be close. Check where the laser is, or change the distance you set it at.`,
+      });
+    }
+
     const lean = wallLean(wall);
     if (!lean) continue;
 
@@ -525,6 +587,22 @@ export function checkMeasurements(
     }
   });
 
+  // --- Walk-in gap. Asked about, never blocked on, unless it is impossible. ---
+  const gap = walkInGapMm(m);
+  if (gap !== null && gap <= 0) {
+    checks.push({
+      code: 'walk-in-no-gap',
+      level: 'confirm',
+      message: `The glass is ${m.runs[0].widthAtFloorMm}mm long but the whole opening is ${m.walkInOpeningMm}mm, which leaves no gap to walk through. Please check both numbers.`,
+    });
+  } else if (gap !== null && gap < WALK_IN_RECOMMENDED_MM) {
+    checks.push({
+      code: 'walk-in-narrow',
+      level: 'hint',
+      message: `That leaves a ${gap}mm gap to walk through. About ${WALK_IN_RECOMMENDED_MM}mm is easier, but you can go narrower if it suits your room.`,
+    });
+  }
+
   // --- The last gate. ---
   if (!m.shapeConfirmed && !checks.some((c) => c.level === 'blocking')) {
     checks.push({
@@ -572,6 +650,9 @@ export function describeOpening(m: OpeningMeasurements, ctx: OpeningContext): st
       parts.push(`floor${where} ${run.floorFallMm}mm lower at the ${run.floorLowEnd}`);
     }
   });
+
+  const gap = walkInGapMm(m);
+  if (gap !== null) parts.push(`walk-in gap ${gap}mm (whole opening ${m.walkInOpeningMm}mm)`);
 
   if (parts.length === 0) return 'Square and level throughout.';
   return parts.join('; ');

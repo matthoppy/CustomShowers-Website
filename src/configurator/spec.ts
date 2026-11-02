@@ -24,7 +24,12 @@ import {
   type PanelDeductions,
 } from '@/lib/showerCalculations';
 import { derivePlanes, openingContext, type Plane, totalRunWidthMm } from './geometry';
-import { describeOpening, describeWidths, METHOD_LABELS } from './measure';
+import {
+  describeOpening,
+  describeWidths,
+  LASER_OFFSET_DEFAULT_MM,
+  METHOD_LABELS,
+} from './measure';
 import {
   CUTOUTS,
   checkDoorLimits,
@@ -34,6 +39,7 @@ import {
   handleHoleHeightsMm,
   hingeHeightsMm,
   mateNotchHeightMm,
+  REVIEW,
   type LimitCheck,
 } from './rules';
 import type { ConfiguratorState } from './types';
@@ -164,6 +170,12 @@ export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
 
   record('Glass', checkGlassSpec(state.glassThicknessMm));
 
+  if (state.heightMm > REVIEW.standardHeightMaxMm) {
+    warnings.push(
+      `Review: the glass is ${state.heightMm}mm tall, over ${REVIEW.standardHeightMaxMm}mm. Custom Showers will check the opening and ceiling by hand before the glass is ordered.`
+    );
+  }
+
   const panels: PanelSpec[] = state.panels.map((p, i) => {
     const plane = planes[i];
     const model = panelModels[i];
@@ -266,6 +278,11 @@ export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
       }
 
       for (const w of hinge.warnings) warnings.push(`${spec.label}: ${w}`);
+      if (spec.cutHeightMm > REVIEW.hingeReviewHeightMm) {
+        warnings.push(
+          `${spec.label}: Review: the door is ${spec.cutHeightMm}mm tall, over ${REVIEW.hingeReviewHeightMm}mm. Custom Showers will check the hinge by hand against the door's ${spec.weightKg}kg weight and the maker's current limits.`
+        );
+      }
       if (hingePlacement.warning) warnings.push(`${spec.label}: ${hingePlacement.warning}`);
       if (handlePlacement.warning) warnings.push(`${spec.label}: ${handlePlacement.warning}`);
       record(spec.label, checkDoorLimits(spec.cutWidthMm, spec.cutHeightMm));
@@ -336,7 +353,13 @@ export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
       ? 'Customer reports the opening as square and level.'
       : `Out of true: ${condition}`
   );
-  if (o.method) rakeNotes.push(`Checked with: ${METHOD_LABELS[o.method]}.`);
+  if (o.method) {
+    rakeNotes.push(
+      o.method === 'laser'
+        ? `Checked with: ${METHOD_LABELS.laser}, set ${o.laserOffsetMm ?? LASER_OFFSET_DEFAULT_MM}mm off the wall.`
+        : `Checked with: ${METHOD_LABELS[o.method]}.`
+    );
+  }
 
   if (support.supportPanelRequired && support.supportPanelReason) {
     warnings.push(`Support panel required: ${support.supportPanelReason}`);

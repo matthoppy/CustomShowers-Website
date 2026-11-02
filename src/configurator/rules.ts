@@ -367,6 +367,22 @@ export const LIMITS = {
   maxPanelWeightKg: 50,
 } as const;
 
+/**
+ * When a job stops being routine and gets looked at by hand.
+ *
+ * [OURS] From the Measuring Calculator decisions (Notion, 2 Nov 2026). Neither
+ * blocks the customer; both put a line in front of the workshop.
+ */
+export const REVIEW = {
+  /** Up to this height the standard measuring route covers the job. */
+  standardHeightMaxMm: 2000,
+  /**
+   * Doors taller than this get their hinge checked by hand against the real
+   * glass weight and the maker's limits. Height alone never approves a hinge.
+   */
+  hingeReviewHeightMm: 2200,
+} as const;
+
 export interface LimitCheck {
   code: string;
   severity: 'warning' | 'blocking';

@@ -23,6 +23,9 @@ import { releasePhoto, type Photo, type PhotoSlot } from '../photos';
 import {
   checkMeasurements,
   halvesTotalMm,
+  LASER_OFFSET_DEFAULT_MM,
+  WALK_IN_RECOMMENDED_MM,
+  walkInGapMm,
   measuredInHalves,
   runLabels,
   signedLeanMm,
@@ -37,6 +40,7 @@ import {
 } from '../measure';
 import { openingContext, runPanelIndices } from '../geometry';
 import type { ConfiguratorPanel } from '../types';
+import { REVIEW } from '../rules';
 import {
   FIGURE_CAPTIONS,
   MeasureDiagram,
@@ -228,6 +232,54 @@ function WallGaps({
 }
 
 /**
+ * The walk-through gap beside a walk-in screen.
+ *
+ * Worked out from the whole opening, which is optional. Under the recommended
+ * width it suggests, gently: a narrow gap is the customer's call to make, not
+ * a mistake, so it never stops them.
+ */
+function WalkInGap({
+  openingMm,
+  gapMm,
+  onChange,
+}: {
+  openingMm: number | null;
+  gapMm: number | null;
+  onChange: (v: number | null) => void;
+}) {
+  return (
+    <div className="space-y-2 rounded border p-3">
+      <Label htmlFor="walk-in-opening" className="text-sm">
+        Whole width of the tray, from the wall to the open end (optional)
+      </Label>
+      <Input
+        id="walk-in-opening"
+        type="number"
+        inputMode="numeric"
+        placeholder="mm"
+        value={openingMm ?? ''}
+        onChange={(e) => {
+          const raw = e.target.value.trim();
+          onChange(raw === '' ? null : Math.max(0, parseInt(raw, 10) || 0));
+        }}
+      />
+      {gapMm !== null && gapMm > 0 && (
+        <p className="text-xs">
+          That leaves a <strong>{gapMm}mm</strong> gap to walk through.
+          {gapMm < WALK_IN_RECOMMENDED_MM && (
+            <span className="text-muted-foreground">
+              {' '}
+              About {WALK_IN_RECOMMENDED_MM}mm is easier to walk through, but narrower is fine if it
+              suits your room.
+            </span>
+          )}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
  * How many cards the phone layout walks through for a given shape.
  *
  * Height, then a pair of width cards per straight run, then the walls, the
@@ -268,7 +320,14 @@ function scaleRunPanels(
   return next;
 }
 
-export function MeasureStep({ state, update, photos, setPhotos, measureCard }: StepProps) {
+export function MeasureStep({
+  state,
+  update,
+  photos,
+  setPhotos,
+  measureCard,
+  templateId,
+}: StepProps) {
   const m = state.opening;
   const ctx = openingContext(state);
   const isMobile = useIsMobile();
@@ -550,6 +609,12 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
             />
             <span className="text-sm">The glass goes all the way to the ceiling</span>
           </label>
+          {state.heightMm > REVIEW.standardHeightMaxMm && (
+            <p className="rounded bg-muted/60 px-3 py-2 text-xs">
+              Glass over {REVIEW.standardHeightMaxMm}mm is fine, but we check taller showers by
+              hand before anything is cut. A photo of the ceiling above the shower helps.
+            </p>
+          )}
           <PhotoCapture
             slot="height"
             prompt="Show us the tape running from the floor up to where the glass will finish."
@@ -569,7 +634,9 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
     const startsAtCorner = i > 0;
     const between =
       runs.length === 1
-        ? 'from wall to wall'
+        ? ctx.hasEndWall
+          ? 'from wall to wall'
+          : 'from the wall to where the glass stops'
         : `from ${startsAtCorner ? 'the corner' : 'the wall'} to ${
             endsAtCorner ? 'the corner' : 'the wall'
           }`;
@@ -583,7 +650,13 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
       title: `Width at the floor${runPhrase(i)}`,
       figure: halves ? 'width-split' : 'width-floor',
       help: halves
-        ? 'With a laser, set it up in the middle and measure from each end to the laser line. No laser? Put a piece of masking tape in the middle, draw a line on it and measure to that. Measure to the tiles or finished surface, not the plaster behind them.'
+        ? `${
+            m.method === 'laser'
+              ? 'Set your laser up in the middle and measure from each end to the laser line.'
+              : m.method
+                ? 'Put a piece of masking tape on the floor in the middle, draw a line on it and measure from each end to that line.'
+                : 'With a laser, set it up in the middle and measure from each end to the laser line. No laser? Put a piece of masking tape in the middle, draw a line on it and measure to that.'
+          } Measure to the tiles or finished surface, not the plaster behind them.`
         : `Measure ${between}, to the tiles or finished surface rather than the plaster behind them.`,
       body: (
         <>
@@ -641,6 +714,13 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
                 </button>
               )}
             </>
+          )}
+          {templateId === 'walk-in' && runs.length === 1 && (
+            <WalkInGap
+              openingMm={m.walkInOpeningMm ?? null}
+              gapMm={walkInGapMm(m)}
+              onChange={(v) => patch({ walkInOpeningMm: v, shapeConfirmed: false })}
+            />
           )}
           {runs.length > 1 && (
             <p className="rounded bg-muted/60 px-3 py-2 text-xs">
@@ -730,6 +810,34 @@ export function MeasureStep({ state, update, photos, setPhotos, measureCard }: S
         <div className="sm:max-w-sm">
           <Figure figure={METHODS.find((x) => x.id === m.method)?.figure ?? 'wall-packers'} />
         </div>
+
+        {m.method === 'laser' && (
+          <div className="space-y-2 rounded border p-3">
+            <Label htmlFor="laser-offset" className="text-sm">
+              Laser set this far off each wall
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="laser-offset"
+                type="number"
+                inputMode="numeric"
+                className="w-24"
+                value={m.laserOffsetMm ?? LASER_OFFSET_DEFAULT_MM}
+                onChange={(e) =>
+                  patch({
+                    laserOffsetMm: Math.max(0, parseInt(e.target.value, 10) || 0),
+                    shapeConfirmed: false,
+                  })
+                }
+              />
+              <span className="text-sm text-muted-foreground">mm</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              We suggest {LASER_OFFSET_DEFAULT_MM}mm. Set the laser this far off the wall at the
+              bottom, so your bottom reading is this number. The top reading tells us the lean.
+            </p>
+          </div>
+        )}
 
         {m.method && m.method !== 'assumed-square' && (
           <div className="grid gap-3 sm:grid-cols-2">

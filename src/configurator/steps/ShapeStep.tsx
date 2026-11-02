@@ -5,7 +5,8 @@
  * does is recognise a picture, not construct a geometry.
  */
 
-import { Pencil } from 'lucide-react';
+import { Check, Pencil } from 'lucide-react';
+import { Label } from '@/components/ui/label';
 import { TEMPLATES, type ShowerTemplate } from '../templates';
 import { TemplateThumbnail } from '../views/TemplateThumbnail';
 import { ShapeConfigSuggestion } from '../ShapeConfigSuggestion';
@@ -19,6 +20,8 @@ interface ShapeStepProps extends StepProps {
 
 export function ShapeStep({
   tenant,
+  state,
+  update,
   selectedTemplateId,
   onSelectTemplate,
   onStartFromScratch,
@@ -81,6 +84,88 @@ export function ShapeStep({
         Not sure? Pick whichever is closest — you can change every size, add panels and move the
         door on the next step.
       </p>
+
+      <SetupQuestions tenant={tenant} state={state} update={update} />
     </div>
+  );
+}
+
+/**
+ * Asked before measuring starts, because both change what comes next.
+ *
+ * Whether they have a laser decides which instructions every measuring card
+ * shows. The finish is a preference taken early so the hinge offered later can
+ * match it where the door's size and weight allow. Both can be changed later.
+ */
+function SetupQuestions({
+  tenant,
+  state,
+  update,
+}: Pick<StepProps, 'tenant' | 'state' | 'update'>) {
+  const method = state.opening.method;
+  const setMethod = (next: 'laser' | 'packers') =>
+    update({ opening: { ...state.opening, method: next, shapeConfirmed: false } });
+
+  return (
+    <section className="space-y-5 rounded-lg border p-4">
+      <h3 className="text-base font-semibold">Before you measure</h3>
+
+      <div className="space-y-2">
+        <Label className="text-sm">Do you have a laser level?</Label>
+        <div className="grid grid-cols-2 gap-2">
+          {(
+            [
+              ['laser', 'Yes, I have a laser', 'We will show you the laser method.'],
+              ['packers', 'No laser', 'You will use masking tape, a spirit level and packers.'],
+            ] as const
+          ).map(([id, label, blurb]) => {
+            const selected = id === 'laser' ? method === 'laser' : method !== null && method !== 'laser';
+            return (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setMethod(id)}
+                className={`rounded-lg border p-3 text-left transition-colors ${
+                  selected ? 'border-foreground bg-muted' : 'hover:bg-muted/50'
+                }`}
+              >
+                <span className="block text-sm font-medium">{label}</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">{blurb}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-sm">Which finish would you like for the hardware?</Label>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {tenant.finishes.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              aria-pressed={state.finishId === f.id}
+              onClick={() => update({ finishId: f.id })}
+              className={`flex items-center gap-2 rounded-lg border p-2 text-left transition-colors ${
+                state.finishId === f.id ? 'border-foreground bg-muted' : 'hover:bg-muted/50'
+              }`}
+            >
+              <span
+                className="h-5 w-5 shrink-0 rounded-full border"
+                style={{ background: f.swatch }}
+                aria-hidden
+              />
+              <span className="min-w-0 text-xs font-medium">{f.label}</span>
+              {state.finishId === f.id && <Check className="ml-auto h-3.5 w-3.5 shrink-0" />}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          This is your preference. Once we know the door size, we check which hinges come in this
+          finish and will carry your door.
+        </p>
+      </div>
+    </section>
   );
 }

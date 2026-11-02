@@ -19,6 +19,8 @@ export interface StepProps {
    * step with more than one screen inside it.
    */
   measureCard?: number;
+  /** The template the customer started from, or null for a shape built by hand. */
+  templateId?: string | null;
   activePanelId: string | null;
   setActivePanelId: (id: string | null) => void;
   /** Drawing box the step should render its view into. */
