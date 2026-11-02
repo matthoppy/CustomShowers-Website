@@ -198,8 +198,10 @@ export function openingContext(state: {
   leftWall: boolean;
   rightWall: boolean;
   heightMm: number;
+  isFloorToCeiling?: boolean;
 }): OpeningContext {
   return {
+    toCeiling: state.isFloorToCeiling ?? false,
     // Only the two ends of the whole chain can meet a wall; everything
     // between them is a glass-to-glass corner.
     hasStartWall: state.leftWall,

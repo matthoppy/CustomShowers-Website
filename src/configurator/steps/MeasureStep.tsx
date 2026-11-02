@@ -21,7 +21,11 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { PhotoCapture } from '../PhotoCapture';
 import { releasePhoto, type Photo, type PhotoSlot } from '../photos';
 import {
+  applyCrossReadings,
   checkMeasurements,
+  createCrossReadings,
+  CROSS_POINTS,
+  type CrossKey,
   halvesTotalMm,
   LASER_OFFSET_DEFAULT_MM,
   WALK_IN_RECOMMENDED_MM,
@@ -40,7 +44,8 @@ import {
 } from '../measure';
 import { openingContext, runPanelIndices } from '../geometry';
 import type { ConfiguratorPanel } from '../types';
-import { REVIEW } from '../rules';
+import { CEILING, REVIEW } from '../rules';
+import { hasTransom, isSingleDoor } from '../spec';
 import {
   FIGURE_CAPTIONS,
   MeasureDiagram,
@@ -232,6 +237,115 @@ function WallGaps({
 }
 
 /**
+ * The single-door card: readings to a centre cross.
+ *
+ * Grouped the way they are taken, across then up and down, and the sums are
+ * shown back as they come in, so a reading that does not add up is caught on
+ * this card rather than in the workshop.
+ */
+function crossCard({
+  cross,
+  setCross,
+  method,
+  toCeiling,
+  m,
+  photo,
+  setPhoto,
+}: {
+  cross: ReturnType<typeof createCrossReadings>;
+  setCross: (key: CrossKey, v: number | null) => void;
+  method: MeasureMethod | null;
+  toCeiling: boolean;
+  m: OpeningMeasurements;
+  photo: Photo | undefined;
+  setPhoto: (p: Photo | null) => void;
+}) {
+  const laser = method === 'laser';
+  const add = (a: number | null, b: number | null) =>
+    a === null || b === null ? null : a + b;
+  const bottom = add(cross.leftBottomMm, cross.rightBottomMm);
+  const top = add(cross.leftTopMm, cross.rightTopMm);
+  const point = (n: number) => CROSS_POINTS[n - 1];
+  const input = (n: number) => (
+    <GapInput
+      key={n}
+      label={`${n}. ${point(n).label}`}
+      value={cross[point(n).key]}
+      onChange={(v) => setCross(point(n).key, v)}
+    />
+  );
+  const lean = (w: WallMeasurement, name: string) => {
+    const l = wallLean(w);
+    if (!l) return null;
+    return l.leanMm === 0
+      ? `${name} is plumb.`
+      : `${name} is ${l.leanMm}mm out, leaning ${l.direction === 'in' ? 'in' : 'out'} at the top.`;
+  };
+  const run = m.runs[0];
+
+  return {
+    title: 'Measure to the cross',
+    figure: (toCeiling ? 'cross-8' : 'cross-6') as MeasureFigure,
+    help: laser
+      ? 'Set the laser in the middle of the opening with both lines on: one straight up and down, one level across. Measure straight from each surface to the nearest line. Measure to the tiles, not the plaster behind them.'
+      : 'Put masking tape on the walls and floor around the middle of the opening and draw a cross on it: one line up and down, one across. Measure straight from each surface to the line. You check the walls with a level on a later card.',
+    body: (
+      <>
+        <div className="space-y-2">
+          <Label className="text-sm">Across, to the up-and-down line</Label>
+          <div className="grid grid-cols-2 gap-2">{[1, 2, 3, 4].map(input)}</div>
+        </div>
+        <div className="space-y-2">
+          <Label className="text-sm">Up and down, to the {laser ? 'level' : 'across'} line</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {(toCeiling ? [5, 6, 7, 8] : [5, 6]).map(input)}
+          </div>
+          {!toCeiling && (
+            <p className="text-xs text-muted-foreground">
+              Going up to the ceiling? Tick that on the first card and we will ask for readings 7
+              and 8 as well.
+            </p>
+          )}
+        </div>
+
+        {(bottom !== null || top !== null) && (
+          <div className="space-y-1 rounded bg-muted/60 px-3 py-2 text-xs">
+            {bottom !== null && (
+              <div>
+                Width at the bottom: {cross.leftBottomMm} + {cross.rightBottomMm} ={' '}
+                <strong>{bottom}mm</strong>
+              </div>
+            )}
+            {top !== null && (
+              <div>
+                Width at the top: {cross.leftTopMm} + {cross.rightTopMm} = <strong>{top}mm</strong>
+              </div>
+            )}
+            {laser && lean(m.startWall, 'Left wall') && <div>{lean(m.startWall, 'Left wall')}</div>}
+            {laser && lean(m.endWall, 'Right wall') && <div>{lean(m.endWall, 'Right wall')}</div>}
+            {laser && cross.floorLeftMm !== null && cross.floorRightMm !== null && (
+              <div>
+                {run.floorFallMm === 0
+                  ? 'Floor is level.'
+                  : `Floor is ${run.floorFallMm}mm lower on the ${run.floorLowEnd === 'start' ? 'left' : 'right'}.`}
+              </div>
+            )}
+            {m.ceilingHeightMm ? <div>Ceiling: {m.ceilingHeightMm}mm at the lowest side.</div> : null}
+          </div>
+        )}
+
+        <PhotoCapture
+          slot={'width-floor-0' as PhotoSlot}
+          prompt="Show the laser or tape cross in the opening, with a tape measure on one reading."
+          photo={photo}
+          onChange={setPhoto}
+        />
+      </>
+    ),
+  };
+}
+
+/**
  * The walk-through gap beside a walk-in screen.
  *
  * Worked out from the whole opening, which is optional. Under the recommended
@@ -394,8 +508,33 @@ export function MeasureStep({
    */
   const runHasDoor = (i: number) =>
     (runIndices[i] ?? []).some((idx) => state.panels[idx]?.kind === 'door');
+  /**
+   * A single door between two walls is measured to a centre cross instead:
+   * eight readings give its width, height and every rake in one go.
+   */
+  const singleDoor = isSingleDoor(state);
+  const transom = hasTransom(state);
+  const topGap = state.topGapMm ?? CEILING.singleDoorTopGapMm;
+  const cross = m.crossReadings ?? createCrossReadings();
+  const crossInUse = singleDoor && CROSS_POINTS.some((p) => cross[p.key] !== null);
+
+  const setCross = (key: CrossKey, v: number | null) => {
+    const next = applyCrossReadings(m, { ...cross, [key]: v });
+    const width = next.runs[0].widthAtFloorMm;
+    update({
+      opening: next,
+      ...(width !== m.runs[0].widthAtFloorMm
+        ? { panels: scaleRunPanels(state.panels, runIndices[0] ?? [], width) }
+        : {}),
+      // Door height follows the ceiling, less the air gap.
+      ...(state.isFloorToCeiling && next.ceilingHeightMm
+        ? { heightMm: next.ceilingHeightMm - topGap }
+        : {}),
+    });
+  };
+
   const halvesFor = (i: number) =>
-    measuredInHalves(runs[i]) || (runHasDoor(i) && !singlePull[i]);
+    !singleDoor && (measuredInHalves(runs[i]) || (runHasDoor(i) && !singlePull[i]));
 
   const patchWall = (key: 'startWall' | 'endWall', p: Partial<WallMeasurement>) =>
     patch({ [key]: { ...m[key], ...p }, shapeConfirmed: false } as Partial<OpeningMeasurements>);
@@ -605,10 +744,98 @@ export function MeasureStep({
           <label className="flex cursor-pointer items-center gap-3 rounded border p-3">
             <Checkbox
               checked={state.isFloorToCeiling}
-              onCheckedChange={(v) => update({ isFloorToCeiling: v === true })}
+              onCheckedChange={(v) =>
+                update({
+                  isFloorToCeiling: v === true,
+                  ...(v === true && singleDoor && m.ceilingHeightMm
+                    ? { heightMm: m.ceilingHeightMm - topGap }
+                    : {}),
+                })
+              }
             />
             <span className="text-sm">The glass goes all the way to the ceiling</span>
           </label>
+          {state.isFloorToCeiling && singleDoor && (
+            <div className="space-y-2 rounded border p-3">
+              <Label htmlFor="top-gap" className="text-sm">
+                Gap above the door
+              </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="top-gap"
+                  type="number"
+                  inputMode="numeric"
+                  className="w-24"
+                  value={topGap}
+                  onChange={(e) => {
+                    const gap = Math.max(0, parseInt(e.target.value, 10) || 0);
+                    update({
+                      topGapMm: gap,
+                      ...(m.ceilingHeightMm ? { heightMm: m.ceilingHeightMm - gap } : {}),
+                    });
+                  }}
+                />
+                <span className="text-sm text-muted-foreground">mm</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                We recommend {CEILING.singleDoorTopGapMm}mm. It lets air past the top of the door,
+                so it does not suck shut or pull hard when you open it.{' '}
+                {m.ceilingHeightMm
+                  ? `Your ceiling is ${m.ceilingHeightMm}mm, so the door will be ${m.ceilingHeightMm - topGap}mm.`
+                  : 'You measure the ceiling on the next card, and we work out the door height from it.'}
+              </p>
+            </div>
+          )}
+          {transom && (
+            <div className="space-y-3 rounded border p-3">
+              <Label className="text-sm">What goes above the door?</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    ['open', 'Open transom', 'A gap above the door to let air through.'],
+                    ['glass', 'Glass transom', 'A glass panel above the door, up to the ceiling.'],
+                  ] as const
+                ).map(([id, label, blurb]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    aria-pressed={state.aboveDoor === id}
+                    onClick={() => update({ aboveDoor: id })}
+                    className={`rounded border p-3 text-left transition-colors ${
+                      state.aboveDoor === id
+                        ? 'border-primary bg-primary/5'
+                        : 'hover:border-muted-foreground/40'
+                    }`}
+                  >
+                    <div className="text-sm font-medium">{label}</div>
+                    <div className="mt-0.5 text-xs text-muted-foreground">{blurb}</div>
+                  </button>
+                ))}
+              </div>
+              <Label htmlFor="door-height" className="text-sm">
+                Door height (mm)
+              </Label>
+              <Input
+                id="door-height"
+                type="number"
+                inputMode="numeric"
+                className="w-32"
+                value={state.doorHeightMm ?? CEILING.transomDoorHeightMm}
+                onChange={(e) => update({ doorHeightMm: parseInt(e.target.value, 10) || 0 })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Put your ceiling height in the height box above. The fixed glass goes up to the
+                ceiling and the door stops at this height. We size the transom and its fixings for
+                you.
+              </p>
+              {state.heightMm <= (state.doorHeightMm ?? CEILING.transomDoorHeightMm) && (
+                <p className="rounded bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                  The height above ({state.heightMm}mm) needs to be your ceiling height, which
+                  should be taller than the door.
+                </p>
+              )}
+            </div>
+          )}
           {state.heightMm > REVIEW.standardHeightMaxMm && (
             <p className="rounded bg-muted/60 px-3 py-2 text-xs">
               Glass over {REVIEW.standardHeightMaxMm}mm is fine, but we check taller showers by
@@ -630,6 +857,20 @@ export function MeasureStep({
   // physically walks to a different wall for each run, so they get their own
   // screens rather than being crammed into one.
   runs.forEach((run, i) => {
+    if (singleDoor && i === 0) {
+      cards.push(
+        crossCard({
+          cross,
+          setCross,
+          method: m.method,
+          toCeiling: state.isFloorToCeiling,
+          m,
+          photo: photoFor('width-floor-0' as PhotoSlot),
+          setPhoto: (p) => setPhotoFor('width-floor-0' as PhotoSlot, p),
+        })
+      );
+      return;
+    }
     const endsAtCorner = i < runs.length - 1;
     const startsAtCorner = i > 0;
     const between =
@@ -811,7 +1052,13 @@ export function MeasureStep({
           <Figure figure={METHODS.find((x) => x.id === m.method)?.figure ?? 'wall-packers'} />
         </div>
 
-        {m.method === 'laser' && (
+        {crossInUse && m.method === 'laser' && (
+          <p className="rounded bg-muted/60 px-3 py-2 text-xs">
+            Filled in from your readings on the cross (1 to 4). Change them there if you need to.
+          </p>
+        )}
+
+        {m.method === 'laser' && !crossInUse && (
           <div className="space-y-2 rounded border p-3">
             <Label htmlFor="laser-offset" className="text-sm">
               Laser set this far off each wall
@@ -903,6 +1150,11 @@ export function MeasureStep({
     figure: 'floor-level',
     body: (
       <>
+        {crossInUse && m.method === 'laser' && (
+          <p className="rounded bg-muted/60 px-3 py-2 text-xs">
+            Worked out from readings 5 and 6 on the cross.
+          </p>
+        )}
         {runs.map((run, i) => (
           <div key={i} className="space-y-2 rounded border p-3">
             {runs.length > 1 && (

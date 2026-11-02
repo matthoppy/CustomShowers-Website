@@ -39,6 +39,7 @@ import {
   handleHoleHeightsMm,
   hingeHeightsMm,
   mateNotchHeightMm,
+  CEILING,
   REVIEW,
   type LimitCheck,
 } from './rules';
@@ -153,6 +154,18 @@ function panelLabel(index: number, kind: 'fixed' | 'door', plane: Plane): string
   return `P${index + 1} — ${kind === 'door' ? 'Door' : 'Fixed'} (${planeName})`;
 }
 
+/** One door, wall to wall, nothing else: the layout that gets the cross method. */
+export function isSingleDoor(state: Pick<ConfiguratorState, 'panels' | 'leftWall' | 'rightWall'>) {
+  return (
+    state.panels.length === 1 && state.panels[0].kind === 'door' && state.leftWall && state.rightWall
+  );
+}
+
+/** A door with other glass, going to the ceiling: it gets a transom above it. */
+export function hasTransom(state: ConfiguratorState) {
+  return state.isFloorToCeiling && !isSingleDoor(state) && state.panels.some((p) => p.kind === 'door');
+}
+
 export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
   const planes = derivePlanes(state.panels, state.junctions);
   const panelModels = state.panels.map((_, i) => toPanelModel(state, i, planes[i]));
@@ -183,11 +196,18 @@ export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
     const hasLeftCorner = state.junctions[i - 1]?.angle_deg === 90;
     const hasRightCorner = state.junctions[i]?.angle_deg === 90;
 
+    // A single door stops short of the ceiling by its air gap, and a door
+    // under a transom stops at its own height. Neither is clamped between
+    // floor and ceiling, so neither takes the floor-to-ceiling deduction.
+    const underTransom = p.kind === 'door' && hasTransom(state);
+    const tightHeight = underTransom
+      ? (state.doorHeightMm ?? CEILING.transomDoorHeightMm)
+      : state.heightMm;
     const deductions = calculatePanelDeductions(
       p.width_mm,
-      state.heightMm,
+      tightHeight,
       model,
-      state.isFloorToCeiling,
+      state.isFloorToCeiling && !isSingleDoor(state) && !underTransom,
       support.supportPanelRequired,
       {
         // At a corner the panel in the front plane runs long and the return
@@ -213,7 +233,7 @@ export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
       kind: p.kind,
       plane,
       tightWidthMm: p.width_mm,
-      tightHeightMm: state.heightMm,
+      tightHeightMm: tightHeight,
       cutWidthMm: deductions.cutWidth,
       cutHeightMm: deductions.cutHeight,
       weightKg: glassWeightKg(deductions.cutWidth, deductions.cutHeight, state.glassThicknessMm),
@@ -361,6 +381,36 @@ export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
     );
   }
 
+  if (state.isFloorToCeiling && isSingleDoor(state)) {
+    const gap = state.topGapMm ?? CEILING.singleDoorTopGapMm;
+    rakeNotes.push(
+      o.ceilingHeightMm
+        ? `Single door to the ceiling: ceiling ${o.ceilingHeightMm}mm (lowest side), door ${state.heightMm}mm, leaving a ${gap}mm air gap above it.`
+        : `Single door to the ceiling with a ${gap}mm air gap above it. Ceiling height not measured.`
+    );
+  }
+  if (hasTransom(state)) {
+    const doorH = state.doorHeightMm ?? CEILING.transomDoorHeightMm;
+    const doors = state.panels.filter((p) => p.kind === 'door');
+    if (state.heightMm <= doorH) {
+      warnings.push(
+        `Review: the glass goes to the ceiling with a transom above the door, but the glass height (${state.heightMm}mm) is not above the door height (${doorH}mm). Custom Showers will confirm the ceiling height with you.`
+      );
+    } else if (state.aboveDoor === 'glass') {
+      warnings.push(
+        `Review: glass transom above the door, about ${doors.map((d) => d.width_mm).join(' / ')} × ${state.heightMm - doorH}mm before deductions (door ${doorH}mm, glass to ${state.heightMm}mm). Custom Showers will size the transom and its fixings by hand.`
+      );
+    } else if (state.aboveDoor === 'open') {
+      warnings.push(
+        `Review: open transom above the door for ventilation (door ${doorH}mm, fixed glass to ${state.heightMm}mm). Custom Showers will check how the top is fixed by hand.`
+      );
+    } else {
+      warnings.push(
+        'Review: the glass goes to the ceiling but nothing is chosen for above the door. Custom Showers will confirm with you.'
+      );
+    }
+  }
+
   if (support.supportPanelRequired && support.supportPanelReason) {
     warnings.push(`Support panel required: ${support.supportPanelReason}`);
   }
@@ -410,7 +460,9 @@ export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
     wallRuns,
     totalChannelLengthMm: totalRunWidthMm(state.panels) + notchAllowance,
     heightMm: state.heightMm,
-    isFloorToCeiling: state.isFloorToCeiling,
+    // A single door stops short of the ceiling by its air gap, so the glass
+    // itself is not floor to ceiling. The note in the opening says why.
+    isFloorToCeiling: state.isFloorToCeiling && !isSingleDoor(state),
     mounting: state.mounting,
     glassThicknessMm: state.glassThicknessMm,
     totalGlassWeightKg: Math.round(panels.reduce((s, p) => s + p.weightKg, 0) * 10) / 10,

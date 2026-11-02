@@ -122,6 +122,16 @@ export const HINGE_KITS: HingeKit[] = [
     maxDoorHeightMm: null,
   },
   {
+    // [NOTION, Measuring Calculator decisions, 2 Nov 2026] Listed there as a
+    // geometry reference limit, to be checked against current supplier data
+    // before production use. 10mm glass is all Custom Showers fits.
+    id: 'vienna',
+    name: 'Vienna',
+    glassMm: [10],
+    ratings: [{ count: 2, maxDoorWidthMm: 864, maxDoorWeightKg: 45 }],
+    maxDoorHeightMm: null,
+  },
+  {
     id: 'bellagio',
     name: 'Bellagio',
     glassMm: [8, 10],
@@ -381,6 +391,21 @@ export const REVIEW = {
    * glass weight and the maker's limits. Height alone never approves a hinge.
    */
   hingeReviewHeightMm: 2200,
+} as const;
+
+/**
+ * Glass up to the ceiling.
+ *
+ * [OURS] A single door between two walls stops short of the ceiling, so air
+ * can get past when it opens; a door that closes right up to the ceiling can
+ * pull a vacuum and fight the person opening it. A door within an enclosure
+ * has a transom above it instead: left open for ventilation, or glazed.
+ */
+export const CEILING = {
+  /** Gap above a single door, door top to ceiling. Recommended, editable. */
+  singleDoorTopGapMm: 30,
+  /** Starting door height under a transom. */
+  transomDoorHeightMm: 2000,
 } as const;
 
 export interface LimitCheck {
