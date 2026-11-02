@@ -16,6 +16,9 @@
 
 export type MeasureFigure =
   | 'width-floor'
+  | 'width-split'
+  | 'cross-6'
+  | 'cross-8'
   | 'width-top'
   | 'height'
   | 'wall-laser'
@@ -38,6 +41,12 @@ interface MeasureDiagramProps {
  */
 export const FIGURE_CAPTIONS: Record<MeasureFigure, string> = {
   'width-floor': 'Tape flat on the floor, from wall to wall.',
+  'cross-6':
+    'Measure from each wall and from the floor to the nearest line of the cross, straight across to it. Opposite readings add up to the opening.',
+  'cross-8':
+    'Measure from each wall, the floor and the ceiling to the nearest line of the cross, straight across to it. Opposite readings add up to the opening.',
+  'width-split':
+    'Mark the middle with a laser line, or a piece of masking tape with a line drawn on it. Measure from each end to the line. We add the two together.',
   'width-top': 'The same measurement again, at the height the glass will reach.',
   height: 'Floor or tray up to a grout line above the shower head.',
   'wall-laser':
@@ -161,6 +170,35 @@ function Room({ leftLean = 0, rightLean = 0, floorFall = 0 }) {
       <line x1={rightTop} y1={0} x2={280} y2={floorRight} stroke={WALL_EDGE} strokeWidth={2} />
       {/* Floor. */}
       <line x1={0} y1={floorLeft} x2={320} y2={floorRight} stroke={WALL_EDGE} strokeWidth={2} />
+    </g>
+  );
+}
+
+/**
+ * The centre cross for a single door: a laser with both lines on, or a cross
+ * drawn on masking tape. Numbers match the order the readings are asked for.
+ */
+function Cross({ ceiling }: { ceiling: boolean }) {
+  const cx = 160;
+  const cy = 96;
+  return (
+    <g>
+      {ceiling && <line x1={0} y1={2} x2={320} y2={2} stroke={WALL_EDGE} strokeWidth={3} />}
+      <line x1={cx} y1={6} x2={cx} y2={180} stroke={ACCENT} strokeWidth={1.5} strokeDasharray="7 5" />
+      <line x1={40} y1={cy} x2={280} y2={cy} stroke={ACCENT} strokeWidth={1.5} strokeDasharray="7 5" />
+      <circle cx={cx} cy={cy} r={5} fill={ACCENT} />
+      <Dim x1={40} y1={164} x2={cx} y2={164} label="1" />
+      <Dim x1={40} y1={26} x2={cx} y2={26} label="2" />
+      <Dim x1={cx} y1={164} x2={280} y2={164} label="3" />
+      <Dim x1={cx} y1={26} x2={280} y2={26} label="4" />
+      <Dim x1={70} y1={cy} x2={70} y2={180} label="5" vertical />
+      <Dim x1={234} y1={cy} x2={234} y2={180} label="6" vertical />
+      {ceiling && (
+        <>
+          <Dim x1={70} y1={4} x2={70} y2={cy} label="7" vertical />
+          <Dim x1={234} y1={4} x2={234} y2={cy} label="8" vertical />
+        </>
+      )}
     </g>
   );
 }
@@ -308,6 +346,9 @@ export function OpeningPreview({
 
 const FIGURE_LABELS: Record<MeasureFigure, string> = {
   'width-floor': 'Measuring the width of the opening along the floor',
+  'width-split': 'Measuring the width in two halves, to a line in the middle',
+  'cross-6': 'Six readings to a cross in the middle of the opening',
+  'cross-8': 'Eight readings to a cross in the middle of the opening, including the ceiling',
   'width-top': 'Measuring the width of the opening at the top of the glass',
   height: 'Measuring from the floor up to the top of the glass',
   'wall-laser': 'Finding how far a wall leans using a laser plumb line',
@@ -321,6 +362,37 @@ const FIGURES: Record<MeasureFigure, JSX.Element> = {
     <>
       <Room />
       <Dim x1={40} y1={168} x2={280} y2={168} label="A" />
+    </>
+  ),
+
+  'cross-6': (
+    <>
+      <Room />
+      <Cross ceiling={false} />
+    </>
+  ),
+
+  'cross-8': (
+    <>
+      <Room />
+      <Cross ceiling />
+    </>
+  ),
+
+  // Two short tape pulls to a mark in the middle, rather than one long one.
+  'width-split': (
+    <>
+      <Room />
+      <line x1={160} y1={14} x2={160} y2={186} stroke={ACCENT} strokeWidth={2} strokeDasharray="7 5" />
+      <rect x={151} y={170} width={18} height={10} rx={1} fill={ACCENT} fillOpacity={0.35} stroke={ACCENT} strokeWidth={1} />
+      <text x={166} y={26} fontSize={11} fontWeight={600} fill={ACCENT}>
+        laser or tape line
+      </text>
+      <Dim x1={40} y1={152} x2={160} y2={152} label="A" />
+      <Dim x1={160} y1={152} x2={280} y2={152} label="B" />
+      <text x={160} y={204} textAnchor="middle" fontSize={12} fontWeight={700} fill={INK}>
+        width = A + B
+      </text>
     </>
   ),
 

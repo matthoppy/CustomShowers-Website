@@ -64,6 +64,15 @@ export interface ConfiguratorState {
   glassThicknessMm: GlassThickness;
   glassType: GlassType;
   glassCoating: GlassCoating;
+  /**
+   * Glass to the ceiling, single door between two walls: the air gap left
+   * above the door. See CEILING in rules.ts.
+   */
+  topGapMm?: number;
+  /** Glass to the ceiling with a door in an enclosure: what goes above the door. */
+  aboveDoor?: 'open' | 'glass' | null;
+  /** Door height under that transom; the fixed panels run to the ceiling. */
+  doorHeightMm?: number;
   /** Keys into the tenant's hardware catalog. */
   finishId: string;
   handleId: string;

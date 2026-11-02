@@ -33,6 +33,19 @@
  * run's top width should equal its floor width.
  */
 
+/**
+ * [OURS] How far off the wall the laser line is set before taking readings.
+ * The bottom reading should come back as this number; the top reading is what
+ * tells us the lean. Installers can change it.
+ */
+export const LASER_OFFSET_DEFAULT_MM = 50;
+
+/**
+ * [OURS] A walk-in gap narrower than this still works, but is awkward to walk
+ * through. A suggestion, never a reason to stop someone.
+ */
+export const WALK_IN_RECOMMENDED_MM = 650;
+
 /** Which way the top of a wall leans, from the point of view of the shower. */
 export type WallLeanDirection = 'in' | 'out';
 
@@ -112,6 +125,15 @@ export interface RunMeasurement {
   /** Wall (or corner) to wall (or corner), measured along the floor. */
   widthAtFloorMm: number;
   /**
+   * The same width taken in two halves, to a laser line or a taped mark in
+   * the middle. Two short tape pulls are more accurate than one long one, and
+   * the customer never has to do the adding up: when both halves are in,
+   * widthAtFloorMm is their sum. Optional so designs saved before this field
+   * existed still load.
+   */
+  halfAMm?: number | null;
+  halfBMm?: number | null;
+  /**
    * Optional. The top width is derived from the floor width and the wall
    * leans, so this is only here for someone who measured it anyway and wants
    * it checked. When it is set, it has to agree.
@@ -130,6 +152,20 @@ export interface OpeningMeasurements {
   /** The wall at the end of the last run. */
   endWall: WallMeasurement;
   method: MeasureMethod | null;
+  /**
+   * Single door between two walls: the eight raw readings to a centre cross.
+   * Kept as read, because everything else is worked out from them.
+   */
+  crossReadings?: CrossReadings | null;
+  /** Floor to ceiling, lowest side, from the cross readings. */
+  ceilingHeightMm?: number | null;
+  /** Where the laser was set off each wall. Optional for older saved designs. */
+  laserOffsetMm?: number;
+  /**
+   * Walk-in screens only: the whole width of the tray or opening, wall to the
+   * open end. With the glass length it gives the walk-through gap.
+   */
+  walkInOpeningMm?: number | null;
   /** Set once the customer has confirmed the drawn-back shape looks right. */
   shapeConfirmed: boolean;
 }
@@ -141,6 +177,8 @@ export interface OpeningContext {
   /** Does the last run terminate against a wall? */
   hasEndWall: boolean;
   glassHeightMm: number;
+  /** The glass goes up to the ceiling, so ceiling readings are needed. */
+  toCeiling?: boolean;
   /**
    * What to call each run. Supplied by the caller because the right name
    * comes from the traced geometry, not from the order the panels happen to
@@ -152,6 +190,8 @@ export interface OpeningContext {
 function createRun(widthMm: number): RunMeasurement {
   return {
     widthAtFloorMm: widthMm,
+    halfAMm: null,
+    halfBMm: null,
     widthAtTopCheckMm: null,
     floorFallMm: 0,
     floorLowEnd: null,
@@ -164,8 +204,155 @@ export function createOpeningMeasurements(runWidthsMm: number[] = [1000]): Openi
     startWall: createWallMeasurement(),
     endWall: createWallMeasurement(),
     method: null,
+    laserOffsetMm: LASER_OFFSET_DEFAULT_MM,
+    walkInOpeningMm: null,
     shapeConfirmed: false,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Single door: eight readings to a centre cross
+// ---------------------------------------------------------------------------
+
+/**
+ * A single door between two walls is measured to a cross in the middle of
+ * the opening: a laser with both lines on, or a cross drawn on masking tape.
+ *
+ * Four readings go across to the up-and-down line (each wall, bottom and
+ * top) and four go up and down to the level line (floor and ceiling, each
+ * side). Opposite readings add up to the opening; readings on the same
+ * surface, compared, give its rake. A tape cross is not plumb or level, so
+ * with tape the sums still hold but the rakes come from a level and packers.
+ * Readings 7 and 8 are only needed when the glass goes to the ceiling.
+ */
+export interface CrossReadings {
+  leftBottomMm: number | null;
+  leftTopMm: number | null;
+  rightBottomMm: number | null;
+  rightTopMm: number | null;
+  floorLeftMm: number | null;
+  floorRightMm: number | null;
+  ceilingLeftMm: number | null;
+  ceilingRightMm: number | null;
+}
+
+export type CrossKey = keyof CrossReadings;
+
+/** The eight points, numbered in the order they are taken. */
+export const CROSS_POINTS: { key: CrossKey; n: number; label: string }[] = [
+  { key: 'leftBottomMm', n: 1, label: 'Left wall, at the bottom' },
+  { key: 'leftTopMm', n: 2, label: 'Left wall, at the top' },
+  { key: 'rightBottomMm', n: 3, label: 'Right wall, at the bottom' },
+  { key: 'rightTopMm', n: 4, label: 'Right wall, at the top' },
+  { key: 'floorLeftMm', n: 5, label: 'Floor, on the left' },
+  { key: 'floorRightMm', n: 6, label: 'Floor, on the right' },
+  { key: 'ceilingLeftMm', n: 7, label: 'Ceiling, on the left' },
+  { key: 'ceilingRightMm', n: 8, label: 'Ceiling, on the right' },
+];
+
+export function createCrossReadings(): CrossReadings {
+  return {
+    leftBottomMm: null,
+    leftTopMm: null,
+    rightBottomMm: null,
+    rightTopMm: null,
+    floorLeftMm: null,
+    floorRightMm: null,
+    ceilingLeftMm: null,
+    ceilingRightMm: null,
+  };
+}
+
+const sum = (a: number | null, b: number | null) =>
+  a === null || b === null ? null : Math.round(a + b);
+
+/** Floor to ceiling on the lower side, or null until both sides are in. */
+export function crossCeilingHeightMm(c: CrossReadings): number | null {
+  const left = sum(c.floorLeftMm, c.ceilingLeftMm);
+  const right = sum(c.floorRightMm, c.ceilingRightMm);
+  if (left === null || right === null) return null;
+  return Math.min(left, right);
+}
+
+/** Which of the points still needed are missing, by number. */
+export function crossMissing(c: CrossReadings, toCeiling: boolean): number[] {
+  const startedCeiling = c.ceilingLeftMm !== null || c.ceilingRightMm !== null;
+  return CROSS_POINTS.filter(
+    (p) => (p.n <= 6 || toCeiling || startedCeiling) && c[p.key] === null
+  ).map((p) => p.n);
+}
+
+function crossStarted(c: CrossReadings | null | undefined): c is CrossReadings {
+  return !!c && CROSS_POINTS.some((p) => c[p.key] !== null);
+}
+
+/**
+ * Turn the eight readings into the measurements every other part of the
+ * designer already uses, so both methods feed the same engine.
+ *
+ * Laser: walls and floor come straight from the readings, because the laser
+ * lines are true. Tape: only the sums are used, and the top width goes in as
+ * a cross-check against the walls the customer checks with a level.
+ */
+export function applyCrossReadings(m: OpeningMeasurements, c: CrossReadings): OpeningMeasurements {
+  const laser = m.method === 'laser';
+  const run = m.runs[0];
+  const floorWidth = sum(c.leftBottomMm, c.rightBottomMm);
+  const topWidth = sum(c.leftTopMm, c.rightTopMm);
+
+  const next: OpeningMeasurements = {
+    ...m,
+    crossReadings: c,
+    ceilingHeightMm: crossCeilingHeightMm(c),
+    shapeConfirmed: false,
+    runs: [
+      {
+        ...run,
+        widthAtFloorMm: floorWidth ?? run.widthAtFloorMm,
+        halfAMm: null,
+        halfBMm: null,
+        widthAtTopCheckMm: laser ? null : topWidth,
+      },
+      ...m.runs.slice(1),
+    ],
+  };
+
+  if (laser) {
+    next.startWall = { gapBottomMm: c.leftBottomMm, gapMiddleMm: null, gapTopMm: c.leftTopMm };
+    next.endWall = { gapBottomMm: c.rightBottomMm, gapMiddleMm: null, gapTopMm: c.rightTopMm };
+    if (c.floorLeftMm !== null && c.floorRightMm !== null) {
+      // Further down from a level line is lower floor.
+      const diff = Math.round(c.floorLeftMm - c.floorRightMm);
+      next.runs[0] = {
+        ...next.runs[0],
+        floorFallMm: Math.abs(diff),
+        floorLowEnd: diff === 0 ? null : diff > 0 ? 'start' : 'end',
+      };
+    }
+  }
+  return next;
+}
+
+/**
+ * The walk-through gap beside a walk-in screen: the whole opening less the
+ * glass. Null until the customer has given the whole opening.
+ */
+export function walkInGapMm(m: OpeningMeasurements): number | null {
+  const opening = m.walkInOpeningMm ?? null;
+  if (opening === null || m.runs.length !== 1) return null;
+  return Math.round(opening - m.runs[0].widthAtFloorMm);
+}
+
+/**
+ * Carry the customer's set-up answers across a change of shape. Picking a
+ * different template resets the measurements, but not whether they own a
+ * laser.
+ */
+export function keepSetup(
+  from: OpeningMeasurements,
+  to: OpeningMeasurements
+): OpeningMeasurements {
+  return { ...to, method: from.method, laserOffsetMm: from.laserOffsetMm ?? LASER_OFFSET_DEFAULT_MM };
 }
 
 /**
@@ -188,6 +375,24 @@ export function syncRuns(
     // to what they are now looking at.
     shapeConfirmed: false,
   };
+}
+
+/**
+ * The width from its two halves, or null until both are in.
+ *
+ * Zero is a real reading here (a line set right against one end), so only a
+ * missing half counts as missing.
+ */
+export function halvesTotalMm(run: RunMeasurement): number | null {
+  const a = run.halfAMm ?? null;
+  const b = run.halfBMm ?? null;
+  if (a === null || b === null) return null;
+  return Math.round(a + b);
+}
+
+/** True when the customer has started the two-halves method on this run. */
+export function measuredInHalves(run: RunMeasurement): boolean {
+  return (run.halfAMm ?? null) !== null || (run.halfBMm ?? null) !== null;
 }
 
 /** Names a customer would use for each run, given how many there are. */
@@ -277,6 +482,9 @@ const CROSS_CHECK_TOLERANCE_MM = 3;
  */
 const LARGE_LEAN_MM = 20;
 
+/** How far a laser bottom reading may stray from where the laser was set. */
+const LASER_REFERENCE_TOLERANCE_MM = 10;
+
 /**
  * Catch the slip where someone types the right number in the wrong unit.
  *
@@ -317,10 +525,36 @@ export function checkMeasurements(
   const labels = ctx.labels ?? runLabels(m.runs.length);
   const named = (i: number) => (m.runs.length > 1 ? `${labels[i].toLowerCase()} ` : '');
 
+  // --- The eight readings, if this door is measured to a cross. ---
+  if (crossStarted(m.crossReadings)) {
+    const missing = crossMissing(m.crossReadings, ctx.toCeiling ?? false);
+    if (missing.length) {
+      checks.push({
+        code: 'run0-widthAtFloor-cross-missing',
+        level: 'blocking',
+        runIndex: 0,
+        message: `We still need reading${missing.length > 1 ? 's' : ''} ${missing.join(', ')} on the cross.`,
+      });
+      return checks;
+    }
+  }
+
   // --- Floor widths, before anything is derived from them. ---
   m.runs.forEach((run, i) => {
     const name = `${named(i)}width at the floor`;
     const value = run.widthAtFloorMm;
+
+    // Half a two-halves reading is not a width. Without this the template's
+    // default width would quietly stand in for the half they never measured.
+    if (measuredInHalves(run) && halvesTotalMm(run) === null) {
+      checks.push({
+        code: `run${i}-widthAtFloor-half-missing`,
+        level: 'blocking',
+        message: `We still need the other half of the ${name}. Measure from the line to the other end too, and we will add the two together.`,
+        runIndex: i,
+      });
+      return;
+    }
 
     if (!value) {
       checks.push({
@@ -357,6 +591,8 @@ export function checkMeasurements(
   if (ctx.hasEndWall) walls.push(['endWall', m.endWall, 'far wall']);
 
   const checkedWalls = m.method !== null && m.method !== 'assumed-square';
+  // Readings to a centre cross are half the opening, not a small gap.
+  const toCross = crossStarted(m.crossReadings);
 
   for (const [key, wall, name] of walls) {
     for (const [field, value, where] of [
@@ -371,7 +607,7 @@ export function checkMeasurements(
           level: 'blocking',
           message: `The gap at the ${where} of the ${name} cannot be less than zero.`,
         });
-      } else if (value > MAX_GAP_MM) {
+      } else if (value > MAX_GAP_MM && !toCross) {
         checks.push({
           code: `${key}-${field}-too-big`,
           level: 'confirm',
@@ -387,6 +623,22 @@ export function checkMeasurements(
         message: `We need the gap at the bottom and at the top of the ${name}. If it is dead plumb, both readings will be the same — enter them anyway so we know it was checked.`,
       });
       continue;
+    }
+
+    // With a laser the bottom reading is the distance it was set off the wall,
+    // so a big difference means a reading was taken from something else.
+    const offset = m.laserOffsetMm ?? LASER_OFFSET_DEFAULT_MM;
+    if (
+      m.method === 'laser' &&
+      !toCross &&
+      wall.gapBottomMm !== null &&
+      Math.abs(wall.gapBottomMm - offset) > LASER_REFERENCE_TOLERANCE_MM
+    ) {
+      checks.push({
+        code: `${key}-laser-reference`,
+        level: 'confirm',
+        message: `You set the laser ${offset}mm off the ${name}, but the reading at the bottom is ${wall.gapBottomMm}mm. Those should be close. Check where the laser is, or change the distance you set it at.`,
+      });
     }
 
     const lean = wallLean(wall);
@@ -484,6 +736,22 @@ export function checkMeasurements(
     }
   });
 
+  // --- Walk-in gap. Asked about, never blocked on, unless it is impossible. ---
+  const gap = walkInGapMm(m);
+  if (gap !== null && gap <= 0) {
+    checks.push({
+      code: 'walk-in-no-gap',
+      level: 'confirm',
+      message: `The glass is ${m.runs[0].widthAtFloorMm}mm long but the whole opening is ${m.walkInOpeningMm}mm, which leaves no gap to walk through. Please check both numbers.`,
+    });
+  } else if (gap !== null && gap < WALK_IN_RECOMMENDED_MM) {
+    checks.push({
+      code: 'walk-in-narrow',
+      level: 'hint',
+      message: `That leaves a ${gap}mm gap to walk through. About ${WALK_IN_RECOMMENDED_MM}mm is easier, but you can go narrower if it suits your room.`,
+    });
+  }
+
   // --- The last gate. ---
   if (!m.shapeConfirmed && !checks.some((c) => c.level === 'blocking')) {
     checks.push({
@@ -532,6 +800,16 @@ export function describeOpening(m: OpeningMeasurements, ctx: OpeningContext): st
     }
   });
 
+  const gap = walkInGapMm(m);
+  if (gap !== null) parts.push(`walk-in gap ${gap}mm (whole opening ${m.walkInOpeningMm}mm)`);
+
+  const c = m.crossReadings;
+  if (c && m.ceilingHeightMm) {
+    parts.push(
+      `ceiling ${sum(c.floorLeftMm, c.ceilingLeftMm)}mm on the left and ${sum(c.floorRightMm, c.ceilingRightMm)}mm on the right`
+    );
+  }
+
   if (parts.length === 0) return 'Square and level throughout.';
   return parts.join('; ');
 }
@@ -551,7 +829,13 @@ export function describeWidths(
       const top = topWidthMm(m, i, ctx);
       const checked =
         run.widthAtTopCheckMm !== null ? `, customer also measured ${run.widthAtTopCheckMm}mm` : '';
-      return `${labels[i]}: ${run.widthAtFloorMm}mm measured at the floor, ${top}mm derived at the top${checked}`;
+      const c = i === 0 && crossStarted(m.crossReadings) ? m.crossReadings : null;
+      const halves = c
+        ? ` (to a centre cross: ${c.leftBottomMm} + ${c.rightBottomMm} at the bottom, ${c.leftTopMm} + ${c.rightTopMm} at the top)`
+        : halvesTotalMm(run) !== null
+          ? ` (in two halves: ${run.halfAMm} + ${run.halfBMm})`
+          : '';
+      return `${labels[i]}: ${run.widthAtFloorMm}mm measured at the floor${halves}, ${top}mm derived at the top${checked}`;
     })
     .join('; ');
 }

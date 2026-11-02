@@ -12,7 +12,13 @@ import { ArrowLeft, ArrowRight, Check, Loader2, RotateCcw } from 'lucide-react';
 import { PlanView } from './views/PlanView';
 import { ElevationView } from './views/ElevationView';
 import { ShapeStep } from './steps/ShapeStep';
-import { checkMeasurements, createOpeningMeasurements, measurementsUsable, syncRuns } from './measure';
+import {
+  checkMeasurements,
+  createOpeningMeasurements,
+  keepSetup,
+  measurementsUsable,
+  syncRuns,
+} from './measure';
 import { openingContext, runWidthsMm } from './geometry';
 import { MeasureStep, measureCardCount } from './steps/MeasureStep';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -60,7 +66,8 @@ function applyTemplate(state: ConfiguratorState, template: ShowerTemplate): Conf
     leftWall: template.leftWall,
     rightWall: template.rightWall,
     heightMm: template.heightMm ?? state.heightMm,
-    opening: syncRuns(createOpeningMeasurements(widths), widths),
+    // New shape, new measurements, but the same person with the same tools.
+    opening: keepSetup(state.opening, syncRuns(createOpeningMeasurements(widths), widths)),
   };
 }
 
@@ -205,6 +212,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     photos,
     setPhotos,
     measureCard,
+    templateId,
     canvasWidth: 620,
     canvasHeight: 520,
   };
@@ -348,7 +356,12 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                   onStartFromScratch={() => {
                     setTemplateId(null);
                     const fresh = createInitialState(tenant.glassThicknessMm);
-                    setState((s) => ({ ...fresh, finishId: s.finishId, handleId: s.handleId }));
+                    setState((s) => ({
+                      ...fresh,
+                      finishId: s.finishId,
+                      handleId: s.handleId,
+                      opening: keepSetup(s.opening, fresh.opening),
+                    }));
                     setActivePanelId(fresh.panels[0].id);
                   }}
                 />

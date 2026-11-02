@@ -8,7 +8,6 @@
 import { Label } from '@/components/ui/label';
 import { Check } from 'lucide-react';
 import type { StepProps } from './types';
-import type { GlassThickness } from '@/types/square';
 import type { GlassType, GlassCoating } from '../types';
 
 const GLASS_TYPES: { id: GlassType; label: string; description: string }[] = [
@@ -17,11 +16,6 @@ const GLASS_TYPES: { id: GlassType; label: string; description: string }[] = [
   { id: 'satin', label: 'Satin / Frosted', description: 'Translucent privacy glass' },
   { id: 'bronze', label: 'Bronze Tinted', description: 'Warm bronze tint' },
   { id: 'grey', label: 'Grey Tinted', description: 'Neutral grey tint' },
-];
-
-const GLASS_THICKNESSES: { value: GlassThickness; label: string }[] = [
-  { value: 8, label: '8mm' },
-  { value: 10, label: '10mm' },
 ];
 
 const GLASS_COATINGS: { id: GlassCoating; label: string; description: string }[] = [
@@ -138,23 +132,14 @@ export function HardwareStep({ tenant, state, update }: StepProps) {
         <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Glass thickness
         </Label>
-        <div className="grid grid-cols-2 gap-2">
-          {GLASS_THICKNESSES.map((thickness) => (
-            <button
-              key={thickness.value}
-              type="button"
-              onClick={() => update({ glassThicknessMm: thickness.value })}
-              className={`rounded-lg border p-3 text-left transition-colors ${
-                state.glassThicknessMm === thickness.value ? 'border-foreground bg-muted' : 'hover:bg-muted/50'
-              }`}
-            >
-              <div className="font-medium">{thickness.label}</div>
-            </button>
-          ))}
+        {/* One thickness, set by the tenant. Custom Showers fits 10mm only, so
+            there is nothing to choose. */}
+        <div className="rounded-lg border bg-muted p-3">
+          <div className="font-medium">{tenant.glassThicknessMm}mm toughened safety glass</div>
+          <div className="text-sm text-muted-foreground">
+            Every panel and door we make is {tenant.glassThicknessMm}mm.
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground">
-          All glass is toughened safety glass. 10mm is standard for doors and tall panels.
-        </p>
       </div>
 
       <div className="space-y-3">
