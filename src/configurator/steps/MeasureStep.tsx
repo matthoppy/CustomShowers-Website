@@ -813,7 +813,7 @@ export function MeasureStep({
                 ))}
               </div>
               <Label htmlFor="door-height" className="text-sm">
-                Door height (mm)
+                How tall do you want the door? (mm)
               </Label>
               <Input
                 id="door-height"
@@ -823,10 +823,20 @@ export function MeasureStep({
                 value={state.doorHeightMm ?? CEILING.transomDoorHeightMm}
                 onChange={(e) => update({ doorHeightMm: parseInt(e.target.value, 10) || 0 })}
               />
+              {state.heightMm > (state.doorHeightMm ?? CEILING.transomDoorHeightMm) && (
+                <p className="rounded bg-muted/60 px-3 py-2 text-xs">
+                  That leaves a{' '}
+                  <strong>
+                    {state.heightMm - (state.doorHeightMm ?? CEILING.transomDoorHeightMm)}mm
+                  </strong>{' '}
+                  {state.aboveDoor === 'open' ? 'open gap' : 'transom'} above the door, up to your{' '}
+                  {state.heightMm}mm ceiling. A shorter door gives a taller transom.
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">
                 Put your ceiling height in the height box above. The fixed glass goes up to the
-                ceiling and the door stops at this height. We size the transom and its fixings for
-                you.
+                ceiling and the door stops at the height you choose here. We size the transom and
+                its fixings for you.
               </p>
               {state.heightMm <= (state.doorHeightMm ?? CEILING.transomDoorHeightMm) && (
                 <p className="rounded bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
