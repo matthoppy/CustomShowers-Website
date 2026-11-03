@@ -133,3 +133,21 @@ The Worker names its own faults rather than returning a generic error.
 | `Too many designs sent from here just now.` | Rate limit: 5 per IP per 10 minutes. Expected while testing — wait it out. |
 
 Live logs: Worker → **Logs** → **Begin log stream**, then submit an enquiry.
+
+---
+
+## v15: the dashboard's copy of every job
+
+Version 15 keeps each design for the admin dashboard (customshowers.uk/admin)
+as well as emailing it. Paste `design-worker/worker.paste.js` as above, then
+add two bindings under Settings → Bindings:
+
+| Type | Variable name | Resource |
+|---|---|---|
+| D1 database | `JOBS` | `customshowers` |
+| KV namespace | `FILES_KV` | `customshowers-files` |
+
+Without the bindings the worker behaves exactly as v14.1. With them, the
+response gains a `jobId` and the job appears in the dashboard. A database
+problem never fails an enquiry that has been emailed. Full set-up:
+`docs/ADMIN_DASHBOARD.md`.

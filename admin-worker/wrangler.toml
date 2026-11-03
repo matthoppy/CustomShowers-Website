@@ -1,0 +1,19 @@
+name = "customshowers-admin"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+# Variables and secrets are set in the Cloudflare dashboard, never here. See
+# the header of worker.js and docs/ADMIN_DASHBOARD.md for the list.
+
+[[d1_databases]]
+binding = "JOBS"
+database_name = "customshowers"
+database_id = "2e9260d0-63a5-4e3b-9ed6-5adb7c3d6785"
+
+[[kv_namespaces]]
+binding = "FILES_KV"
+id = "59246ea5bf0b4f92814dd018b22c755d"
+
+# [[r2_buckets]]
+# binding = "FILES"
+# bucket_name = "customshowers-files"

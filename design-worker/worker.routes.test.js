@@ -80,3 +80,77 @@ for (const path of ["/analyse", "/suggest"]) {
     assert.ok(!calls.some(c => c.url.includes("generativelanguage")), "Gemini not called");
   });
 }
+
+// ── Keeping the job for the dashboard ────────────────────────────────────────
+
+/** The worker rate-limits five enquiries per IP, so each test comes from its own address. */
+let nextIp = 10;
+function enquiryFromFreshIp(extra = {}) {
+  const req = enquiry(extra);
+  const headers = new Headers(req.headers);
+  headers.set("cf-connecting-ip", `10.0.0.${nextIp++}`);
+  return new Request(req.url, { method: "POST", headers, body: req.body, duplex: "half" });
+}
+
+function fakeD1(runs, { fail = false } = {}) {
+  return {
+    prepare: (sql) => ({
+      bind: (...args) => ({
+        run: async () => {
+          if (fail) throw new Error("D1 down");
+          runs.push({ sql, args });
+          return { success: true };
+        },
+      }),
+    }),
+  };
+}
+
+test("enquiry: keeps the job in D1 and the files in the store when they are bound", async () => {
+  mockFetch();
+  const runs = [];
+  const puts = [];
+  const env = {
+    ...ENV,
+    JOBS: fakeD1(runs),
+    FILES_KV: { put: async (key, bytes, opts) => { puts.push({ key, bytes: bytes.length, opts }); } },
+  };
+  const res = await worker.fetch(
+    enquiryFromFreshIp({
+      summary: { panelCount: 2, runWidthMm: "1210mm", heightMm: "2000mm", finish: "Polished chrome" },
+      attachments: [
+        { filename: "plan-view.png", content: btoa("png-bytes") },
+        { filename: "measured-height.jpg", content: btoa("jpg-bytes") },
+      ],
+    }),
+    env
+  );
+  const body = await res.json();
+  assert.strictEqual(res.status, 200);
+  assert.match(body.jobId, /^CS-\d{8}-[A-HJ-NP-Z2-9]{4}$/);
+  assert.strictEqual(puts.length, 2);
+  assert.strictEqual(puts[0].key, `jobs/${body.jobId}/plan-view.png`);
+  assert.strictEqual(puts[0].opts.metadata.contentType, "image/png");
+  assert.strictEqual(runs.length, 2);
+  assert.ok(runs[0].sql.includes("INSERT INTO jobs"));
+  assert.strictEqual(runs[0].args[0], body.jobId);
+  assert.strictEqual(runs[0].args[7], "2 panels · 1210mm wide · 2000mm tall · Polished chrome");
+  const attachments = JSON.parse(runs[0].args[10]);
+  assert.deepStrictEqual(attachments.map((a) => a.kind), ["drawing", "measurement"]);
+  assert.ok(runs[1].sql.includes("INSERT INTO job_events"));
+});
+
+test("enquiry: a database failure never fails a design that has already been emailed", async () => {
+  mockFetch();
+  const env = { ...ENV, JOBS: fakeD1([], { fail: true }) };
+  const res = await worker.fetch(enquiryFromFreshIp(), env);
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual((await res.json()).jobId, null);
+});
+
+test("enquiry: without bindings the worker only emails, as before", async () => {
+  mockFetch();
+  const res = await worker.fetch(enquiryFromFreshIp(), ENV);
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual((await res.json()).jobId, null);
+});

@@ -1,35 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import gallery1 from "@/assets/gallery-1.jpg";
-import gallery2 from "@/assets/gallery-2.jpg";
-import gallery3 from "@/assets/gallery-3.jpg";
-import gallery4 from "@/assets/gallery-4.jpg";
+import { imageUrl, siteImages } from "@/content/siteImages";
 
-const projects = [
-  { image: gallery1, alt: "Custom shower enclosure with gold fixtures" },
-  { image: gallery2, alt: "Custom glass shower installation" },
-  { image: gallery3, alt: "Glass shower with blue tile finish" },
-  { image: gallery4, alt: "Frameless glass shower with skylight" },
-  { image: "/images/shower-screen-1.JPG", alt: "Frameless shower screen installation" },
-  { image: "/images/shower-screen-2.JPG", alt: "Bespoke shower screen" },
-  { image: "/images/shower-screen-3.JPG", alt: "Custom shower screen" },
-  { image: "/images/shower-screen-4.JPG", alt: "Glass shower screen" },
-  { image: "/images/shower-screen-clamps-1.JPG", alt: "Clamp-fixed shower screen" },
-  { image: "/images/shower-screen-crittal-1.JPG", alt: "Crittal-style shower screen" },
-  { image: "/images/shower-screen-framed-1.JPG", alt: "Framed shower screen" },
-  { image: "/images/shower-inline-1.jpeg", alt: "Inline frameless shower enclosure" },
-  { image: "/images/shower-inline-2.JPG", alt: "Inline shower enclosure" },
-  { image: "/images/shower-inline-3.JPG", alt: "Bespoke inline shower" },
-  { image: "/images/shower-inline4.JPG", alt: "Inline shower panel" },
-  { image: "/images/shower-inline-steam.JPG", alt: "Steam inline shower enclosure" },
-  { image: "/images/shower-sliding-2.JPG", alt: "Sliding shower door" },
-  { image: "/images/shower-bath-sliding-1.JPG", alt: "Bath sliding shower screen" },
-  { image: "/images/shower-enclosure-3.JPG", alt: "Bespoke shower enclosure" },
-  { image: "/images/shower-enclosure-4.JPG", alt: "Custom shower enclosure" },
-  { image: "/images/shower-enclosure-5.JPG", alt: "Frameless shower enclosure" },
-  { image: "/images/shower-enclosure-clamps-1.JPG", alt: "Clamp-fixed shower enclosure" },
-  { image: "/images/shower-enclosure-clamps-2.JPG", alt: "Clamp shower enclosure detail" },
-];
+// The gallery strip, in the order the manifest lists it. Replace or reorder
+// pictures from the admin dashboard, which commits the manifest.
+const projects = siteImages.gallery.map((image) => ({ image: imageUrl(image), alt: image.alt }));
 
 const IMAGE_WIDTH = 320;
 

@@ -14,10 +14,17 @@
  *   GEMINI_API_KEY        optional, for photo recognition features
  *   BUSINESS_EMAIL        optional, defaults to sales@customshowers.uk
  *   FROM_EMAIL            optional, defaults to noreply@customshowers.uk
+ *
+ * Bindings (Settings → Bindings), both optional. With them, every design is
+ * also kept for the admin dashboard at customshowers.uk/admin; without them
+ * the worker behaves exactly as before and only emails.
+ *   JOBS       D1 database  "customshowers"       — the job row
+ *   FILES      R2 bucket    "customshowers-files" — drawings and photos, or
+ *   FILES_KV   KV namespace "customshowers-files" — the same, where R2 is off
  */
 
 /** Bump when the code changes, so a browser visit shows which paste is live. */
-const WORKER_VERSION = "v14.1";
+const WORKER_VERSION = "v15";
 
 /**
  * CORS configuration: the production domain, plus Cloudflare Pages preview
@@ -158,7 +165,7 @@ export default {
 
     try {
       const body = await request.json();
-      const { tenantId, customer, summary, spec, disclaimer, attachments, turnstileToken, antispam } =
+      const { tenantId, customer, summary, spec, disclaimer, attachments, turnstileToken, antispam, design } =
         body || {};
 
       if (!customer?.name || !customer?.email) {
@@ -274,6 +281,22 @@ export default {
         attachments: mailAttachments,
       });
 
+      // Into the dashboard's job list, when the worker has somewhere to keep
+      // it. Never fatal: the email above is the record and has already gone,
+      // so a database hiccup must not turn a sent design into an error.
+      const jobId = await persistJob(env, {
+        tenantId,
+        customer,
+        summary,
+        spec,
+        disclaimer,
+        antispam,
+        design,
+        attachments: mailAttachments,
+        tooFast,
+        challengeSkipped,
+      });
+
       // Copy to the customer, suppressed only on a suspiciously fast
       // completion — there the address may belong to someone who never filled
       // anything in, and mailing them would make us the one sending junk. A
@@ -292,7 +315,7 @@ export default {
         });
       }
 
-      return json({ success: true }, 200, corsHeaders);
+      return json({ success: true, jobId }, 200, corsHeaders);
     } catch (err) {
       console.error("design-worker error:", err);
 
@@ -315,6 +338,139 @@ export default {
     }
   },
 };
+
+// ── Jobs: the dashboard's copy ───────────────────────────────────────────────
+
+/** A readable job number, CS-YYYYMMDD-XXXX, as the dashboard shows it. */
+export function newJobId(now = new Date()) {
+  const day = now.toISOString().slice(0, 10).replace(/-/g, "");
+  // No 0/O or 1/I, so a number read out over the phone cannot be misheard.
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = new Uint8Array(4);
+  crypto.getRandomValues(bytes);
+  let tail = "";
+  for (const b of bytes) tail += alphabet[b % alphabet.length];
+  return `CS-${day}-${tail}`;
+}
+
+/** What an attachment is, so the dashboard can group them. */
+export function attachmentKind(filename) {
+  if (/\.png$/i.test(filename)) return "drawing";
+  if (/^measured-/i.test(filename)) return "measurement";
+  return "photo";
+}
+
+/** One line for the job list: panels, size, finish. */
+export function jobHeadline(summary) {
+  const s = summary && typeof summary === "object" ? summary : {};
+  const parts = [];
+  if (s.panelCount) parts.push(`${s.panelCount} panel${s.panelCount === 1 ? "" : "s"}`);
+  if (s.runWidthMm) parts.push(`${s.runWidthMm} wide`);
+  if (s.heightMm) parts.push(`${s.heightMm} tall`);
+  if (s.finish) parts.push(String(s.finish));
+  return parts.join(" · ");
+}
+
+/**
+ * The file store: an R2 bucket bound as FILES, or a KV namespace bound as
+ * FILES_KV where R2 is not enabled on the account. One call either way.
+ */
+function fileStore(env) {
+  if (env.FILES) {
+    return {
+      kind: "r2",
+      put: (key, bytes, contentType) =>
+        env.FILES.put(key, bytes, { httpMetadata: { contentType } }),
+    };
+  }
+  if (env.FILES_KV) {
+    return {
+      kind: "kv",
+      put: (key, bytes, contentType) => env.FILES_KV.put(key, bytes, { metadata: { contentType } }),
+    };
+  }
+  return null;
+}
+
+function base64ToBytes(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+function contentTypeFor(filename) {
+  if (/\.png$/i.test(filename)) return "image/png";
+  if (/\.jpe?g$/i.test(filename)) return "image/jpeg";
+  if (/\.webp$/i.test(filename)) return "image/webp";
+  return "application/octet-stream";
+}
+
+/**
+ * Keep the job for the dashboard: the row in D1, the drawings and photos in
+ * the file store. Returns the job id, or null when there is nowhere to keep
+ * it or the keeping failed. The email has already gone either way, so this
+ * never throws.
+ */
+export async function persistJob(env, job) {
+  if (!env.JOBS) return null;
+  const id = newJobId();
+  const now = new Date().toISOString();
+  try {
+    const store = fileStore(env);
+    const stored = [];
+    if (store) {
+      for (const a of job.attachments || []) {
+        const key = `jobs/${id}/${a.filename}`;
+        const bytes = base64ToBytes(a.content);
+        await store.put(key, bytes, contentTypeFor(a.filename));
+        stored.push({ filename: a.filename, key, bytes: bytes.length, kind: attachmentKind(a.filename) });
+      }
+    }
+    const customer = job.customer || {};
+    await env.JOBS.prepare(
+      `INSERT INTO jobs (id, created_at, tenant_id, customer_name, customer_email, customer_phone,
+         customer_postcode, status, headline, summary_json, payload_json, attachments_json, flags_json, emailed)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'new', ?8, ?9, ?10, ?11, ?12, 1)`
+    )
+      .bind(
+        id,
+        now,
+        job.tenantId || null,
+        customer.name || null,
+        customer.email || null,
+        customer.phone || null,
+        customer.postcode || null,
+        jobHeadline(job.summary),
+        JSON.stringify(job.summary ?? {}),
+        JSON.stringify({
+          customer,
+          summary: job.summary,
+          spec: job.spec,
+          disclaimer: job.disclaimer,
+          antispam: job.antispam,
+          design: job.design ?? null,
+        }),
+        JSON.stringify(stored),
+        JSON.stringify({
+          tooFast: !!job.tooFast,
+          challengeSkipped: !!job.challengeSkipped,
+          filesStored: !!store,
+          fileStore: store ? store.kind : null,
+        })
+      )
+      .run();
+    await env.JOBS.prepare(
+      `INSERT INTO job_events (job_id, at, actor, kind, detail) VALUES (?1, ?2, 'customer', 'received', ?3)`
+    )
+      .bind(id, now, `Sent from the designer${job.tooFast ? " (completed unusually fast)" : ""}`)
+      .run();
+    return id;
+  } catch (err) {
+    console.error("Could not keep the job for the dashboard", String(err));
+    return null;
+  }
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

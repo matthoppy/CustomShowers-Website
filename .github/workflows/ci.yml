@@ -34,7 +34,18 @@ jobs:
       - name: Lint the configurator
         run: npx eslint src/configurator
 
-      # The worker is pasted into Cloudflare by hand, so a syntax error in it
-      # would not surface until an enquiry failed in production.
-      - name: Check the worker parses
-        run: node --check design-worker/worker.js
+      # The workers are pasted into Cloudflare by hand, so a syntax error in
+      # one would not surface until an enquiry failed in production.
+      - name: Check the workers parse
+        run: |
+          node --check design-worker/worker.js
+          node --check design-worker/worker.paste.js
+          node --check contact-worker/worker.js
+          node --check admin-worker/worker.js
+
+      # The dashboard lives in src/admin; lint it alongside the configurator.
+      - name: Lint the dashboard
+        run: npx eslint src/admin src/content
+
+      - name: Unit tests
+        run: npm test

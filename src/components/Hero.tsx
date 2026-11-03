@@ -1,5 +1,5 @@
 import { Button } from "./ui/button";
-import heroImage from "@/assets/hero-shower.jpg";
+import { imageUrl, siteImages } from "@/content/siteImages";
 
 interface HeroProps {
   onOpenQuote?: () => void;
@@ -11,7 +11,7 @@ const Hero = ({ onOpenQuote }: HeroProps) => {
       {/* Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${heroImage})` }}
+        style={{ backgroundImage: `url(${imageUrl(siteImages.hero)})` }}
       >
         <div className="absolute inset-0 bg-overlay/50" />
       </div>

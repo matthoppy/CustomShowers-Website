@@ -53,6 +53,12 @@ export interface EnquiryPayload {
   attachments: EnquiryAttachment[];
   turnstileToken: string | null;
   antispam: AntiSpamSignals;
+  /**
+   * The design itself, as the configurator held it. The email does not use
+   * it; the admin dashboard does, to draw the plan and elevation again as
+   * vectors and to show every reading the customer took.
+   */
+  design: ConfiguratorState;
 }
 
 export interface AntiSpamSignals {
@@ -153,6 +159,7 @@ export function buildEnquiryPayload(
     attachments,
     turnstileToken,
     antispam,
+    design: state,
   };
 }
 

@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "hero": { "src": "/images/site/hero-shower.jpg", "alt": "Frameless glass shower enclosure", "v": 1 },
+  "about": [
+    { "src": "/images/site/about-shower-1.jpg", "alt": "Bespoke frameless glass shower enclosure with gold trim and geometric tile flooring", "v": 1 },
+    { "src": "/images/site/about-shower-2.jpg", "alt": "Walk-in frameless shower screen in a tiled bathroom", "v": 1 }
+  ],
+  "gallery": [
+    { "src": "/images/site/gallery-1.jpg", "alt": "Custom shower enclosure with gold fixtures", "v": 1 },
+    { "src": "/images/site/gallery-2.jpg", "alt": "Custom glass shower installation", "v": 1 },
+    { "src": "/images/site/gallery-3.jpg", "alt": "Glass shower with blue tile finish", "v": 1 },
+    { "src": "/images/site/gallery-4.jpg", "alt": "Frameless glass shower with skylight", "v": 1 },
+    { "src": "/images/shower-screen-1.JPG", "alt": "Frameless shower screen installation", "v": 1 },
+    { "src": "/images/shower-screen-2.JPG", "alt": "Bespoke shower screen", "v": 1 },
+    { "src": "/images/shower-screen-3.JPG", "alt": "Custom shower screen", "v": 1 },
+    { "src": "/images/shower-screen-4.JPG", "alt": "Glass shower screen", "v": 1 },
+    { "src": "/images/shower-screen-clamps-1.JPG", "alt": "Clamp-fixed shower screen", "v": 1 },
+    { "src": "/images/shower-screen-crittal-1.JPG", "alt": "Crittal-style shower screen", "v": 1 },
+    { "src": "/images/shower-screen-framed-1.JPG", "alt": "Framed shower screen", "v": 1 },
+    { "src": "/images/shower-inline-1.jpeg", "alt": "Inline frameless shower enclosure", "v": 1 },
+    { "src": "/images/shower-inline-2.JPG", "alt": "Inline shower enclosure", "v": 1 },
+    { "src": "/images/shower-inline-3.JPG", "alt": "Bespoke inline shower", "v": 1 },
+    { "src": "/images/shower-inline4.JPG", "alt": "Inline shower panel", "v": 1 },
+    { "src": "/images/shower-inline-steam.JPG", "alt": "Steam inline shower enclosure", "v": 1 },
+    { "src": "/images/shower-sliding-2.JPG", "alt": "Sliding shower door", "v": 1 },
+    { "src": "/images/shower-bath-sliding-1.JPG", "alt": "Bath sliding shower screen", "v": 1 },
+    { "src": "/images/shower-enclosure-3.JPG", "alt": "Bespoke shower enclosure", "v": 1 },
+    { "src": "/images/shower-enclosure-4.JPG", "alt": "Custom shower enclosure", "v": 1 },
+    { "src": "/images/shower-enclosure-5.JPG", "alt": "Frameless shower enclosure", "v": 1 },
+    { "src": "/images/shower-enclosure-clamps-1.JPG", "alt": "Clamp-fixed shower enclosure", "v": 1 },
+    { "src": "/images/shower-enclosure-clamps-2.JPG", "alt": "Clamp shower enclosure detail", "v": 1 }
+  ]
+}

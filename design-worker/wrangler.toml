@@ -12,3 +12,22 @@ compatibility_date = "2024-09-23"
 #
 # Deploy:
 #   cd design-worker && npx wrangler deploy
+
+# Optional bindings for the admin dashboard (customshowers.uk/admin). Without
+# them the worker only emails, as it always has. In the dashboard these are
+# Settings → Bindings on the customshowers-design worker.
+[[d1_databases]]
+binding = "JOBS"
+database_name = "customshowers"
+database_id = "2e9260d0-63a5-4e3b-9ed6-5adb7c3d6785"
+
+# The file store for drawings and photos. KV until R2 is enabled on the
+# account; then create the bucket, bind it as FILES and drop this block —
+# the worker prefers FILES when both are present.
+[[kv_namespaces]]
+binding = "FILES_KV"
+id = "59246ea5bf0b4f92814dd018b22c755d"
+
+# [[r2_buckets]]
+# binding = "FILES"
+# bucket_name = "customshowers-files"

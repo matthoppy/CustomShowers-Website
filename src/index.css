@@ -152,3 +152,14 @@ All colors MUST be HSL.
 .dark {
   --measure-accent: 199 45% 63%;
 }
+
+/* The fitting sheet prints as a document. */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  body {
+    background: white;
+    color: black;
+  }
+}
