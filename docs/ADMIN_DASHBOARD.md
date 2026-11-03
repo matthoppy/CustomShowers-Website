@@ -3,7 +3,7 @@
 The dashboard lives at **customshowers.uk/admin**, behind a GitHub sign-in.
 It shows the jobs sent from the shower designer (with the drawings, every
 measurement the customer took, the cut sizes and a printable fitting sheet),
-the quote-form enquiries, lets you change the site's pictures, and shows
+the quote-form enquiries, lets you change the website photos, and shows
 Cloudflare traffic and deployments and the Google Business Profile.
 
 Written 3 November 2026. Everything below is what has to exist for each part
@@ -19,7 +19,7 @@ to work; the dashboard says plainly which parts are not connected yet.
 | Quote-form enquiries | `contact-worker/worker.js` v2 → worker `customshowers-contact` | Paste over the live worker, add the bindings, keep its secrets |
 | The database | Cloudflare D1 `customshowers` (id `2e9260d0-63a5-4e3b-9ed6-5adb7c3d6785`), created 3 Nov 2026 with its tables | Already exists |
 | Drawings and photos | KV namespace `customshowers-files` (id `59246ea5bf0b4f92814dd018b22c755d`) | Already exists; swap for R2 when R2 is enabled (below) |
-| Site pictures | `src/content/site-images.json` and `public/images/site/` | Committed to the repo by the dashboard as you; Pages redeploys |
+| Website photos | `src/content/site-images.json` and `public/images/site/` | Committed to the repo by the dashboard as you; Pages redeploys |
 
 The live `customshowers-contact` worker was not deployed from this repository.
 The version in `contact-worker/` keeps everything it did (Turnstile, the
@@ -42,7 +42,7 @@ customer "something went wrong" when only the Supabase copy fails.
    set `VITE_ADMIN_API_URL` to it in the Pages project's build variables and
    redeploy the site.
 
-Opening the URL in a browser should show `customshowers-admin v1 — the
+Opening the URL in a browser should show `customshowers-admin v2 — the
 dashboard's API`.
 
 ### 2. Create the GitHub OAuth app
@@ -65,12 +65,20 @@ dashboard's API`.
 | `GITHUB_BRANCH` | optional, defaults to `main` |
 
 Signing in asks GitHub for `read:user` and `repo`. The `repo` scope is what
-lets the Pictures page commit to the repository as you; the token is kept in
+lets the Photos page commit to the repository as you; the token is kept in
 the dashboard's own D1 sessions table, never in the browser. Sessions last 30
 days; Sign out deletes one.
 
+Sign in works the way the Brennan Glass photos page does: the button opens
+GitHub in a small window, the worker finishes the sign-in there and hands the
+session back to the dashboard, which never leaves the page. Where pop-ups are
+blocked the whole page goes to GitHub and comes back to `/admin/auth`
+instead. Either way you only do it once per phone or browser.
+
 Then open customshowers.uk/admin and sign in. An account not on the list is
-told so and refused.
+told so and refused. An account that is on the list but cannot push to the
+repository can look at everything and is told, on Photos, that it cannot
+publish.
 
 ### 3. Deploy the design worker v15 (jobs)
 
@@ -138,15 +146,38 @@ The page shows listing views, website clicks, calls and direction requests
 for the period (Google lags about two days), and the latest ten reviews with
 the average. The first account and location on the Google login are used.
 
-### 7. Pictures
+### 7. Photos
 
-Nothing to set up beyond the GitHub sign-in. Pictures → replace, describe,
-reorder → Publish. The dashboard downscales uploads to at most 2000px JPEG,
-commits them under `public/images/site/` with the manifest
-`src/content/site-images.json` in one commit, and the site rebuilds. A
-replaced picture under `public/images/site/` that nothing uses any more is
-removed in the same commit. The commit appears in the repository history as
-you, with the message you typed.
+Nothing to set up beyond the GitHub sign-in. The page is modelled on the
+Brennan Glass photos page, so it works the same way from a phone:
+
+- The gallery is a list of **jobs**, each a finished installation with one
+  or more photos, filed under a **type of work** (Enclosures, Inline, Walk-in
+  screens, Sliding doors, Bath screens, Other glass). The tabs at the top
+  filter by type and carry counts.
+- **Add a job**: pick photos (camera or library), tap the type, tap a "What
+  was it?" chip and a "Where?" chip to write the label (or type one), then
+  **Publish to website**. The first photo is the cover the gallery strip
+  shows; tap another to make it the cover. New jobs go to the top of their
+  type.
+- Tap a job to change its photos, type or label (**Publish changes**), or
+  **Delete this job**.
+- **Page pictures** below the list are the hero and the two About pictures:
+  replace the picture and its description one at a time.
+
+Photos are shrunk in the browser to at most 2000px JPEG, uploaded one by one
+(the progress sheet counts them), and committed under `public/images/site/`
+together with the manifest `src/content/site-images.json` in one commit, as
+you. The site rebuilds and the change is live in a minute or two; until then
+the dashboard shows the new photo from its own copy. A photo under
+`public/images/site/` that nothing uses any more is removed in the same
+commit. If someone else published between you opening a job and publishing
+it, the publish is refused with "changed somewhere else" rather than
+overwriting their change; go back to Photos and open it again.
+
+The public gallery reads the same manifest: filter buttons by type, a "N
+photos" badge on jobs with more than one, and a lightbox that walks through
+a job's photos.
 
 ## Switching the file store to R2
 
@@ -186,6 +217,7 @@ it off. The browser tests use this mode.
 - Send a design from the designer → it appears under Jobs with drawings and
   photos; open it; change its status; open the fitting sheet and print it.
 - Send a quote-form enquiry → it appears under Quote forms.
-- Pictures → replace the hero → Publish → the commit appears on GitHub and,
-  a minute later, the Site page lists the deployment as success and the
-  home page shows the new picture.
+- Photos → Add a job → two photos, a type, a label → Publish to website →
+  the commit appears on GitHub and, a minute later, the Site page lists the
+  deployment as success and the home page gallery shows the job first in
+  its type.

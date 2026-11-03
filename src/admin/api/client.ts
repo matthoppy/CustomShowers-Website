@@ -15,11 +15,11 @@ import type {
   JobDetail,
   JobsList,
   Me,
-  PublishRequest,
+  PublishPhotosRequest,
   PublishResult,
   Quote,
   QuotesList,
-  SiteImagesState,
+  SitePhotosState,
 } from './types';
 
 export const TOKEN_KEY = 'admin:token';
@@ -29,6 +29,9 @@ export const MOCK_KEY = 'admin:mock';
 export const ADMIN_API_URL: string =
   (import.meta.env.VITE_ADMIN_API_URL as string | undefined) ||
   'https://customshowers-admin.vcwvk4sm9m.workers.dev';
+
+/** The worker's origin: the only place a popup sign-in result is accepted from. */
+export const ADMIN_API_ORIGIN: string = new URL(ADMIN_API_URL).origin;
 
 export function getToken(): string | null {
   try {
@@ -49,9 +52,12 @@ export function setToken(token: string | null) {
 
 export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  /** The publish found the job changed elsewhere since the editor opened it. */
+  conflict: boolean;
+  constructor(message: string, status: number, conflict = false) {
     super(message);
     this.status = status;
+    this.conflict = conflict;
   }
 }
 
@@ -77,7 +83,8 @@ export function createWorkerApi(baseUrl: string = ADMIN_API_URL): AdminApi {
       const message =
         (data && typeof data === 'object' && 'error' in data && String((data as { error: unknown }).error)) ||
         `The dashboard server answered ${res.status}.`;
-      throw new ApiError(message, res.status);
+      const conflict = !!(data && typeof data === 'object' && 'conflict' in data && (data as { conflict: unknown }).conflict);
+      throw new ApiError(message, res.status, conflict);
     }
     return data as T;
   };
@@ -90,7 +97,7 @@ export function createWorkerApi(baseUrl: string = ADMIN_API_URL): AdminApi {
   const fileUrl = (path: string) => `${baseUrl}${path}?t=${encodeURIComponent(getToken() || '')}`;
 
   return {
-    loginUrl: (returnPath) => `${baseUrl}/auth/github/start?return=${encodeURIComponent(returnPath)}`,
+    loginUrl: (returnPath, popup = false) => `${baseUrl}/auth/github/start?return=${encodeURIComponent(returnPath)}${popup ? '&popup=1' : ''}`,
     me: () => call<Me>('/me'),
     logout: async () => {
       await call('/auth/logout', { method: 'POST' }).catch(() => undefined);
@@ -102,8 +109,9 @@ export function createWorkerApi(baseUrl: string = ADMIN_API_URL): AdminApi {
     listQuotes: (params = {}) => call<QuotesList>(`/quotes${query({ status: params.status, q: params.q })}`),
     updateQuote: (id, patch) => call<Quote>(`/quotes/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch) }),
     quoteFileUrl: (id, filename) => fileUrl(`/quotes/${encodeURIComponent(id)}/files/${encodeURIComponent(filename)}`),
-    siteImages: () => call<SiteImagesState>('/site/images'),
-    publishImages: (request: PublishRequest) => call<PublishResult>('/site/images/publish', { method: 'POST', body: JSON.stringify(request) }),
+    sitePhotos: () => call<SitePhotosState>('/site/photos'),
+    uploadPhoto: (contentBase64) => call<{ sha: string; bytes: number }>('/site/photos/upload', { method: 'POST', body: JSON.stringify({ contentBase64 }) }),
+    publishPhotos: (request: PublishPhotosRequest) => call<PublishResult>('/site/photos/publish', { method: 'POST', body: JSON.stringify(request) }),
     cloudflare: (days) => call<CloudflareSummary>(`/cloudflare/summary${query({ days })}`),
     googleStatus: () => call<GoogleStatus>('/google/status'),
     googleConnectUrl: async () => (await call<{ url: string }>('/auth/google/start')).url,

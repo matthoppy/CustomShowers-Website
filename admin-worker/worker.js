@@ -7,8 +7,9 @@
  *   - signing in with GitHub, restricted to an allow-list of logins
  *   - the jobs the design worker kept (D1 + the file store) and the quote
  *     form enquiries the contact worker kept
- *   - changing the site's pictures, by committing to the repository as the
- *     signed-in user (their own GitHub token), which redeploys the site
+ *   - the website photos: gallery jobs and the page pictures, committed to
+ *     the repository as the signed-in user (their own GitHub token), which
+ *     redeploys the site
  *   - Cloudflare data: zone traffic, the workers' request counts, and the
  *     latest Pages deployments
  *   - Google Business Profile: performance and reviews, through a Google
@@ -36,7 +37,7 @@
  *   FILES_KV   KV namespace "customshowers-files" — the same, where R2 is off
  */
 
-const WORKER_VERSION = "v1";
+const WORKER_VERSION = "v2";
 
 const DEFAULTS = {
   allowedLogins: "matthoppy",
@@ -61,11 +62,23 @@ const ALLOWED_ORIGINS = [
   /^http:\/\/127\.0\.0\.1(:\d+)?$/,
 ];
 
-/** The repository paths the picture manager may touch. */
-const IMAGE_DIR = "public/images/";
+/** The repository paths the photos page may touch. */
+const UPLOAD_DIR = "public/images/site/";
+const SITE_PREFIX = "/images/site/";
 const MANIFEST_PATH = "src/content/site-images.json";
 const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
-const MAX_FILES_PER_PUBLISH = 24;
+const MAX_PHOTOS_PER_PUBLISH = 24;
+const MAX_TITLE_LENGTH = 80;
+/** The parts of the gallery, as src/content/siteImages.ts lists them. */
+const JOB_TYPES = ["enclosure", "inline", "walkin", "sliding", "bath", "other"];
+const JOB_TYPE_NAMES = {
+  enclosure: "Enclosures",
+  inline: "Inline",
+  walkin: "Walk-in screens",
+  sliding: "Sliding doors",
+  bath: "Bath screens",
+  other: "Other glass",
+};
 
 // ── Small helpers ────────────────────────────────────────────────────────────
 
@@ -266,61 +279,259 @@ function decodeContent(file) {
   return new TextDecoder().decode(bytes);
 }
 
-/** What the picture manager may commit, checked before a single blob is made. */
-export function validatePublish(body) {
+// ── Website photos ───────────────────────────────────────────────────────────
+
+/**
+ * The manifest with every type of work present and only well-formed entries.
+ * Anything else in the file is kept as it was. A manifest from before the
+ * gallery became jobs (a flat `gallery` list) is carried over as one job per
+ * picture, under "other".
+ */
+export function normaliseManifest(raw) {
+  const m = raw && typeof raw === "object" ? raw : {};
+  const picture = (x) =>
+    x && typeof x === "object" && typeof x.src === "string"
+      ? { src: x.src, alt: typeof x.alt === "string" ? x.alt : "", v: Number(x.v) || 1 }
+      : null;
+  const out = {
+    version: 2,
+    hero: picture(m.hero) || { src: "", alt: "", v: 1 },
+    about: Array.isArray(m.about) ? m.about.map(picture).filter(Boolean) : [],
+    jobs: {},
+  };
+  const jobs = m.jobs && typeof m.jobs === "object" ? m.jobs : {};
+  for (const type of JOB_TYPES) {
+    out.jobs[type] = (Array.isArray(jobs[type]) ? jobs[type] : [])
+      .filter((j) => j && typeof j === "object")
+      .map((j) => ({
+        title: String(j.title || ""),
+        photos: Array.isArray(j.photos) ? j.photos.filter((p) => typeof p === "string" && p) : [],
+      }));
+  }
+  for (const k of Object.keys(jobs)) if (!(k in out.jobs)) out.jobs[k] = jobs[k];
+  if (!m.jobs && Array.isArray(m.gallery)) {
+    out.jobs.other = m.gallery.map(picture).filter(Boolean).map((p) => ({ title: p.alt, photos: [p.src] }));
+  }
+  for (const k of Object.keys(m)) if (!(k in out) && k !== "gallery") out[k] = m[k];
+  return out;
+}
+
+const isSitePath = (p) => typeof p === "string" && p.startsWith("/images/") && !p.includes("..") && !/[\s"'<>\\]/.test(p);
+const isNewPhoto = (p, count) => typeof p === "string" && /^new:\d+$/.test(p) && Number(p.slice(4)) < count;
+
+/**
+ * What the photos page may publish, checked before GitHub is touched. A
+ * change is one job (added, updated or deleted) or one page picture; the
+ * photos it names are either paths already on the site or "new:<n>", the nth
+ * blob uploaded just before.
+ */
+export function validateChange(body) {
   const errors = [];
-  const files = Array.isArray(body?.files) ? body.files : [];
-  const removals = Array.isArray(body?.removals) ? body.removals : [];
-  const manifest = body?.manifest;
-  if (!manifest || typeof manifest !== "object") errors.push("manifest missing");
-  else {
-    const img = (x) => x && typeof x.src === "string" && x.src.startsWith("/images/") && typeof x.alt === "string";
-    if (!img(manifest.hero)) errors.push("hero picture invalid");
-    if (!Array.isArray(manifest.about) || manifest.about.length !== 2 || !manifest.about.every(img)) errors.push("about pictures invalid");
-    if (!Array.isArray(manifest.gallery) || manifest.gallery.length === 0 || !manifest.gallery.every(img)) errors.push("gallery invalid");
-  }
-  if (files.length > MAX_FILES_PER_PUBLISH) errors.push(`too many files (${files.length})`);
-  for (const f of files) {
-    if (typeof f?.path !== "string" || !f.path.startsWith(IMAGE_DIR) || f.path.includes("..") || !/\.(jpe?g|png|webp)$/i.test(f.path)) {
-      errors.push(`not an image under ${IMAGE_DIR}: ${f?.path}`);
-      continue;
+  const change = body?.change && typeof body.change === "object" ? body.change : null;
+  const blobs = Array.isArray(body?.blobs) ? body.blobs : [];
+  if (blobs.length > MAX_PHOTOS_PER_PUBLISH) errors.push(`too many photos at once (${blobs.length})`);
+  for (const b of blobs) if (!b || !/^[0-9a-f]{40}$/.test(String(b.sha || ""))) errors.push("an uploaded photo has no blob id");
+  if (!change) errors.push("no change given");
+  else if (change.kind === "job") {
+    const mode = change.mode;
+    if (!["add", "update", "delete"].includes(mode)) errors.push("unknown job change");
+    if (mode === "add" || mode === "update") {
+      if (!JOB_TYPES.includes(change.type)) errors.push("unknown type of work");
+      const title = typeof change.title === "string" ? change.title.trim() : "";
+      if (!title) errors.push("the job needs a label");
+      if (title.length > MAX_TITLE_LENGTH) errors.push("the label is too long");
+      const photos = Array.isArray(change.photos) ? change.photos : [];
+      if (!photos.length) errors.push("the job needs at least one photo");
+      for (const p of photos) if (!isSitePath(p) && !isNewPhoto(p, blobs.length)) errors.push(`not a photo of the site: ${p}`);
     }
-    if (typeof f.contentBase64 !== "string" || !f.contentBase64) errors.push(`no content for ${f.path}`);
-    else if (Math.ceil((f.contentBase64.length * 3) / 4) > MAX_IMAGE_BYTES) errors.push(`${f.path} is over 6MB`);
-  }
-  for (const r of removals) {
-    if (typeof r !== "string" || !r.startsWith(IMAGE_DIR) || r.includes("..")) errors.push(`cannot remove ${r}`);
-  }
-  return { ok: errors.length === 0, errors, files, removals, manifest };
+    if (mode === "update" || mode === "delete") {
+      if (!JOB_TYPES.includes(change.origType)) errors.push("the job's current type is unknown");
+      if (!Number.isInteger(change.origIndex) || change.origIndex < 0) errors.push("the job's position is unknown");
+      if (typeof change.origJson !== "string" || !change.origJson) errors.push("the job as it was is missing");
+    }
+  } else if (change.kind === "slot") {
+    if (!["hero", "about"].includes(change.slot)) errors.push("unknown page picture");
+    if (change.slot === "about" && !(Number.isInteger(change.index) && change.index >= 0)) errors.push("which About picture?");
+    if (typeof change.alt !== "string" || change.alt.length > 200) errors.push("the description is missing or too long");
+    if (change.photo != null && !isSitePath(change.photo) && !isNewPhoto(change.photo, blobs.length)) errors.push("not a photo of the site");
+  } else errors.push("unknown change");
+  return {
+    ok: errors.length === 0,
+    errors,
+    change,
+    blobs,
+    message: typeof body?.message === "string" ? body.message.slice(0, 200) : "",
+  };
+}
+
+function conflict(message) {
+  const err = new Error(message);
+  err.conflict = true;
+  return err;
+}
+
+/** Of the paths dropped, those under the photos folder that nothing on the site still shows. */
+function unused(manifest, dropped) {
+  const still = JSON.stringify(manifest);
+  return [...new Set(dropped)].filter((p) => p.startsWith(SITE_PREFIX) && !still.includes(`"${p}"`));
 }
 
 /**
- * One commit on the branch with every changed picture and the manifest, made
- * with the Git Data API as the signed-in user. Pages then redeploys.
+ * The change applied to a fresh copy of the manifest. A job is found by what
+ * it looked like when the editor opened it, so two people publishing at once
+ * cannot overwrite each other: if it has moved it is still found, and if it
+ * has changed the publish is refused. `newPaths` are the site paths of the
+ * uploaded photos, in blob order. Returns the next manifest and the photo
+ * files nothing uses any more.
  */
-async function publishPictures(token, repo, branch, { files, removals, manifest, message }, actor) {
-  const ref = await github(token, "GET", `/repos/${repo}/git/ref/heads/${branch}`);
-  const headSha = ref.object.sha;
-  const head = await github(token, "GET", `/repos/${repo}/git/commits/${headSha}`);
-  const tree = [];
-  for (const f of files) {
-    const blob = await github(token, "POST", `/repos/${repo}/git/blobs`, { content: f.contentBase64, encoding: "base64" });
-    tree.push({ path: f.path, mode: "100644", type: "blob", sha: blob.sha });
+export function applyChange(current, change, newPaths = []) {
+  const manifest = normaliseManifest(current);
+  const resolve = (p) => (/^new:\d+$/.test(p) ? newPaths[Number(p.slice(4))] : p);
+  const dropped = [];
+
+  if (change.kind === "slot") {
+    const old = change.slot === "hero" ? manifest.hero : manifest.about[change.index];
+    if (!old) throw conflict("That page picture is not on the site any more.");
+    const src = change.photo ? resolve(change.photo) : old.src;
+    const next = { src, alt: change.alt, v: src === old.src ? old.v : 1 };
+    if (change.slot === "hero") manifest.hero = next;
+    else manifest.about[change.index] = next;
+    if (src !== old.src) dropped.push(old.src);
+    return { manifest, removed: unused(manifest, dropped) };
   }
-  for (const path of removals) tree.push({ path, mode: "100644", type: "blob", sha: null });
-  const manifestBlob = await github(token, "POST", `/repos/${repo}/git/blobs`, {
-    content: JSON.stringify(manifest, null, 2) + "\n",
-    encoding: "utf-8",
+
+  const finalPhotos = change.mode === "delete" ? [] : change.photos.map(resolve);
+  if (change.mode === "add") {
+    (manifest.jobs[change.type] = manifest.jobs[change.type] || []).unshift({ title: change.title.trim(), photos: finalPhotos });
+    return { manifest, removed: [] };
+  }
+
+  const list = manifest.jobs[change.origType] || [];
+  let idx = -1;
+  if (list[change.origIndex] && JSON.stringify(list[change.origIndex]) === change.origJson) idx = change.origIndex;
+  else idx = list.findIndex((j) => JSON.stringify(j) === change.origJson);
+  if (idx === -1) throw conflict("This job was changed somewhere else while you were editing. Go back to Photos to see the latest version.");
+  const [old] = list.splice(idx, 1);
+  for (const p of old.photos) if (change.mode === "delete" || !finalPhotos.includes(p)) dropped.push(p);
+  if (change.mode === "delete") return { manifest, removed: unused(manifest, dropped) };
+  const updated = { title: change.title.trim(), photos: finalPhotos };
+  if (change.type === change.origType) list.splice(idx, 0, updated);
+  else (manifest.jobs[change.type] = manifest.jobs[change.type] || []).unshift(updated);
+  return { manifest, removed: unused(manifest, dropped) };
+}
+
+function slugify(s) {
+  return (
+    String(s || "")
+      .toLowerCase()
+      .replace(/&/g, "and")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 50) || "photo"
+  );
+}
+
+function stamp(d = new Date()) {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getUTCFullYear()}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}-${p(d.getUTCHours())}${p(d.getUTCMinutes())}${p(d.getUTCSeconds())}`;
+}
+
+function describeChange(change) {
+  if (change.kind === "slot") return change.slot === "hero" ? "Replace the hero picture" : `Update About picture ${(change.index || 0) + 1}`;
+  const type = JOB_TYPE_NAMES[change.type || change.origType] || change.type || change.origType;
+  if (change.mode === "delete") {
+    let title = "";
+    try {
+      title = JSON.parse(change.origJson).title || "";
+    } catch {
+      title = "";
+    }
+    return `Remove gallery job: ${title || "untitled"} (${type})`;
+  }
+  return `${change.mode === "add" ? "Add" : "Update"} gallery job: ${change.title.trim()} (${type})`;
+}
+
+/**
+ * One commit on the branch: the uploaded photos under public/images/site/,
+ * the manifest, and the removal of photos nothing uses any more. If someone
+ * else committed between reading the manifest and moving the branch, GitHub
+ * refuses the fast-forward and the whole thing is done once more from the
+ * new head, with the blobs already uploaded.
+ */
+async function publishChange(token, repo, branch, { change, blobs, message }, actor) {
+  const label = change.kind === "slot" ? (change.slot === "hero" ? "hero" : `about-${(change.index || 0) + 1}`) : change.title;
+  const base = `${slugify(label)}-${stamp()}`;
+  const repoPaths = blobs.map((_, i) => `${UPLOAD_DIR}${base}${blobs.length > 1 ? `-${i + 1}` : ""}.jpg`);
+  const sitePaths = repoPaths.map((p) => `/${p.slice("public/".length)}`);
+
+  const attempt = async (retried) => {
+    const ref = await github(token, "GET", `/repos/${repo}/git/ref/heads/${branch}`);
+    const headSha = ref.object.sha;
+    const file = await github(token, "GET", `/repos/${repo}/contents/${MANIFEST_PATH}?ref=${headSha}`);
+    const current = normaliseManifest(JSON.parse(decodeContent(file)));
+    const { manifest, removed } = applyChange(current, change, sitePaths);
+    if (!blobs.length && JSON.stringify(manifest) === JSON.stringify(current)) {
+      return { sha: null, url: null, unchanged: true, manifest, newPaths: [] };
+    }
+    const tree = repoPaths.map((path, i) => ({ path, mode: "100644", type: "blob", sha: blobs[i].sha }));
+    tree.push({ path: MANIFEST_PATH, mode: "100644", type: "blob", content: JSON.stringify(manifest, null, 2) + "\n" });
+    for (const p of removed) tree.push({ path: `public${p}`, mode: "100644", type: "blob", sha: null });
+    try {
+      const head = await github(token, "GET", `/repos/${repo}/git/commits/${headSha}`);
+      const newTree = await github(token, "POST", `/repos/${repo}/git/trees`, { base_tree: head.tree.sha, tree });
+      const commit = await github(token, "POST", `/repos/${repo}/git/commits`, {
+        message: `${describeChange(change)}\n\nVia the website photos page by ${actor}${message ? `\n\n${message}` : ""}`,
+        tree: newTree.sha,
+        parents: [headSha],
+      });
+      await github(token, "PATCH", `/repos/${repo}/git/refs/heads/${branch}`, { sha: commit.sha, force: false });
+      return { sha: commit.sha, url: `https://github.com/${repo}/commit/${commit.sha}`, manifest, newPaths: sitePaths };
+    } catch (err) {
+      if (!retried && (err.status === 409 || err.status === 422)) return attempt(true);
+      throw err;
+    }
+  };
+  return attempt(false);
+}
+
+// ── Sign-in responses ────────────────────────────────────────────────────────
+
+/**
+ * Where the browser ends up after GitHub. Normally back in the dashboard, with
+ * the outcome in the URL fragment. When the dashboard opened the sign-in in a
+ * popup, a small page instead hands the outcome to the window that opened it
+ * and closes: the dashboard says hello first, so the result only ever goes to
+ * one of the dashboard's own origins.
+ */
+export function signInResponse(adminOrigin, popup, outcome) {
+  const target = `${adminOrigin}/admin/auth#${new URLSearchParams(outcome).toString()}`;
+  if (!popup) return redirect(target);
+  const payload = JSON.stringify({ source: "customshowers-admin", ...outcome }).replace(/</g, "\\u003c");
+  const origins = JSON.stringify(ALLOWED_ORIGINS.map((o) => (o instanceof RegExp ? { re: o.source } : o)));
+  const html = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Signing in</title></head>
+<body style="font-family: system-ui, sans-serif; padding: 24px; color: #333"><p>Signing you in…</p>
+<script>
+(function () {
+  var opener = window.opener;
+  var target = ${JSON.stringify(target)};
+  if (!opener) { location.replace(target); return; }
+  var allowed = ${origins}.concat([${JSON.stringify(adminOrigin)}]);
+  function ok(origin) {
+    return allowed.some(function (a) { return typeof a === "string" ? a === origin : new RegExp(a.re).test(origin); });
+  }
+  var sent = false;
+  window.addEventListener("message", function (e) {
+    if (sent || e.source !== opener || e.data !== "customshowers-admin:ready" || !ok(e.origin)) return;
+    sent = true;
+    opener.postMessage(${payload}, e.origin);
+    setTimeout(function () { window.close(); }, 300);
   });
-  tree.push({ path: MANIFEST_PATH, mode: "100644", type: "blob", sha: manifestBlob.sha });
-  const newTree = await github(token, "POST", `/repos/${repo}/git/trees`, { base_tree: head.tree.sha, tree });
-  const commit = await github(token, "POST", `/repos/${repo}/git/commits`, {
-    message: message || `Site pictures updated from the dashboard by ${actor}`,
-    tree: newTree.sha,
-    parents: [headSha],
-  });
-  await github(token, "PATCH", `/repos/${repo}/git/refs/heads/${branch}`, { sha: commit.sha, force: false });
-  return { sha: commit.sha, url: `https://github.com/${repo}/commit/${commit.sha}` };
+  opener.postMessage("customshowers-admin:hello", "*");
+  setTimeout(function () { if (!sent) location.replace(target); }, 4000);
+})();
+</script></body></html>`;
+  return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } });
 }
 
 // ── Cloudflare ───────────────────────────────────────────────────────────────
@@ -810,10 +1021,11 @@ export default {
 
       // ── GitHub sign-in ──
       if (path === "/auth/github/start" && method === "GET") {
+        const popup = url.searchParams.get("popup") === "1";
         if (!env.GITHUB_CLIENT_ID || !env.GITHUB_CLIENT_SECRET) {
-          return redirect(`${adminOrigin}/admin/auth#error=github-not-configured`);
+          return signInResponse(adminOrigin, popup, { error: "github-not-configured" });
         }
-        const state = await signState(env.GITHUB_CLIENT_SECRET, { r: safeReturnPath(url.searchParams.get("return")) });
+        const state = await signState(env.GITHUB_CLIENT_SECRET, { r: safeReturnPath(url.searchParams.get("return")), p: popup ? 1 : 0 });
         const params = new URLSearchParams({
           client_id: env.GITHUB_CLIENT_ID,
           redirect_uri: `${workerOrigin}/auth/github/callback`,
@@ -839,17 +1051,18 @@ export default {
           }),
         });
         const tokenData = await tokenRes.json().catch(() => ({}));
+        const popup = !!state.p;
         if (!tokenData.access_token) {
           console.error("GitHub token exchange failed", tokenData);
-          return redirect(`${adminOrigin}/admin/auth#error=token-exchange`);
+          return signInResponse(adminOrigin, popup, { error: "token-exchange" });
         }
         const user = await github(tokenData.access_token, "GET", "/user");
         if (!isAllowedLogin(user.login, setting(env, "ALLOWED_LOGINS", DEFAULTS.allowedLogins))) {
           console.warn("Sign-in refused", user.login);
-          return redirect(`${adminOrigin}/admin/auth#error=not-allowed&login=${encodeURIComponent(user.login)}`);
+          return signInResponse(adminOrigin, popup, { error: "not-allowed", login: user.login });
         }
         const sid = await createSession(env, user, tokenData.access_token);
-        return redirect(`${adminOrigin}/admin/auth#token=${sid}&return=${encodeURIComponent(state.r || "/admin")}`);
+        return signInResponse(adminOrigin, popup, { token: sid, return: state.r || "/admin" });
       }
 
       if (path === "/auth/google/callback" && method === "GET") {
@@ -951,34 +1164,39 @@ export default {
         return serveFile(env, photo.key, request);
       }
 
-      // ── Site pictures ──
-      if (path === "/site/images" && method === "GET") {
+      // ── Website photos ──
+      if (path === "/site/photos" && method === "GET") {
         const file = await github(session.gh_token, "GET", `/repos/${repo}/contents/${MANIFEST_PATH}?ref=${branch}`);
-        const manifest = JSON.parse(decodeContent(file));
-        const listDir = async (dir) => {
-          try {
-            const entries = await github(session.gh_token, "GET", `/repos/${repo}/contents/${dir}?ref=${branch}`);
-            return (Array.isArray(entries) ? entries : []).filter((e) => e.type === "file").map((e) => ({ path: e.path, size: e.size }));
-          } catch (err) {
-            if (err.status === 404) return [];
-            throw err;
-          }
-        };
-        const files = [...(await listDir("public/images")), ...(await listDir("public/images/site"))];
-        return json({ manifest, manifestSha: file.sha, repo, branch, files, siteOrigin: adminOrigin }, 200, cors);
+        const manifest = normaliseManifest(JSON.parse(decodeContent(file)));
+        let canPublish = false;
+        try {
+          const about = await github(session.gh_token, "GET", `/repos/${repo}`);
+          canPublish = !!about.permissions?.push;
+        } catch (err) {
+          if (err.status !== 403 && err.status !== 404) throw err;
+        }
+        return json({ manifest, repo, branch, siteOrigin: adminOrigin, canPublish }, 200, cors);
       }
-      if (path === "/site/images/publish" && method === "POST") {
+      if (path === "/site/photos/upload" && method === "POST") {
         const body = await request.json().catch(() => ({}));
-        const check = validatePublish(body);
+        const content = typeof body.contentBase64 === "string" ? body.contentBase64.replace(/\s/g, "") : "";
+        const bytes = Math.floor((content.length * 3) / 4);
+        if (!content) return json({ error: "No photo was sent." }, 400, cors);
+        if (!content.startsWith("/9j/")) return json({ error: "Photos must be JPEGs; the page makes them so before sending." }, 400, cors);
+        if (bytes > MAX_IMAGE_BYTES) return json({ error: "That photo is over 6MB even after shrinking." }, 413, cors);
+        const blob = await github(session.gh_token, "POST", `/repos/${repo}/git/blobs`, { content, encoding: "base64" });
+        return json({ sha: blob.sha, bytes }, 200, cors);
+      }
+      if (path === "/site/photos/publish" && method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        const check = validateChange(body);
         if (!check.ok) return json({ error: check.errors.join("; ") }, 400, cors);
-        const result = await publishPictures(
-          session.gh_token,
-          repo,
-          branch,
-          { files: check.files, removals: check.removals, manifest: check.manifest, message: typeof body.message === "string" ? body.message.slice(0, 200) : "" },
-          session.login
-        );
-        return json(result, 200, cors);
+        try {
+          return json(await publishChange(session.gh_token, repo, branch, check, session.login), 200, cors);
+        } catch (err) {
+          if (err.conflict) return json({ error: err.message, conflict: true }, 409, cors);
+          throw err;
+        }
       }
 
       // ── Cloudflare ──

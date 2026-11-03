@@ -112,9 +112,10 @@ audit it came from, are in `docs/MEASURING_JOURNEY.md`.
 
 `/admin` is a dashboard behind a GitHub sign-in: the jobs sent from the
 designer (drawings, every measurement, cut sizes, a printable fitting sheet),
-the quote-form enquiries, the site's pictures (committed to this repository
-from the dashboard), Cloudflare traffic and deployments, and the Google
-Business Profile. The pages are in `src/admin/`; the server is
+the quote-form enquiries, the website photos (gallery jobs and page pictures,
+committed to this repository from the dashboard, modelled on the Brennan Glass
+photos page), Cloudflare traffic and deployments, and the Google Business
+Profile. The pages are in `src/admin/`; the server is
 `admin-worker/worker.js`; jobs are kept by `design-worker/` and quote-form
 enquiries by `contact-worker/` in Cloudflare D1, with files in KV (or R2).
 Set-up, in order, is in `docs/ADMIN_DASHBOARD.md`. `/admin?mock=1` runs it on

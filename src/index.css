@@ -154,6 +154,20 @@ All colors MUST be HSL.
 }
 
 /* The fitting sheet prints as a document. */
+/* Admin dashboard: a sheet slides up from the bottom on phones. */
+@keyframes admin-sheet-up {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.admin-sheet {
+  animation: admin-sheet-up 0.22s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-sheet {
+    animation: none;
+  }
+}
+
 @media print {
   @page {
     margin: 14mm;

@@ -16,6 +16,7 @@ import { getTemplate } from '@/configurator/templates';
 import { getTenant } from '@/configurator/tenant';
 import { createInitialState, type ConfiguratorState, type CustomerDetails } from '@/configurator/types';
 import { siteImages, type SiteImages } from '@/content/siteImages';
+import { applyPhotoChange, normaliseManifest } from '../photos';
 import type {
   AdminApi,
   CloudflareSummary,
@@ -23,7 +24,7 @@ import type {
   JobDetail,
   JobEvent,
   Quote,
-  SiteImagesState,
+  SitePhotosState,
 } from './types';
 
 const tenant = getTenant();
@@ -350,8 +351,9 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export function createMockApi(): AdminApi {
   const jobs = buildJobs();
   const quotes = buildQuotes();
-  let manifest: SiteImages = structuredClone(siteImages);
+  let manifest: SiteImages = normaliseManifest(siteImages);
   let nextEvent = 100;
+  let uploads = 0;
 
   return {
     loginUrl: (returnPath) => `${returnPath}?mock=1`,
@@ -421,22 +423,32 @@ export function createMockApi(): AdminApi {
       return { ...x };
     },
     quoteFileUrl: (_id, filename) => MOCK_PHOTOS[filename] || '/images/site/gallery-2.jpg',
-    siteImages: async (): Promise<SiteImagesState> => {
+    sitePhotos: async (): Promise<SitePhotosState> => {
       await wait(150);
-      const paths = [manifest.hero, ...manifest.about, ...manifest.gallery].map((i) => `public${i.src}`);
       return {
         manifest: structuredClone(manifest),
-        manifestSha: 'mock-sha',
         repo: 'matthoppy/CustomShowers-Website',
         branch: 'main',
-        files: paths.map((p, i) => ({ path: p, size: 900000 + i * 123456 })),
         siteOrigin: window.location.origin,
+        canPublish: true,
       };
     },
-    publishImages: async (request) => {
-      await wait(900);
-      manifest = structuredClone(request.manifest);
-      return { sha: 'mock' + Math.random().toString(16).slice(2, 9), url: 'https://github.com/matthoppy/CustomShowers-Website/commits/main' };
+    uploadPhoto: async (contentBase64) => {
+      await wait(250 + Math.min(600, contentBase64.length / 4000));
+      return { sha: (++uploads).toString(16).padStart(40, '0'), bytes: Math.floor((contentBase64.length * 3) / 4) };
+    },
+    publishPhotos: async ({ change, blobs }) => {
+      await wait(700);
+      const stamp = Date.now().toString(36);
+      const newPaths = blobs.map((_, i) => `/images/site/sample-${stamp}-${i + 1}.jpg`);
+      const { manifest: next } = applyPhotoChange(manifest, change, newPaths);
+      manifest = next;
+      return {
+        sha: 'mock' + Math.random().toString(16).slice(2, 9),
+        url: 'https://github.com/matthoppy/CustomShowers-Website/commits/main',
+        manifest: structuredClone(manifest),
+        newPaths,
+      };
     },
     cloudflare: async (days) => {
       await wait(200);

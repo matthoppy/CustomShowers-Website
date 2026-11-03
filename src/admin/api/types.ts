@@ -6,7 +6,7 @@
 import type { ConfiguratorSpec } from '@/configurator/spec';
 import type { ConfiguratorState, CustomerDetails } from '@/configurator/types';
 import type { EnquiryPayload } from '@/configurator/submit';
-import type { SiteImages } from '@/content/siteImages';
+import type { JobTypeId, SiteImages } from '@/content/siteImages';
 
 export type JobStatus = 'new' | 'reviewing' | 'quoted' | 'ordered' | 'done' | 'closed';
 export const JOB_STATUSES: JobStatus[] = ['new', 'reviewing', 'quoted', 'ordered', 'done', 'closed'];
@@ -114,25 +114,42 @@ export interface Me {
   version: string;
 }
 
-export interface SiteImagesState {
+export interface SitePhotosState {
   manifest: SiteImages;
-  manifestSha: string;
   repo: string;
   branch: string;
-  files: { path: string; size: number }[];
   siteOrigin: string;
+  /** Whether the signed-in GitHub account may push to the repository. */
+  canPublish: boolean;
 }
 
-export interface PublishRequest {
-  manifest: SiteImages;
-  files: { path: string; contentBase64: string }[];
-  removals: string[];
+/**
+ * One change to the website photos: a gallery job added, updated or deleted,
+ * or one of the page pictures replaced or re-described. Photos are paths
+ * already on the site, or "new:<n>" for the nth blob uploaded just before.
+ * A job being updated or deleted is identified by what it looked like when
+ * the editor opened it, so a job someone else changed meanwhile is refused.
+ */
+export type PhotoChange =
+  | { kind: 'job'; mode: 'add'; type: JobTypeId; title: string; photos: string[] }
+  | { kind: 'job'; mode: 'update'; type: JobTypeId; title: string; photos: string[]; origType: JobTypeId; origIndex: number; origJson: string }
+  | { kind: 'job'; mode: 'delete'; origType: JobTypeId; origIndex: number; origJson: string }
+  | { kind: 'slot'; slot: 'hero' | 'about'; index?: number; alt: string; photo: string | null };
+
+export interface PublishPhotosRequest {
+  change: PhotoChange;
+  blobs: { sha: string }[];
   message?: string;
 }
 
 export interface PublishResult {
-  sha: string;
-  url: string;
+  /** Null when the change turned out to change nothing. */
+  sha: string | null;
+  url: string | null;
+  unchanged?: boolean;
+  manifest: SiteImages;
+  /** The site paths the uploaded photos were given, in upload order. */
+  newPaths: string[];
 }
 
 export interface TrafficDay {
@@ -205,8 +222,8 @@ export interface GoogleSummary {
 }
 
 export interface AdminApi {
-  /** Where the sign-in button sends the browser. */
-  loginUrl(returnPath: string): string;
+  /** Where the sign-in button sends the browser, or the popup when asked for one. */
+  loginUrl(returnPath: string, popup?: boolean): string;
   me(): Promise<Me>;
   logout(): Promise<void>;
   listJobs(params?: { status?: JobStatus | null; q?: string }): Promise<JobsList>;
@@ -216,8 +233,10 @@ export interface AdminApi {
   listQuotes(params?: { status?: QuoteStatus | null; q?: string }): Promise<QuotesList>;
   updateQuote(id: string, patch: { status?: QuoteStatus; notes?: string }): Promise<Quote>;
   quoteFileUrl(id: string, filename: string): string;
-  siteImages(): Promise<SiteImagesState>;
-  publishImages(request: PublishRequest): Promise<PublishResult>;
+  sitePhotos(): Promise<SitePhotosState>;
+  /** One shrunk JPEG, as base64, becomes a blob in the repository. */
+  uploadPhoto(contentBase64: string): Promise<{ sha: string; bytes: number }>;
+  publishPhotos(request: PublishPhotosRequest): Promise<PublishResult>;
   cloudflare(days: number): Promise<CloudflareSummary>;
   googleStatus(): Promise<GoogleStatus>;
   googleConnectUrl(): Promise<string>;
