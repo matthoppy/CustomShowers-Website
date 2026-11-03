@@ -34,6 +34,8 @@ interface ElevationViewProps {
   activePanelId?: string | null;
   onPanelClick?: (id: string) => void;
   accent?: string;
+  /** Measuring: the panels being measured right now; the rest step back. */
+  highlightPanelIds?: string[] | null;
 }
 
 const GAP_MM = 24;
@@ -51,6 +53,7 @@ export function ElevationView({
   activePanelId,
   onPanelClick,
   accent = '#2563eb',
+  highlightPanelIds = null,
 }: ElevationViewProps) {
   const planes = useMemo(() => derivePlanes(panels, junctions), [panels, junctions]);
 
@@ -114,19 +117,22 @@ export function ElevationView({
 
         const hinge = isDoor ? calculateHingePlacement(heightMm) : null;
         const hingeOnLeft = panel.door?.hinge_side === 'left';
+        const lit = !!highlightPanelIds?.includes(panel.id);
+        const dimmed = highlightPanelIds !== null && !lit;
 
         return (
           <g
             key={panel.id}
             onClick={() => onPanelClick?.(panel.id)}
             style={{ cursor: onPanelClick ? 'pointer' : 'default' }}
+            opacity={dimmed ? 0.3 : 1}
           >
             <path
               d={path}
-              fill={isDoor ? accent : '#0f172a'}
-              fillOpacity={isActive ? 0.16 : 0.07}
-              stroke={isDoor ? accent : '#475569'}
-              strokeWidth={isActive ? 2.5 : 1.5}
+              fill={isDoor || lit ? accent : '#0f172a'}
+              fillOpacity={isActive || lit ? 0.16 : 0.07}
+              stroke={isDoor || lit ? accent : '#475569'}
+              strokeWidth={isActive || lit ? 2.5 : 1.5}
               strokeLinejoin="round"
             />
 

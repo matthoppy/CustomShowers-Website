@@ -21,6 +21,14 @@ interface PlanViewProps {
   onPanelClick?: (id: string) => void;
   onToggleJunction?: (index: number) => void;
   accent?: string;
+  /**
+   * Measuring: the panels being measured right now. Everything else is dimmed
+   * so the drawing follows the customer around the bathroom. Null leaves the
+   * plan as it is on the other steps.
+   */
+  highlightPanelIds?: string[] | null;
+  /** Measuring: the wall being checked right now. */
+  highlightWall?: 'left' | 'right' | null;
 }
 
 const GLASS_STROKE = 7;
@@ -37,6 +45,8 @@ export function PlanView({
   onPanelClick,
   onToggleJunction,
   accent = '#2563eb',
+  highlightPanelIds = null,
+  highlightWall = null,
 }: PlanViewProps) {
   // Every hook runs unconditionally — an empty or door-less run is valid and
   // must not short-circuit before this point.
@@ -73,6 +83,8 @@ export function PlanView({
   const doorPanel = panels[trace.anchorIndex];
   const hasDoor = doorPanel?.kind === 'door';
   const ends = runEnds(trace, panels.length);
+  const measuring = highlightPanelIds !== null || highlightWall !== null;
+  const isLit = (id: string) => !!highlightPanelIds?.includes(id);
 
   return (
     <svg width={width} height={height} className="select-none" role="img" aria-label="Top-down plan of the shower enclosure">
@@ -115,6 +127,9 @@ export function PlanView({
           dx={ends.left.dx}
           dy={ends.left.dy}
           label="WALL"
+          lit={highlightWall === 'left'}
+          dim={measuring && highlightWall !== 'left' && highlightWall !== null}
+          accent={accent}
         />
       )}
       {rightWall && ends.right && (
@@ -124,6 +139,9 @@ export function PlanView({
           dx={ends.right.dx}
           dy={ends.right.dy}
           label="WALL"
+          lit={highlightWall === 'right'}
+          dim={measuring && highlightWall !== 'right' && highlightWall !== null}
+          accent={accent}
         />
       )}
 
@@ -135,12 +153,16 @@ export function PlanView({
         const midX = tx((seg.x1 + seg.x2) / 2);
         const midY = ty((seg.y1 + seg.y2) / 2);
         const vertical = Math.abs(seg.dy) > Math.abs(seg.dx);
+        const lit = isLit(panel.id);
+        // While measuring, glass that is not being measured steps back.
+        const dimmed = measuring && !lit;
 
         return (
           <g
             key={panel.id}
             onClick={() => onPanelClick?.(panel.id)}
             style={{ cursor: onPanelClick ? 'pointer' : 'default' }}
+            opacity={dimmed ? 0.3 : 1}
           >
             {/* Fat transparent hit area so thin glass is still easy to click. */}
             <line
@@ -151,15 +173,30 @@ export function PlanView({
               stroke="transparent"
               strokeWidth={22}
             />
+            {lit && (
+              // A soft halo under the measured run: the one thing on the
+              // drawing that moves, so the eye finds it before reading.
+              <line
+                x1={tx(seg.x1)}
+                y1={ty(seg.y1)}
+                x2={tx(seg.x2)}
+                y2={ty(seg.y2)}
+                stroke={accent}
+                strokeWidth={GLASS_STROKE + 12}
+                strokeLinecap="round"
+                opacity={0.22}
+                className="measure-pulse"
+              />
+            )}
             <line
               x1={tx(seg.x1)}
               y1={ty(seg.y1)}
               x2={tx(seg.x2)}
               y2={ty(seg.y2)}
-              stroke={isDoor ? accent : '#0f172a'}
-              strokeWidth={isActive ? GLASS_STROKE + 3 : GLASS_STROKE}
+              stroke={isDoor || lit ? accent : '#0f172a'}
+              strokeWidth={isActive || lit ? GLASS_STROKE + 3 : GLASS_STROKE}
               strokeLinecap="round"
-              opacity={isActive ? 1 : 0.85}
+              opacity={isActive || lit ? 1 : 0.85}
             />
             <text
               x={vertical ? midX + 16 : midX}
@@ -225,29 +262,50 @@ function WallTick({
   dx,
   dy,
   label,
+  lit = false,
+  dim = false,
+  accent = '#2563eb',
 }: {
   x: number;
   y: number;
   dx: number;
   dy: number;
   label: string;
+  /** This is the wall being checked right now. */
+  lit?: boolean;
+  /** Another wall is being checked; this one steps back. */
+  dim?: boolean;
+  accent?: string;
 }) {
   // Perpendicular to the panel, so the wall reads as a face rather than a
   // stray dash floating alongside a vertical return.
   const px = -dy;
   const py = dx;
-  const half = 20;
+  const half = lit ? 26 : 20;
 
   return (
-    <g>
+    <g opacity={dim ? 0.35 : 1}>
+      {lit && (
+        <line
+          x1={x - px * half}
+          y1={y - py * half}
+          x2={x + px * half}
+          y2={y + py * half}
+          stroke={accent}
+          strokeWidth={14}
+          strokeLinecap="round"
+          opacity={0.22}
+          className="measure-pulse"
+        />
+      )}
       {/* The wall face sits on the end of the run, where the glass meets it. */}
       <line
         x1={x - px * half}
         y1={y - py * half}
         x2={x + px * half}
         y2={y + py * half}
-        stroke="#94a3b8"
-        strokeWidth={3}
+        stroke={lit ? accent : '#94a3b8'}
+        strokeWidth={lit ? 5 : 3}
       />
       {/* Label goes beyond the wall, not back over the glass. */}
       <text
@@ -258,7 +316,7 @@ function WallTick({
         fontSize={9}
         fontWeight={700}
         letterSpacing={1.5}
-        fill="#94a3b8"
+        fill={lit ? accent : '#94a3b8'}
       >
         {label}
       </text>

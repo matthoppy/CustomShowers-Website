@@ -191,6 +191,38 @@ export function runLabelsFor(
   );
 }
 
+/**
+ * One door, wall to wall, nothing else: the layout that gets the cross method.
+ *
+ * Lives here rather than in spec.ts so the measuring journey can ask without
+ * pulling in the fabrication library (and its path aliases, which the unit
+ * tests cannot resolve).
+ */
+export function isSingleDoor(state: {
+  panels: ConfiguratorPanel[];
+  leftWall: boolean;
+  rightWall: boolean;
+}): boolean {
+  return (
+    state.panels.length === 1 &&
+    state.panels[0].kind === 'door' &&
+    state.leftWall &&
+    state.rightWall
+  );
+}
+
+/** A door with other glass, going to the ceiling: it gets a transom above it. */
+export function hasTransom(state: {
+  panels: ConfiguratorPanel[];
+  leftWall: boolean;
+  rightWall: boolean;
+  isFloorToCeiling: boolean;
+}): boolean {
+  return (
+    state.isFloorToCeiling && !isSingleDoor(state) && state.panels.some((p) => p.kind === 'door')
+  );
+}
+
 /** What the shape tells the measurement checks. */
 export function openingContext(state: {
   panels: ConfiguratorPanel[];

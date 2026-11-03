@@ -8,20 +8,20 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight, Check, Loader2, RotateCcw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Loader2, RotateCcw, X } from 'lucide-react';
 import { PlanView } from './views/PlanView';
 import { ElevationView } from './views/ElevationView';
 import { ShapeStep } from './steps/ShapeStep';
 import {
   checkMeasurements,
   createOpeningMeasurements,
+  hydrateOpening,
   keepSetup,
-  measurementsUsable,
   syncRuns,
 } from './measure';
-import { openingContext, runWidthsMm } from './geometry';
-import { MeasureStep, measureCardCount } from './steps/MeasureStep';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { openingContext, runPanelIndices, runWidthsMm } from './geometry';
+import { MeasureStep } from './steps/MeasureStep';
+import { buildJourney, canLeaveScreen, measureScreenCount } from './journey';
 import { SizesStep } from './steps/SizesStep';
 import { HardwareStep } from './steps/HardwareStep';
 import { ReviewStep } from './steps/ReviewStep';
@@ -46,6 +46,75 @@ const EMPTY_CUSTOMER: CustomerDetails = {
   notes: '',
   measurementsAcknowledged: false,
 };
+
+/**
+ * Progress, saved in the browser.
+ *
+ * Someone measuring stands in a bathroom with a phone that locks, a battery
+ * that dies and a child that needs something. Ten minutes of readings should
+ * survive all three. The design, step and contact details go to localStorage
+ * as they change; photos do not (they are large, and their previews are
+ * object URLs that die with the page), so a resumed design asks for them
+ * again. Cleared when the design is sent or the customer starts again.
+ */
+const STORAGE_VERSION = 1;
+
+interface SavedDesign {
+  v: number;
+  savedAt: number;
+  templateId: string | null;
+  state: ConfiguratorState;
+  customer: CustomerDetails;
+  stepId: StepId;
+  measureCard: number;
+}
+
+function storageKey(tenantId: string) {
+  return `glass-configurator:${tenantId}:v${STORAGE_VERSION}`;
+}
+
+function loadSaved(key: string): SavedDesign | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as SavedDesign;
+    if (saved?.v !== STORAGE_VERSION || !Array.isArray(saved.state?.panels) || !saved.state.panels.length) {
+      return null;
+    }
+    return saved;
+  } catch {
+    return null;
+  }
+}
+
+/** A saved design is only worth mentioning if the customer had actually begun. */
+function worthResuming(saved: SavedDesign): boolean {
+  return (
+    saved.stepId !== 'shape' ||
+    saved.measureCard > 0 ||
+    saved.state.opening?.method !== null ||
+    !!saved.customer?.name
+  );
+}
+
+/** Fill in anything a saved design predates, so last week's design still loads. */
+function hydrate(saved: SavedDesign, tenant: TenantConfig): ConfiguratorState {
+  const fresh = createInitialState(tenant.glassThicknessMm);
+  const state: ConfiguratorState = { ...fresh, ...saved.state };
+  state.opening = hydrateOpening(saved.state.opening, runWidthsMm(state.panels, state.junctions));
+  return state;
+}
+
+function describeSavedAt(savedAt: number): string {
+  const minutes = Math.round((Date.now() - savedAt) / 60000);
+  if (minutes < 2) return 'a moment ago';
+  if (minutes < 60) return `${minutes} minutes ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return hours === 1 ? 'an hour ago' : `${hours} hours ago`;
+  const days = Math.round(hours / 24);
+  return days === 1 ? 'yesterday' : `${days} days ago`;
+}
 
 /**
  * Drop a template's shape into the current state, keeping anything the
@@ -78,16 +147,20 @@ interface ConfiguratorProps {
 }
 
 export function Configurator({ tenant = getTenant(), embedded = false }: ConfiguratorProps) {
-  const [stepId, setStepId] = useState<StepId>('shape');
-  const [templateId, setTemplateId] = useState<string | null>(TEMPLATES[0].id);
+  const saveKey = storageKey(tenant.id);
+  const [saved] = useState(() => loadSaved(saveKey));
+  const [stepId, setStepId] = useState<StepId>(saved?.stepId ?? 'shape');
+  const [templateId, setTemplateId] = useState<string | null>(saved ? saved.templateId : TEMPLATES[0].id);
   const [state, setState] = useState<ConfiguratorState>(() =>
-    applyTemplate(createInitialState(tenant.glassThicknessMm), TEMPLATES[0])
+    saved ? hydrate(saved, tenant) : applyTemplate(createInitialState(tenant.glassThicknessMm), TEMPLATES[0])
   );
-  const [customer, setCustomerState] = useState<CustomerDetails>(EMPTY_CUSTOMER);
+  const [customer, setCustomerState] = useState<CustomerDetails>(saved?.customer ?? EMPTY_CUSTOMER);
   const [activePanelId, setActivePanelId] = useState<string | null>(state.panels[0]?.id ?? null);
   const [photos, setPhotos] = useState<Photo[]>([]);
-  const [measureCard, setMeasureCard] = useState(0);
-  const isMobile = useIsMobile();
+  const [measureCard, setMeasureCard] = useState(saved?.measureCard ?? 0);
+  const [resumedFrom, setResumedFrom] = useState<number | null>(
+    saved && worthResuming(saved) ? saved.savedAt : null
+  );
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -146,15 +219,81 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
   const setCustomer = (patch: Partial<CustomerDetails>) =>
     setCustomerState((c) => ({ ...c, ...patch }));
 
+  // Save as they go. Debounced, because every keystroke in a measurement box
+  // is a state change; flushed at once when the page is hidden or unloaded,
+  // because that is what a phone locking in a bathroom looks like. Skipped
+  // once the design has been sent.
+  const pendingSave = useRef<SavedDesign | null>(null);
+  const writeSave = () => {
+    const payload = pendingSave.current;
+    if (!payload) return;
+    try {
+      window.localStorage.setItem(saveKey, JSON.stringify({ ...payload, savedAt: Date.now() }));
+    } catch {
+      // Storage full or blocked: carry on without saving.
+    }
+  };
+  useEffect(() => {
+    if (submitted) {
+      pendingSave.current = null;
+      return;
+    }
+    pendingSave.current = {
+      v: STORAGE_VERSION,
+      savedAt: Date.now(),
+      templateId,
+      state,
+      customer,
+      stepId,
+      measureCard,
+    };
+    const timer = setTimeout(writeSave, 400);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveKey, templateId, state, customer, stepId, measureCard, submitted]);
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') writeSave();
+    };
+    window.addEventListener('pagehide', writeSave);
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      window.removeEventListener('pagehide', writeSave);
+      document.removeEventListener('visibilitychange', onHide);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveKey]);
+
   const stepIndex = STEPS.findIndex((s) => s.id === stepId);
   const step = STEPS[stepIndex];
   const isLast = stepIndex === STEPS.length - 1;
 
-  // How many measurement cards this shape needs: a corner shower is two
-  // straight runs and so two more pairs of widths than an inline one.
-  const cardTotal = measureCardCount(state.opening.runs.length);
-  const inMeasureCards = isMobile && stepId === 'measure';
+  // The Measure step is a sequence of screens on every device, one task each.
+  // The journey decides how many from the shape and the tool in hand; a
+  // change of either can shorten it, so the index is clamped to what exists.
+  const cardTotal = measureScreenCount(state);
+  const inMeasureCards = stepId === 'measure';
+  useEffect(() => {
+    if (measureCard > cardTotal - 1) setMeasureCard(cardTotal - 1);
+  }, [measureCard, cardTotal]);
+  const measureScreen = inMeasureCards ? buildJourney(state)[Math.min(measureCard, cardTotal - 1)] : null;
   const onLastMeasureCard = measureCard >= cardTotal - 1;
+
+  // The drawings follow the customer around the bathroom while they measure.
+  const runIndices = runPanelIndices(state.panels, state.junctions);
+  const highlightPanelIds: string[] | null = (() => {
+    if (!measureScreen) return null;
+    if ('runIndex' in measureScreen) return (runIndices[measureScreen.runIndex] ?? []).map((i) => state.panels[i].id);
+    if (measureScreen.kind === 'cross') return state.panels.map((p) => p.id);
+    return null;
+  })();
+  const highlightWall: 'left' | 'right' | null = (() => {
+    if (!measureScreen) return null;
+    if (measureScreen.kind === 'wall') return measureScreen.wall === 'start' ? 'left' : 'right';
+    if (measureScreen.kind === 'cross' && measureScreen.group === 'left') return 'left';
+    if (measureScreen.kind === 'cross' && measureScreen.group === 'right') return 'right';
+    return null;
+  })();
 
   const goNext = () => {
     if (inMeasureCards && !onLastMeasureCard) {
@@ -177,12 +316,12 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
       case 'shape':
         return state.panels.length > 0;
       case 'measure':
-        // Moving between the measurement cards on a phone is free; what is
-        // gated is leaving the step. A customer who walks past a
-        // contradiction in their own numbers ends up paying for a panel that
-        // does not fit, so that one gate is held shut.
-        if (isMobile && measureCard < cardTotal - 1) return true;
-        return measurementsUsable(checkMeasurements(state.opening, openingContext(state)));
+        // Moving between the measuring screens is free; what is gated is the
+        // method (everything after it is written for that tool) and leaving
+        // the step. A customer who walks past a contradiction in their own
+        // numbers ends up paying for a panel that does not fit, so that one
+        // gate is held shut.
+        return canLeaveScreen(state, measureCard, checkMeasurements(state.opening, openingContext(state)));
       case 'sizes':
         return (
           state.panels.length > 0 &&
@@ -201,7 +340,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
       default:
         return false;
     }
-  }, [stepId, state, customer, isMobile, measureCard, cardTotal]);
+  }, [stepId, state, customer, measureCard]);
 
   const stepProps: StepProps = {
     tenant,
@@ -212,6 +351,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     photos,
     setPhotos,
     measureCard,
+    setMeasureCard,
     templateId,
     canvasWidth: 620,
     canvasHeight: 520,
@@ -248,6 +388,11 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
     setSubmitting(false);
     if (result.ok) {
       setSubmitted(true);
+      try {
+        window.localStorage.removeItem(saveKey);
+      } catch {
+        // Nothing to clear.
+      }
     } else {
       setError(
         result.error ??
@@ -257,11 +402,19 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
   }
 
   function reset() {
+    try {
+      window.localStorage.removeItem(saveKey);
+    } catch {
+      // Nothing to clear.
+    }
     const fresh = applyTemplate(createInitialState(tenant.glassThicknessMm), TEMPLATES[0]);
     setTemplateId(TEMPLATES[0].id);
     setState(fresh);
     setCustomerState(EMPTY_CUSTOMER);
     setActivePanelId(fresh.panels[0]?.id ?? null);
+    setPhotos([]);
+    setMeasureCard(0);
+    setResumedFrom(null);
     setStepId('shape');
     setSubmitted(false);
     setError(null);
@@ -334,6 +487,32 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
         </div>
       </div>
 
+      {/* Picked up from last time. */}
+      {resumedFrom !== null && (
+        <div className="border-b bg-muted/40">
+          <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2 text-xs sm:px-6 sm:text-sm">
+            <p className="flex-1 text-muted-foreground">
+              Picked up where you left off, saved {describeSavedAt(resumedFrom)}. Any photos need adding again.
+            </p>
+            <button
+              type="button"
+              className="shrink-0 font-medium underline-offset-2 hover:underline"
+              onClick={reset}
+            >
+              Start again
+            </button>
+            <button
+              type="button"
+              className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              onClick={() => setResumedFrom(null)}
+              aria-label="Dismiss"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Body. */}
       <div className="flex-1 overflow-auto">
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
@@ -342,7 +521,13 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
             <p className="mt-1 text-sm sm:text-base text-muted-foreground">{step.blurb}</p>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-8">
+          <div
+            className={`grid gap-6 lg:gap-8 ${
+              stepId === 'measure'
+                ? 'lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]'
+                : 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]'
+            }`}
+          >
             <div className="min-w-0">
               {stepId === 'shape' && (
                 <ShapeStep
@@ -432,6 +617,8 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                       width={Math.min(560, typeof window !== 'undefined' ? window.innerWidth - 80 : 560)}
                       height={stepId === 'shape' ? 420 : 300}
                       activePanelId={activePanelId}
+                      highlightPanelIds={highlightPanelIds}
+                      highlightWall={highlightWall}
                       onPanelClick={setActivePanelId}
                       onToggleJunction={(i) => {
                         const junctions = [...state.junctions];
@@ -460,6 +647,7 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                       width={Math.min(560, typeof window !== 'undefined' ? window.innerWidth - 80 : 560)}
                       height={stepId === 'shape' ? 260 : 380}
                       activePanelId={activePanelId}
+                      highlightPanelIds={highlightPanelIds}
                       onPanelClick={setActivePanelId}
                       accent={tenant.brand.primary}
                     />
@@ -467,8 +655,9 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
                 </figure>
               </div>
               <p className="mt-2 text-center text-xs text-muted-foreground sm:mt-3">
-                Drawings are to scale but indicative. The cut sizes come from your
-                measurements, on the Review step.
+                {stepId === 'measure'
+                  ? 'The part you are measuring is lit. Drawings are to scale but indicative.'
+                  : 'Drawings are to scale but indicative. The cut sizes come from your measurements, on the Review step.'}
               </p>
             </div>
           </div>

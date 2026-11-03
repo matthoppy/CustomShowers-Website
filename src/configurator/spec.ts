@@ -23,13 +23,25 @@ import {
   type HingePlacement,
   type PanelDeductions,
 } from '@/lib/showerCalculations';
-import { derivePlanes, openingContext, type Plane, totalRunWidthMm } from './geometry';
 import {
+  derivePlanes,
+  hasTransom,
+  isSingleDoor,
+  openingContext,
+  type Plane,
+  totalRunWidthMm,
+} from './geometry';
+import {
+  ceilingSlope,
   describeOpening,
   describeWidths,
   LASER_OFFSET_DEFAULT_MM,
   METHOD_LABELS,
 } from './measure';
+
+// The shape predicates moved to geometry.ts so the measuring journey can use
+// them without this module's fabrication imports. Re-exported for callers.
+export { isSingleDoor, hasTransom };
 import {
   CUTOUTS,
   checkDoorLimits,
@@ -152,18 +164,6 @@ function panelLabel(index: number, kind: 'fixed' | 'door', plane: Plane): string
           ? 'Back'
           : 'Front';
   return `P${index + 1} — ${kind === 'door' ? 'Door' : 'Fixed'} (${planeName})`;
-}
-
-/** One door, wall to wall, nothing else: the layout that gets the cross method. */
-export function isSingleDoor(state: Pick<ConfiguratorState, 'panels' | 'leftWall' | 'rightWall'>) {
-  return (
-    state.panels.length === 1 && state.panels[0].kind === 'door' && state.leftWall && state.rightWall
-  );
-}
-
-/** A door with other glass, going to the ceiling: it gets a transom above it. */
-export function hasTransom(state: ConfiguratorState) {
-  return state.isFloorToCeiling && !isSingleDoor(state) && state.panels.some((p) => p.kind === 'door');
 }
 
 export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
@@ -389,6 +389,32 @@ export function buildSpec(state: ConfiguratorState): ConfiguratorSpec {
         : `Single door to the ceiling with a ${gap}mm air gap above it. Ceiling height not measured.`
     );
   }
+  // Ceiling heights at each end of each run, where they were taken. The cut
+  // heights above are bounding boxes; a slope here is cut as one straight line
+  // between the two readings, and the workshop needs both numbers to do it.
+  // The single door reports its ceiling from the cross, above.
+  o.runs.forEach((run, i) => {
+    if (isSingleDoor(state) && i === 0) return;
+    const slope = ceilingSlope(run);
+    if (!slope) return;
+    const label = ctx.labels?.[i] ?? `Run ${i + 1}`;
+    rakeNotes.push(
+      slope.dropMm === 0
+        ? `${label}: ceiling ${slope.highMm}mm at both ends.`
+        : `${label}: ceiling ${slope.highMm}mm at one end falling ${slope.dropMm}mm to ${slope.lowMm}mm at the ${slope.lowEnd} — top edge cut as one straight line between them.`
+    );
+    if (state.isFloorToCeiling && slope.dropMm > 0) {
+      warnings.push(
+        `Review: the ceiling along the ${label.toLowerCase()} slopes ${slope.dropMm}mm. The glass on that run is cut to the ${slope.highMm}mm bounding height with a raked top edge; Custom Showers will confirm the ceiling line before ordering.`
+      );
+    }
+    if (!state.isFloorToCeiling && slope.lowMm <= state.heightMm) {
+      warnings.push(
+        `Review: the ceiling over the ${label.toLowerCase()} is ${slope.lowMm}mm at its lowest, not above the ${state.heightMm}mm glass. Custom Showers will confirm the height with you.`
+      );
+    }
+  });
+
   if (hasTransom(state)) {
     const doorH = state.doorHeightMm ?? CEILING.transomDoorHeightMm;
     const doors = state.panels.filter((p) => p.kind === 'door');

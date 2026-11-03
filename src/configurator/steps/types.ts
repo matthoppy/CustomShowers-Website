@@ -14,11 +14,13 @@ export interface StepProps {
   photos: Photo[];
   setPhotos: (photos: Photo[]) => void;
   /**
-   * Which measurement card the phone layout is showing. Owned by the shell
+   * Which measuring screen is showing, on every device. Owned by the shell
    * because its Back/Next buttons drive it — the Measure step is the only
    * step with more than one screen inside it.
    */
   measureCard?: number;
+  /** Jump to a measuring screen: the progress rail and the summary's Change links. */
+  setMeasureCard?: (index: number) => void;
   /** The template the customer started from, or null for a shape built by hand. */
   templateId?: string | null;
   activePanelId: string | null;
@@ -40,8 +42,8 @@ export const STEPS: { id: StepId; label: string; heading: string; blurb: string 
   {
     id: 'measure',
     label: 'Measure',
-    heading: 'Measuring your opening',
-    blurb: 'We cut the glass to these numbers, so this is the part worth getting right. Follow the pictures and it takes about ten minutes.',
+    heading: 'Measuring your shower',
+    blurb: 'One measurement at a time, with a picture of exactly where to put the tape. We cut the glass to these numbers, so this is the part worth getting right.',
   },
   {
     id: 'sizes',

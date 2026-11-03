@@ -22,7 +22,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CornerUpRight, Plus, Trash2 } from 'lucide-react';
-import { derivePlanes } from '../geometry';
+import { derivePlanes, runPanelIndices } from '../geometry';
+import { runNames } from '../journey';
+import { rebalanceRun, scaleRunPanels } from '../layout';
 import { createPanel, type ConfiguratorPanel, type PanelKind } from '../types';
 import type { StepProps } from './types';
 
@@ -50,19 +52,50 @@ export function SizesStep({ state, update }: StepProps) {
   );
   const doorIndex = state.panels.findIndex((p) => p.kind === 'door');
   const doorPanel = doorIndex >= 0 ? state.panels[doorIndex] : null;
+  const runs = useMemo(() => runPanelIndices(state.panels, state.junctions), [state.panels, state.junctions]);
+  const names = useMemo(() => runNames(state), [state]);
+  const measuredFor = (runIndex: number) => state.opening.runs[runIndex]?.widthAtFloorMm ?? 0;
 
   const patchPanel = (id: string, patch: Partial<ConfiguratorPanel>) =>
     update({ panels: state.panels.map((p) => (p.id === id ? { ...p, ...patch } : p)) });
 
+  /**
+   * A panel's width is set against the run it sits in. The run was measured,
+   * so it does not change here: the other panels in it take up the
+   * difference. The door is the size the customer cares about, and the fixed
+   * panel is whatever is left.
+   */
+  const setPanelWidth = (index: number, widthMm: number) => {
+    const runIndex = runs.findIndex((r) => r.includes(index));
+    const indices = runs[runIndex] ?? [index];
+    const measured = measuredFor(runIndex);
+    if (indices.length < 2 || !measured) {
+      patchPanel(state.panels[index].id, { width_mm: widthMm });
+      return;
+    }
+    update({ panels: rebalanceRun(state.panels, indices, index, widthMm, measured) });
+  };
+
+  /** Fit a run's panels to its measured width after the chain has changed. */
+  const fitRuns = (panels: ConfiguratorPanel[], junctions: typeof state.junctions): ConfiguratorPanel[] => {
+    const nextRuns = runPanelIndices(panels, junctions);
+    // Only when the runs still line up with what was measured: a new corner
+    // is a new wall, which has not been measured yet.
+    if (nextRuns.length !== state.opening.runs.length) return panels;
+    return nextRuns.reduce((acc, indices, i) => {
+      const measured = measuredFor(i);
+      return measured ? scaleRunPanels(acc, indices, measured) : acc;
+    }, panels);
+  };
+
   const addPanel = (side: 'left' | 'right', kind: PanelKind) => {
     const panel = createPanel(kind, Date.now());
-    update({
-      panels: side === 'left' ? [panel, ...state.panels] : [...state.panels, panel],
-      junctions:
-        side === 'left'
-          ? [{ angle_deg: 180 as const }, ...state.junctions]
-          : [...state.junctions, { angle_deg: 180 as const }],
-    });
+    const panels = side === 'left' ? [panel, ...state.panels] : [...state.panels, panel];
+    const junctions =
+      side === 'left'
+        ? [{ angle_deg: 180 as const }, ...state.junctions]
+        : [...state.junctions, { angle_deg: 180 as const }];
+    update({ panels: fitRuns(panels, junctions), junctions });
   };
 
   const removePanel = (id: string) => {
@@ -70,7 +103,8 @@ export function SizesStep({ state, update }: StepProps) {
     const index = state.panels.findIndex((p) => p.id === id);
     const junctions = [...state.junctions];
     junctions.splice(index === 0 ? 0 : index - 1, 1);
-    update({ panels: state.panels.filter((p) => p.id !== id), junctions });
+    const panels = state.panels.filter((p) => p.id !== id);
+    update({ panels: fitRuns(panels, junctions), junctions });
   };
 
   const setNotch = (id: string, patch: Partial<NonNullable<ConfiguratorPanel['notches']>>) => {
@@ -87,41 +121,77 @@ export function SizesStep({ state, update }: StepProps) {
 
   return (
     <div className="space-y-6">
-      {/* Widths. */}
+      {/* Widths, grouped by the run they were measured as. */}
       <div className="space-y-3">
         <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Panel widths (mm)
         </Label>
-        <div className="space-y-2">
-          {state.panels.map((panel, i) => (
-            <div key={panel.id} className="flex items-center gap-2 rounded-lg border p-2.5 sm:gap-3 sm:p-3">
-              <span className="min-w-0 flex-1 text-xs font-medium sm:text-sm">{labels[i]}</span>
-              <Input
-                type="number"
-                aria-label={`${labels[i]} width in millimetres`}
-                value={panel.width_mm}
-                onChange={(e) => {
-                  const v = parseInt(e.target.value, 10);
-                  patchPanel(panel.id, { width_mm: Number.isNaN(v) ? 0 : v });
-                }}
-                className="w-20 text-sm sm:w-28"
-              />
-              {state.panels.length > 1 && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => removePanel(panel.id)}
-                  aria-label={`Remove ${labels[i]}`}
-                  className="h-8 w-8 p-0 sm:h-9 sm:w-9"
-                >
-                  <Trash2 className="h-3.5 w-3.5 text-destructive sm:h-4 sm:w-4" />
-                </Button>
-              )}
-            </div>
-          ))}
+        <div className="space-y-3">
+          {runs.map((indices, r) => {
+            const measured = measuredFor(r);
+            const single = indices.length === 1;
+            return (
+              <div key={r} className="rounded-lg border">
+                <div className="flex items-baseline justify-between gap-3 border-b bg-muted/40 px-3 py-2 text-xs">
+                  <span className="font-medium">
+                    {runs.length > 1 ? names[r].charAt(0).toUpperCase() + names[r].slice(1) : 'The opening'}
+                  </span>
+                  {measured > 0 && (
+                    <span className="text-muted-foreground">
+                      {measured}mm measured along the floor
+                    </span>
+                  )}
+                </div>
+                <div className="divide-y">
+                  {indices.map((i) => {
+                    const panel = state.panels[i];
+                    return (
+                      <div key={panel.id} className="flex items-center gap-2 p-2.5 sm:gap-3 sm:p-3">
+                        <span className="min-w-0 flex-1 text-xs font-medium sm:text-sm">{labels[i]}</span>
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            inputMode="numeric"
+                            aria-label={`${labels[i]} width in millimetres`}
+                            value={panel.width_mm}
+                            readOnly={single && measured > 0}
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value, 10);
+                              setPanelWidth(i, Number.isNaN(v) ? 0 : v);
+                            }}
+                            className={`w-24 pr-9 text-sm tabular-nums sm:w-32 ${single && measured > 0 ? 'bg-muted/60 text-muted-foreground' : ''}`}
+                          />
+                          <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            mm
+                          </span>
+                        </div>
+                        {state.panels.length > 1 && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removePanel(panel.id)}
+                            aria-label={`Remove ${labels[i]}`}
+                            className="h-8 w-8 p-0 sm:h-9 sm:w-9"
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-destructive sm:h-4 sm:w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {single && measured > 0 && (
+                  <p className="border-t px-3 py-2 text-xs text-muted-foreground">
+                    This is the width you measured. To change it, go back to Measure.
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
         <p className="text-xs text-muted-foreground">
-          Measure the full opening. We take off the allowances for channels and seals ourselves.
+          The panels in a run always add up to the width you measured for it: change one and the
+          others take up the difference. We take off the allowances for channels and seals ourselves.
         </p>
       </div>
 

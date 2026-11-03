@@ -119,3 +119,36 @@ All colors MUST be HSL.
     }
   }
 }
+
+/* The one moving thing on a measuring screen: the line being measured
+   breathes, so the eye lands on it before reading anything. Everything else
+   on the page holds still. */
+@keyframes measure-pulse {
+  0%,
+  100% {
+    opacity: 0.22;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.measure-pulse {
+  animation: measure-pulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .measure-pulse {
+    animation: none;
+  }
+}
+
+/* The accent the measuring drawings are lit with. Navy on white; on a dark
+   surface the brand's lighter blue, which navy cannot do. */
+:root {
+  --measure-accent: 210 50% 23%;
+}
+
+.dark {
+  --measure-accent: 199 45% 63%;
+}
