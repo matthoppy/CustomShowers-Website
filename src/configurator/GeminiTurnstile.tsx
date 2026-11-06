@@ -6,6 +6,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { ensureTurnstile } from '@/lib/turnstile';
 import { getTenant } from './tenant';
 
 declare global {
@@ -93,6 +94,15 @@ export function GeminiTurnstile({ onToken, autoRender = true }: GeminiTurnstileP
 
     // Fallback: retry after short delay
     const retryTimer = setTimeout(tryRender, 1000);
+
+    // The script is loaded on demand; render as soon as it is there.
+    ensureTurnstile()
+      .then(() => {
+        if (mounted) tryRender();
+      })
+      .catch(() => {
+        if (mounted) setState('failed');
+      });
 
     // Cleanup on unmount
     return () => {

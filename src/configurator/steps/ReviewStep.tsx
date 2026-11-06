@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useMemo, useState, useRef } from 'react';
+import { ensureTurnstile } from '@/lib/turnstile';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -202,6 +203,15 @@ export function ReviewStep({
     
     // Fallback: retry after short delay
     const retryTimer = setTimeout(tryRender, 1500);
+
+    // The script is loaded on demand; render as soon as it is there.
+    ensureTurnstile()
+      .then(() => {
+        if (mounted) tryRender();
+      })
+      .catch(() => {
+        if (mounted) setChallenge('failed');
+      });
     
     // Cleanup on unmount
     return () => {

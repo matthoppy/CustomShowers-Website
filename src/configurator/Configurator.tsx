@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ensureTurnstile } from '@/lib/turnstile';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Check, Loader2, RotateCcw, X } from 'lucide-react';
 import { PlanView } from './views/PlanView';
@@ -185,6 +186,11 @@ export function Configurator({ tenant = getTenant(), embedded = false }: Configu
    * host page does the scrolling — so there is nothing here to scroll and we
    * ask the parent instead.
    */
+  // Start fetching the security check now, so it is ready by the review step.
+  useEffect(() => {
+    if (tenant.turnstileSiteKey) ensureTurnstile().catch(() => undefined);
+  }, [tenant.turnstileSiteKey]);
+
   useEffect(() => {
     // Skip the very first render: scrolling on mount would yank a host page
     // down to the widget as soon as it loads.

@@ -25,17 +25,25 @@
     <meta name="twitter:title" content="Bespoke Custom Shower Enclosures London | Custom Showers" />
     <meta name="twitter:description" content="Bespoke frameless shower enclosures supplied nationwide. Premium 10mm toughened glass, custom-made to your measurements. Free consultation." />
 
-    <!-- Google Ads -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-1800906037"></script>
+    <!-- Google Ads. The tag itself is fetched once the page has loaded, so it
+         never competes with the page; calls made before then are queued. -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'AW-1800906037');
+      (function () {
+        var load = function () {
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=AW-1800906037';
+          document.head.appendChild(s);
+        };
+        if (document.readyState === 'complete') setTimeout(load, 1500);
+        else window.addEventListener('load', function () { setTimeout(load, 1500); });
+      })();
     </script>
-    
-    <!-- Cloudflare Turnstile -->
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <!-- Cloudflare Turnstile is loaded by the forms that need it (src/lib/turnstile.ts). -->
   </head>
 
   <body>
