@@ -153,43 +153,44 @@ All colors MUST be HSL.
   --measure-accent: 199 45% 63%;
 }
 
-/* Measuring cards: each picture loops every 3.2 seconds. The resting state
-   is the finished picture, so with animations off it still reads. */
+/* Measuring cards: each picture shows its one action, holds, and goes
+   round again every four seconds. The resting state is the finished
+   picture, so with animations off it still reads. */
 @keyframes mw-extend {
   0% { transform: scaleX(0); }
-  40%, 86% { transform: scaleX(1); }
+  35%, 88% { transform: scaleX(1); }
   100% { transform: scaleX(0); }
 }
 @keyframes mw-extend-y {
   0% { transform: scaleY(0); }
-  40%, 86% { transform: scaleY(1); }
+  35%, 88% { transform: scaleY(1); }
   100% { transform: scaleY(0); }
 }
 @keyframes mw-appear {
-  0%, 38% { opacity: 0; }
-  50%, 86% { opacity: 1; }
+  0%, 34% { opacity: 0; }
+  44%, 88% { opacity: 1; }
   100% { opacity: 0; }
 }
+@keyframes mw-appear-early {
+  0% { opacity: 0; }
+  10%, 100% { opacity: 1; }
+}
 @keyframes mw-draw {
-  0% { stroke-dashoffset: var(--mw-len); }
+  0%, 12% { stroke-dashoffset: var(--mw-len); }
   45%, 100% { stroke-dashoffset: 0; }
 }
 @keyframes mw-glow {
-  0%, 100% { opacity: 0.45; }
+  0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
 }
-@keyframes mw-travel {
-  0% { transform: translate(0, 0); }
-  70%, 100% { transform: translate(var(--mw-dx), var(--mw-dy, 0)); }
-}
-.mw-extend { animation: mw-extend 3.2s ease-in-out infinite; transform-box: view-box; }
-.mw-extend-y { animation: mw-extend-y 3.2s ease-in-out infinite; transform-box: view-box; }
-.mw-appear { animation: mw-appear 3.2s ease-in-out infinite; }
-.mw-draw { animation: mw-draw 3.2s ease-out infinite; stroke-dasharray: var(--mw-len); }
+.mw-extend { animation: mw-extend 4s cubic-bezier(0.16, 1, 0.3, 1) infinite; transform-box: view-box; }
+.mw-extend-y { animation: mw-extend-y 4s cubic-bezier(0.16, 1, 0.3, 1) infinite; transform-box: view-box; }
+.mw-appear { animation: mw-appear 4s ease-out infinite; }
+.mw-appear-early { animation: mw-appear-early 4s ease-out infinite; }
+.mw-draw { animation: mw-draw 4s cubic-bezier(0.16, 1, 0.3, 1) infinite; stroke-dasharray: var(--mw-len); }
 .mw-glow { animation: mw-glow 2s ease-in-out infinite; }
-.mw-travel { animation: mw-travel 3.2s ease-in-out infinite; transform-box: view-box; }
 @media (prefers-reduced-motion: reduce) {
-  .mw-extend, .mw-extend-y, .mw-appear, .mw-draw, .mw-glow, .mw-travel { animation: none; }
+  .mw-extend, .mw-extend-y, .mw-appear, .mw-appear-early, .mw-draw, .mw-glow { animation: none; }
 }
 
 /* The fitting sheet prints as a document. */

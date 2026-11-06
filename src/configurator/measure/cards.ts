@@ -26,7 +26,7 @@ import type { ConfiguratorState } from '../types';
 
 /** What the picture on a card shows. Each kind has a component in ./visuals. */
 export type CardVisual =
-  | { kind: 'tape-line' }
+  | { kind: 'marks' }
   | { kind: 'laser-setup'; toCeiling: boolean }
   | { kind: 'cross-reading'; point: number; toCeiling: boolean }
   | { kind: 'height' };
@@ -69,22 +69,22 @@ export function readingCards(cards: MeasureCardDef[]): MeasureCardDef[] {
 
 function singleDoorLaser(state: ConfiguratorState): MeasureCardDef[] {
   const toCeiling = state.isFloorToCeiling;
-  const top = toCeiling ? 'just below the ceiling' : 'level with the top of the glass';
+  const top = toCeiling ? 'along the ceiling' : 'held level with your mark on the wall';
   const cards: MeasureCardDef[] = [
     {
-      id: 'tape-line',
+      id: 'marks',
       kind: 'instruction',
-      title: 'Mark the glass line',
+      title: 'Mark where the glass goes',
       instruction:
-        'Run masking tape across the floor where the glass will stand, wall to wall. Every number you take is along this line.',
-      visual: { kind: 'tape-line' },
+        'Stick a short piece of masking tape on the floor against each wall and draw the glass line on it: the middle of a plinth, or 10mm in from the edge of a tray.',
+      visual: { kind: 'marks' },
     },
     {
       id: 'laser-setup',
       kind: 'instruction',
       title: 'Set up the laser',
       instruction:
-        'Stand the laser on the tape in the middle of the opening and switch on both lines. You measure to the lines, never to the laser itself.',
+        'Stand the laser on the floor in front of the shower, pointing in, with its up-and-down line through the middle of your marks. Switch both lines on.',
       visual: { kind: 'laser-setup', toCeiling },
     },
   ];
@@ -94,10 +94,10 @@ function singleDoorLaser(state: ConfiguratorState): MeasureCardDef[] {
       id: 'height',
       kind: 'reading',
       title: 'How tall is the glass?',
-      instruction: 'From the floor to where you want the top of the glass. Most doors are 2000mm.',
+      instruction: 'Mark the top of the glass on a piece of tape on the wall. Hook the tape measure on the floor and read up to your mark.',
       visual: { kind: 'height' },
       field: { kind: 'height' },
-      inputLabel: 'Glass height',
+      inputLabel: 'Floor to your mark',
       minMm: 500,
       maxMm: 3000,
     });
@@ -106,43 +106,43 @@ function singleDoorLaser(state: ConfiguratorState): MeasureCardDef[] {
   const words: Record<number, { title: string; instruction: string; label: string }> = {
     1: {
       title: 'Left wall, at the bottom',
-      instruction: 'Measure from the left wall to the up-and-down line, along the tape.',
-      label: 'Left wall to the line, at the floor',
+      instruction: 'Hook the tape on the left wall at your mark, along the floor, and read where the laser lights the blade.',
+      label: 'Left wall to the laser, at the floor',
     },
     2: {
       title: 'Left wall, at the top',
-      instruction: `Measure from the left wall to the up-and-down line, ${top}.`,
-      label: 'Left wall to the line, at the top',
+      instruction: `Hook the tape on the left wall ${top}, and read where the laser lights the blade.`,
+      label: 'Left wall to the laser, at the top',
     },
     3: {
       title: 'Right wall, at the bottom',
-      instruction: 'Measure from the right wall to the up-and-down line, along the tape.',
-      label: 'Right wall to the line, at the floor',
+      instruction: 'Hook the tape on the right wall at your mark, along the floor, and read where the laser lights the blade.',
+      label: 'Right wall to the laser, at the floor',
     },
     4: {
       title: 'Right wall, at the top',
-      instruction: `Measure from the right wall to the up-and-down line, ${top}.`,
-      label: 'Right wall to the line, at the top',
+      instruction: `Hook the tape on the right wall ${top}, and read where the laser lights the blade.`,
+      label: 'Right wall to the laser, at the top',
     },
     5: {
       title: 'Floor, on the left',
-      instruction: 'Measure down from the level line to the floor, next to the left wall.',
-      label: 'Line down to the floor, left',
+      instruction: 'Hook the tape on the floor next to the left wall, at your mark, and read up at the level line.',
+      label: 'Floor up to the level line, left',
     },
     6: {
       title: 'Floor, on the right',
-      instruction: 'Measure down from the level line to the floor, next to the right wall.',
-      label: 'Line down to the floor, right',
+      instruction: 'Hook the tape on the floor next to the right wall, at your mark, and read up at the level line.',
+      label: 'Floor up to the level line, right',
     },
     7: {
       title: 'Ceiling, on the left',
-      instruction: 'Measure up from the level line to the ceiling, next to the left wall.',
-      label: 'Line up to the ceiling, left',
+      instruction: 'Hold the tape against the ceiling next to the left wall and read down at the level line.',
+      label: 'Level line up to the ceiling, left',
     },
     8: {
       title: 'Ceiling, on the right',
-      instruction: 'Measure up from the level line to the ceiling, next to the right wall.',
-      label: 'Line up to the ceiling, right',
+      instruction: 'Hold the tape against the ceiling next to the right wall and read down at the level line.',
+      label: 'Level line up to the ceiling, right',
     },
   };
 

@@ -49,7 +49,7 @@ export function renderStoryboard(): { frames: FrameOut[]; standardHeight: FrameO
     }
     const value = card.field ? readField(state, card.field) : null;
     const done = readings.filter((r) => (r.readingIndex ?? 0) < (card.readingIndex ?? 99)).map((r) => (r.visual?.kind === 'cross-reading' ? r.visual.point : 0)).filter(Boolean);
-    const visual = card.visual ? <CardPicture visual={card.visual} value={value} done={done} /> : null;
+    const visual = card.visual ? <CardPicture visual={card.visual} value={value} done={done} glassMm={state.heightMm} /> : null;
     frames.push({
       caption: `Screen ${i + 1} · ${card.kind === 'reading' ? `Reading ${card.readingIndex} of ${readings.length}` : 'Instruction'}`,
       kind: 'card',
@@ -66,7 +66,7 @@ export function renderStoryboard(): { frames: FrameOut[]; standardHeight: FrameO
   const stdCards = buildCards(standard);
   const stdReadings = readingCards(stdCards);
   const standardHeight: FrameOut[] = stdCards
-    .filter((c) => c.id === 'height' || c.id === 'cross-2' || c.id === 'review')
+    .filter((c) => c.id === 'height' || c.id === 'cross-2' || c.id === 'cross-5' || c.id === 'review')
     .map((card) => {
       const i = stdCards.indexOf(card);
       if (card.kind === 'review') return { caption: 'Review, standard height', kind: 'review' as const, html: renderToStaticMarkup(<MeasureReview state={standard} cards={stdCards} onEdit={noop} onConfirm={noop} />) };
@@ -75,7 +75,7 @@ export function renderStoryboard(): { frames: FrameOut[]; standardHeight: FrameO
         caption: `Screen ${i + 1} · Reading ${card.readingIndex} of ${stdReadings.length}`,
         kind: 'card' as const,
         html: renderToStaticMarkup(
-          <MeasureCard card={card} step={i + 1} stepCount={stdCards.length} readingCount={stdReadings.length} value={value} onChange={noop} onNext={noop} onBack={noop} canBack visual={card.visual ? <CardPicture visual={card.visual} value={value} done={[1]} /> : null} />
+          <MeasureCard card={card} step={i + 1} stepCount={stdCards.length} readingCount={stdReadings.length} value={value} onChange={noop} onNext={noop} onBack={noop} canBack visual={card.visual ? <CardPicture visual={card.visual} value={value} done={[1]} glassMm={standard.heightMm} /> : null} />
         ),
       };
     });

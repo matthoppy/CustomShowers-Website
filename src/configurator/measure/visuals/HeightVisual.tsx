@@ -1,21 +1,29 @@
 /**
- * Floor to the top of the glass, up the wall beside the opening.
+ * The glass height: a piece of tape on the wall with the top of the glass
+ * marked on it, and the tape measure hooked on the floor, read up at the mark.
  */
 
-import { FLOOR, Frame, LF, RF, MaskingTape, Room, TapeMeasure, ACCENT } from './Scene';
+import { Caption, FloorMark, Frame, GlassLine, Room, TapeMeasure, W, WallMark, p } from './Scene';
 
-export function HeightVisual({ value }: { value: number | null }) {
-  const top = 36;
+export function HeightVisual({ height, value }: { height: number; value: number | null }) {
+  const inset = 14;
+  const body = p(inset, height, 0);
+  const hook = p(inset, 0, 0);
+  const cap = p(W / 2, height, 0);
   return (
-    <Frame label="Measuring from the floor up to where the top of the glass will be">
-      <Room ceiling={false} />
-      <MaskingTape />
-      <rect x={LF + 6} y={top} width={RF - LF - 12} height={FLOOR - 7 - top} fill={ACCENT} opacity={0.06} />
-      <line x1={LF + 6} y1={top} x2={RF - 6} y2={top} stroke={ACCENT} strokeWidth={1.2} strokeDasharray="4 3" />
-      <TapeMeasure x1={LF + 24} y1={FLOOR} x2={LF + 24} y2={top} value={value === null ? '?' : `${value}mm`} />
-      <text x={RF - 10} y={top - 8} textAnchor="end" fontSize={10.5} fontWeight={700} fill={ACCENT} fontFamily="system-ui, sans-serif">
-        top of the glass
-      </text>
+    <Frame label="A marker line on tape stuck to the wall at the height of the glass, and a tape measure hooked on the floor reading up to it">
+      <Room height={height} ceiling={false} />
+      <FloorMark side="left" />
+      <FloorMark side="right" />
+      <GlassLine />
+      <WallMark side="left" y={height} />
+      <WallMark side="right" y={height} />
+      <TapeMeasure x1={body.x} y1={body.y} x2={hook.x} y2={hook.y} value={value === null ? '?' : `${value}mm`} labelSide="after" />
+      <g className="mw-appear">
+        <Caption x={cap.x} y={cap.y - 8} anchor="middle">
+          top of the glass
+        </Caption>
+      </g>
     </Frame>
   );
 }
