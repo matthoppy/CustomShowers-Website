@@ -16,9 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Node 22: the configurator tests import .ts files directly, which
+      # needs Node's built-in type stripping (22.18 and later).
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
 
       - run: npm ci

@@ -2,6 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /admin/
-Disallow: /app.html
+Disallow: /app
 
 Sitemap: https://customshowers.uk/sitemap.xml

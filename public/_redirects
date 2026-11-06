@@ -1,5 +1,7 @@
 # Every page has its own HTML file (see scripts/prerender.mjs); anything
-# else is a real 404. The dashboard renders in the browser from app.html.
+# else is a real 404. The dashboard renders in the browser from app.html,
+# which Pages serves at /app (it redirects *.html to the clean address, so
+# the rewrite must name the clean one).
 /balustrades  /  301
-/admin  /app.html  200
-/admin/*  /app.html  200
+/admin  /app  200
+/admin/*  /app  200
