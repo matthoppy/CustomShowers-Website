@@ -84,7 +84,7 @@ function singleDoorLaser(state: ConfiguratorState): MeasureCardDef[] {
       kind: 'instruction',
       title: 'Set up the laser',
       instruction:
-        'Stand the laser on the floor in front of the shower, pointing in, with its up-and-down line through the middle of your marks. Switch both lines on.',
+        'Put the laser on a small tripod in front of the shower, back from the glass line, with its up-and-down line through the middle of your marks. Switch both lines on.',
       visual: { kind: 'laser-setup', toCeiling },
     },
   ];

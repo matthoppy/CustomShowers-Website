@@ -3,22 +3,23 @@ import { CrossReadingVisual } from './CrossReadingVisual';
 import { HeightVisual } from './HeightVisual';
 import { LaserSetupVisual } from './LaserSetupVisual';
 import { MarksVisual } from './MarksVisual';
+import { FLOOR } from './Scene';
 
-/** Picture height of the glass or the ceiling, from the real size. */
-function pictureHeight(glassMm: number, toCeiling: boolean): number {
-  return toCeiling ? 176 : Math.max(120, Math.min(160, glassMm * 0.075));
+/** Where the top of the glass sits in the picture, from the real height. */
+function glassTopFor(glassMm: number): number {
+  return FLOOR - Math.max(110, Math.min(150, glassMm * 0.07));
 }
 
 /** The picture for a card, given what has been typed and what is done. */
 export function CardPicture({ visual, value, done, glassMm }: { visual: CardVisual; value: number | null; done: number[]; glassMm: number }) {
   switch (visual.kind) {
     case 'marks':
-      return <MarksVisual height={pictureHeight(glassMm, false)} />;
+      return <MarksVisual />;
     case 'laser-setup':
-      return <LaserSetupVisual height={pictureHeight(glassMm, visual.toCeiling)} toCeiling={visual.toCeiling} />;
+      return <LaserSetupVisual toCeiling={visual.toCeiling} />;
     case 'cross-reading':
-      return <CrossReadingVisual point={visual.point} height={pictureHeight(glassMm, visual.toCeiling)} toCeiling={visual.toCeiling} value={value} done={done} />;
+      return <CrossReadingVisual point={visual.point} glassTop={glassTopFor(glassMm)} toCeiling={visual.toCeiling} value={value} done={done} />;
     case 'height':
-      return <HeightVisual height={pictureHeight(value ?? glassMm, false)} value={value} />;
+      return <HeightVisual glassTop={glassTopFor(value ?? glassMm)} value={value} />;
   }
 }

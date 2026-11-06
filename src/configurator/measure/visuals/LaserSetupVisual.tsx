@@ -1,28 +1,25 @@
 /**
- * The laser on the bathroom floor in front of the opening, pointing in, its
- * two lines coming on: the up-and-down plane through the middle of the marks,
- * and the level line round the walls.
+ * The laser on its tripod in front of the opening, away from the glass line,
+ * its two lines coming on: the level line out to each wall, the up-and-down
+ * line to the ceiling and the floor.
  */
 
-import { Caption, FloorMark, Frame, GlassLine, LEVEL, Laser, LaserPlane, LevelLine, Room, W, p } from './Scene';
+import { CEIL, CX, Caption, FloorMark, Frame, GlassLine, LEVEL, LaserLines, RF, Room, Tripod } from './Scene';
 
-export function LaserSetupVisual({ height, toCeiling }: { height: number; toCeiling: boolean }) {
-  const levelAt = p(W, LEVEL, 0);
-  const planeAt = p(W / 2, height, 0);
+export function LaserSetupVisual({ toCeiling }: { toCeiling: boolean }) {
   return (
-    <Frame label="A laser standing on the floor in front of the shower, pointing in, with an up-and-down line through the middle of the opening and a level line round the walls">
-      <Room height={height} ceiling={toCeiling} />
+    <Frame label="A laser on a small tripod standing in front of the opening, with a level line going out to both walls and an up-and-down line through the middle">
+      <Room ceiling={toCeiling} />
       <FloorMark side="left" />
       <FloorMark side="right" />
       <GlassLine />
-      <LevelLine draw />
-      <LaserPlane height={height} ceiling={toCeiling} draw />
-      <Laser />
+      <LaserLines ceiling={toCeiling} vertical="draw" level="draw" />
+      <Tripod />
       <g className="mw-appear">
-        <Caption x={planeAt.x + 8} y={planeAt.y - 10}>
+        <Caption x={CX + 8} y={(toCeiling ? CEIL : 0) + 16}>
           up-and-down line
         </Caption>
-        <Caption x={levelAt.x + 6} y={levelAt.y + 4}>
+        <Caption x={RF - 6} y={LEVEL - 8} anchor="end">
           level line
         </Caption>
       </g>

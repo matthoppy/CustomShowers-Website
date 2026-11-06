@@ -1,26 +1,24 @@
 /**
- * The glass height: a piece of tape on the wall with the top of the glass
+ * The glass height: a piece of tape on each wall with the top of the glass
  * marked on it, and the tape measure hooked on the floor, read up at the mark.
  */
 
-import { Caption, FloorMark, Frame, GlassLine, Room, TapeMeasure, W, WallMark, p } from './Scene';
+import { CX, Caption, FLOOR, FloorMark, Frame, GlassLine, LF, Room, TapeMeasure, WallMark } from './Scene';
 
-export function HeightVisual({ height, value }: { height: number; value: number | null }) {
-  const inset = 14;
-  const body = p(inset, height, 0);
-  const hook = p(inset, 0, 0);
-  const cap = p(W / 2, height, 0);
+export function HeightVisual({ glassTop, value }: { glassTop: number; value: number | null }) {
+  const x = LF + 18;
   return (
-    <Frame label="A marker line on tape stuck to the wall at the height of the glass, and a tape measure hooked on the floor reading up to it">
-      <Room height={height} ceiling={false} />
+    <Frame label="A marker line on tape stuck to each wall at the height of the glass, and a tape measure hooked on the floor reading up to it">
+      <Room ceiling={false} />
       <FloorMark side="left" />
       <FloorMark side="right" />
       <GlassLine />
-      <WallMark side="left" y={height} />
-      <WallMark side="right" y={height} />
-      <TapeMeasure x1={body.x} y1={body.y} x2={hook.x} y2={hook.y} value={value === null ? '?' : `${value}mm`} labelSide="after" />
+      <WallMark side="left" y={glassTop} />
+      <WallMark side="right" y={glassTop} />
+      <line x1={LF + 12} y1={glassTop} x2={CX + 100} y2={glassTop} stroke="hsl(var(--measure-accent))" strokeWidth={1} strokeDasharray="4 3" opacity={0.5} />
+      <TapeMeasure x1={x} y1={glassTop} x2={x} y2={FLOOR} value={value === null ? '?' : `${value}mm`} labelSide="after" />
       <g className="mw-appear">
-        <Caption x={cap.x} y={cap.y - 8} anchor="middle">
+        <Caption x={CX + 20} y={glassTop - 8} anchor="middle">
           top of the glass
         </Caption>
       </g>

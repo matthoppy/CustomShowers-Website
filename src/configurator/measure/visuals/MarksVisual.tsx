@@ -3,18 +3,17 @@
  * wall, and the line drawn across it where the glass will stand.
  */
 
-import { Caption, FloorMark, Frame, GlassLine, Room, W, p } from './Scene';
+import { CX, Caption, FLOOR, FloorMark, Frame, GlassLine, Room } from './Scene';
 
-export function MarksVisual({ height }: { height: number }) {
-  const mid = p(W / 2, 0, 0);
+export function MarksVisual() {
   return (
     <Frame label="Two short pieces of masking tape on the floor, one against each wall, each with a marker line where the glass will stand">
-      <Room height={height} ceiling={false} />
+      <Room ceiling={false} />
       <FloorMark side="left" animate />
       <FloorMark side="right" animate />
       <g className="mw-appear">
         <GlassLine lit />
-        <Caption x={mid.x} y={mid.y + 22} anchor="middle">
+        <Caption x={CX} y={FLOOR - 10} anchor="middle">
           the glass line
         </Caption>
       </g>
