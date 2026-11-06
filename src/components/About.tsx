@@ -46,6 +46,8 @@ const About = () => {
                 key={image.src}
                 src={imageUrl(image)}
                 alt={image.alt}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-[220px] object-cover shadow-2xl"
               />
             ))}
