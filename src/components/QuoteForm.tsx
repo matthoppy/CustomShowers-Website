@@ -1,9 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-const WORKER_URL = "https://customshowers-contact.workers.dev";
+const WORKER_URL = "https://customshowers-contact.vcwvk4sm9m.workers.dev";
 
 const QuoteForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -11,6 +11,25 @@ const QuoteForm = () => {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const { toast } = useToast();
+  // The security check is a third-party widget: it loads once the form is
+  // close to the screen or someone starts filling it in, not with the page.
+  const [challengeReady, setChallengeReady] = useState(false);
+  useEffect(() => {
+    const form = formRef.current;
+    if (!form || challengeReady) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setChallengeReady(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setChallengeReady(true);
+      },
+      { rootMargin: "400px" }
+    );
+    io.observe(form);
+    return () => io.disconnect();
+  }, [challengeReady]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -106,7 +125,7 @@ const QuoteForm = () => {
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
+    <form onFocusCapture={() => setChallengeReady(true)} ref={formRef} onSubmit={handleSubmit} className="space-y-6">
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-primary-foreground mb-2">
@@ -233,12 +252,16 @@ const QuoteForm = () => {
         ></textarea>
       </div>
 
-      <div className="flex justify-center">
-        <Turnstile
-          siteKey="0x4AAAAAACmVMi3ZDLDzTYwv"
-          onSuccess={(token) => setTurnstileToken(token)}
-          onExpire={() => setTurnstileToken(null)}
-        />
+      <div className="flex min-h-[65px] justify-center">
+        {challengeReady ? (
+          <Turnstile
+            siteKey="0x4AAAAAACmVMi3ZDLDzTYwv"
+            onSuccess={(token) => setTurnstileToken(token)}
+            onExpire={() => setTurnstileToken(null)}
+          />
+        ) : (
+          <div className="h-[65px]" aria-hidden="true" />
+        )}
       </div>
 
       <Button

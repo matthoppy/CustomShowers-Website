@@ -1,1 +1,5 @@
-/* /index.html 200
+# Every page has its own HTML file (see scripts/prerender.mjs); anything
+# else is a real 404. The dashboard renders in the browser from app.html.
+/balustrades  /  301
+/admin  /app.html  200
+/admin/*  /app.html  200

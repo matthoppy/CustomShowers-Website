@@ -5,6 +5,8 @@ import { blogArticles } from "../data/blogArticles";
 import { Button } from "../components/ui/button";
 import { useState } from "react";
 import QuoteModal from "../components/QuoteModal";
+import { usePageMeta } from "@/seo/usePageMeta";
+import { NOT_FOUND, articleMeta } from "@/seo/meta";
 
 // Minimal markdown-like renderer for the article content
 // Handles: ## headings, **bold**, paragraphs, and blank-line separation
@@ -46,6 +48,7 @@ const BlogArticle = () => {
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
 
   const article = blogArticles.find((a) => a.slug === slug);
+  usePageMeta(article ? articleMeta(article) : NOT_FOUND);
 
   if (!article) {
     return (

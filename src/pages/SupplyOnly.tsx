@@ -4,6 +4,8 @@ import Footer from "../components/Footer";
 import { Button } from "../components/ui/button";
 import { useState } from "react";
 import QuoteModal from "../components/QuoteModal";
+import { usePageMeta } from "@/seo/usePageMeta";
+import { SUPPLY_ONLY } from "@/seo/meta";
 
 const steps = [
   {
@@ -79,6 +81,7 @@ const faqs = [
 
 const SupplyOnly = () => {
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
+  usePageMeta(SUPPLY_ONLY);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -88,7 +91,7 @@ const SupplyOnly = () => {
       <section
         className="relative text-primary-foreground pt-32 pb-20 px-6 bg-cover bg-center bg-fixed"
         style={{
-          backgroundImage: "url(/images/greentile.landscape.png)",
+          backgroundImage: "url(/images/greentile.landscape.jpg)",
         }}
       >
         <div className="absolute inset-0 bg-black/40" />

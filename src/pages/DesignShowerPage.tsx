@@ -7,9 +7,12 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { Configurator } from '@/configurator/Configurator';
 import { getTenant } from '@/configurator/tenant';
+import { usePageMeta } from '@/seo/usePageMeta';
+import { DESIGN } from '@/seo/meta';
 
 export default function DesignShowerPage() {
   const tenant = getTenant();
+  usePageMeta(DESIGN);
 
   return (
     <div className="flex min-h-screen flex-col">

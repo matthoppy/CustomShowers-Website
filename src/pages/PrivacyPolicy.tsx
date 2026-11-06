@@ -1,7 +1,10 @@
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
+import { usePageMeta } from "@/seo/usePageMeta";
+import { PRIVACY } from "@/seo/meta";
 
 const PrivacyPolicy = () => {
+  usePageMeta(PRIVACY);
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />

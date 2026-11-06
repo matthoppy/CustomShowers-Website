@@ -21,6 +21,7 @@ import { ApiError } from '../api/client';
 import type { PhotoChange, SitePhotosState } from '../api/types';
 import {
   AREAS,
+  HERO_EDGE_PX,
   MAX_TITLE_LENGTH,
   WHAT,
   blobToBase64,
@@ -676,7 +677,7 @@ function SlotEditorLoaded({ state }: { state: SitePhotosState }) {
     setBusy(true);
     try {
       if (fresh) URL.revokeObjectURL(fresh.url);
-      setFresh(await shrink(file));
+      setFresh(await shrink(file, slot === 'hero' ? HERO_EDGE_PX : undefined));
     } catch (e) {
       sheets.toast((e as Error).message || 'That photo couldn’t be read. Try a JPEG or PNG.');
     } finally {

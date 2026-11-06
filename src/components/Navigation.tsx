@@ -26,6 +26,7 @@ const Navigation = ({ onOpenQuote }: NavigationProps) => {
     { label: "Home", href: "/" },
     { label: "Design Your Shower", href: "/design-shower" },
     { label: "Supply Only", href: "/supply-only" },
+    { label: "Blog", href: "/blog" },
     { label: "Gallery", href: isHomePage ? "#gallery" : "/#gallery" },
     { label: "Contact", href: isHomePage ? "#contact" : "/#contact" },
   ];

@@ -9,9 +9,12 @@ import FAQ from "@/components/FAQ";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import QuoteModal from "@/components/QuoteModal";
+import { usePageMeta } from "@/seo/usePageMeta";
+import { HOME } from "@/seo/meta";
 
 const Index = () => {
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
+  usePageMeta(HOME);
 
   return (
     <div className="min-h-screen">

@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import LegalModal from "./LegalModal";
 
 const TERMS_TEXT = `TERMS OF TRADE
@@ -385,7 +386,13 @@ const Footer = () => {
         <div className="container mx-auto px-6 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-footer-text/60">
             <p>&copy; {currentYear} Custom Showers. All rights reserved.</p>
-            <div className="flex gap-6">
+            <div className="flex flex-wrap justify-center gap-6">
+              <Link to="/supply-only" className="hover:text-primary transition-colors duration-300">
+                Supply Only
+              </Link>
+              <Link to="/blog" className="hover:text-primary transition-colors duration-300">
+                Blog
+              </Link>
               <LegalModal
                 trigger={
                   <button className="hover:text-primary transition-colors duration-300">

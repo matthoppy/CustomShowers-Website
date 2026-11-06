@@ -4,6 +4,8 @@ import Footer from "../components/Footer";
 import { blogArticles } from "../data/blogArticles";
 import { useState } from "react";
 import QuoteModal from "../components/QuoteModal";
+import { usePageMeta } from "@/seo/usePageMeta";
+import { BLOG } from "@/seo/meta";
 
 const categoryColours: Record<string, string> = {
   "Buying Guide": "bg-blue-100 text-blue-800",
@@ -14,6 +16,7 @@ const categoryColours: Record<string, string> = {
 
 const Blog = () => {
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
+  usePageMeta(BLOG);
 
   return (
     <div className="min-h-screen flex flex-col">

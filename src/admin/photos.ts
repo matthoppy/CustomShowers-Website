@@ -9,8 +9,10 @@ import { JOB_TYPES, type JobTypeId, type SiteImage, type SiteImages, type SiteJo
 import type { PhotoChange } from './api/types';
 
 /** Longest side of an uploaded photo, in pixels; and the JPEG quality. */
-export const MAX_EDGE_PX = 2000;
-export const JPEG_QUALITY = 0.82;
+export const MAX_EDGE_PX = 1600;
+/** The hero runs the full width of a big screen, so it gets more. */
+export const HERO_EDGE_PX = 2000;
+export const JPEG_QUALITY = 0.8;
 export const MAX_TITLE_LENGTH = 80;
 
 /** What a job of each type usually is: tap one and the label writes itself. */
@@ -92,9 +94,9 @@ async function decode(file: File): Promise<ImageBitmap | HTMLImageElement> {
 }
 
 /** The photo at most MAX_EDGE_PX on its longest side, as a JPEG on a white background. */
-export async function shrink(file: File): Promise<ShrunkPhoto> {
+export async function shrink(file: File, maxEdge: number = MAX_EDGE_PX): Promise<ShrunkPhoto> {
   const img = await decode(file);
-  const scale = Math.min(1, MAX_EDGE_PX / Math.max(img.width, img.height));
+  const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, Math.round(img.width * scale));
   canvas.height = Math.max(1, Math.round(img.height * scale));

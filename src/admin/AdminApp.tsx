@@ -39,8 +39,17 @@ export default function AdminApp() {
   useEffect(() => {
     const previous = document.title;
     document.title = 'Custom Showers · Admin';
+    let robots = document.head.querySelector('meta[name="robots"]');
+    if (!robots) {
+      robots = document.createElement('meta');
+      robots.setAttribute('name', 'robots');
+      document.head.appendChild(robots);
+    }
+    const previousRobots = robots.getAttribute('content');
+    robots.setAttribute('content', 'noindex, nofollow');
     return () => {
       document.title = previous;
+      if (previousRobots) robots.setAttribute('content', previousRobots);
     };
   }, []);
   return (

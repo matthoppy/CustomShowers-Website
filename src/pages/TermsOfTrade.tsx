@@ -1,7 +1,10 @@
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
+import { usePageMeta } from "@/seo/usePageMeta";
+import { TERMS } from "@/seo/meta";
 
 const TermsOfTrade = () => {
+  usePageMeta(TERMS);
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
