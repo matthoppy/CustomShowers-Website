@@ -13,7 +13,9 @@
  */
 
 import type { ConfiguratorJunction, ConfiguratorPanel } from './types';
-import type { OpeningContext } from './measure';
+// The .ts extension matters: the two constants make this a runtime import, and
+// the unit tests load this file under Node, which cannot resolve './measure'.
+import { MIN_PLAUSIBLE_MM, MIN_PLAUSIBLE_RETURN_MM, type OpeningContext } from './measure.ts';
 
 export interface Segment {
   id: string;
@@ -240,6 +242,13 @@ export function openingContext(state: {
     hasEndWall: state.rightWall,
     glassHeightMm: state.heightMm,
     labels: runLabelsFor(state.panels, state.junctions),
+    // A run with a door in it has to be wide enough to walk through. A run of
+    // fixed glass alone can be a short return panel, so it may be narrower.
+    minWidthsMm: runPanelIndices(state.panels, state.junctions).map((indices) =>
+      indices.some((i) => state.panels[i].kind === 'door')
+        ? MIN_PLAUSIBLE_MM
+        : MIN_PLAUSIBLE_RETURN_MM
+    ),
   };
 }
 

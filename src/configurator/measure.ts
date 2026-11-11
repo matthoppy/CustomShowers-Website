@@ -210,6 +210,14 @@ export interface OpeningContext {
    * be listed in.
    */
   labels?: string[];
+  /**
+   * The narrowest each run could plausibly be, in run order. Supplied by the
+   * caller because it depends on what the run is made of, which only the
+   * shape knows: a run with a door in it has to be wide enough to walk
+   * through, while fixed glass alone can be a short return. A run with no
+   * entry here is held to MIN_PLAUSIBLE_MM.
+   */
+  minWidthsMm?: number[];
 }
 
 function createRun(widthMm: number): RunMeasurement {
@@ -516,8 +524,20 @@ export interface MeasureCheck {
 }
 
 /** Anything outside this is a typo or the wrong units, not a bathroom. */
-const MIN_PLAUSIBLE_MM = 400;
+export const MIN_PLAUSIBLE_MM = 400;
 const MAX_PLAUSIBLE_MM = 3000;
+
+/**
+ * The same floor for a run of fixed glass with no door in it.
+ *
+ * A run with a door has to be wide enough to walk through, so anything under
+ * MIN_PLAUSIBLE_MM there is a slip. A run without one can be a short return
+ * panel, turned in at the end of a walk-in screen and commonly 200 to 400mm
+ * wide. Held to 400, a real 300mm return reads as "300 looks like
+ * centimetres" and the customer cannot send a shower we can make. Under this
+ * it is still a slip: 30 typed for a 300mm return is caught and 300 offered.
+ */
+export const MIN_PLAUSIBLE_RETURN_MM = 100;
 
 /** Ceilings run taller than openings run wide; a Victorian room clears 3000. */
 const MIN_CEILING_MM = 1500;
@@ -607,6 +627,8 @@ export function checkMeasurements(
   m.runs.forEach((run, i) => {
     const name = `${named(i)}width at the floor`;
     const value = run.widthAtFloorMm;
+    // A short return is a real panel, not a slip: see minWidthsMm.
+    const min = ctx.minWidthsMm?.[i] ?? MIN_PLAUSIBLE_MM;
 
     // Half a two-halves reading is not a width. Without this the template's
     // default width would quietly stand in for the half they never measured.
@@ -630,13 +652,13 @@ export function checkMeasurements(
       return;
     }
 
-    const slip = unitSlip(value, name);
+    const slip = unitSlip(value, name, min);
     if (slip) {
       checks.push({ ...slip, code: `run${i}-widthAtFloor-${slip.code}`, runIndex: i });
       return;
     }
 
-    if (value < MIN_PLAUSIBLE_MM || value > MAX_PLAUSIBLE_MM) {
+    if (value < min || value > MAX_PLAUSIBLE_MM) {
       checks.push({
         code: `run${i}-widthAtFloor-implausible`,
         level: 'blocking',
