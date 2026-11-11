@@ -12,7 +12,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node design-worker/worker.test.js && node design-worker/worker.routes.test.js && node contact-worker/worker.test.js && node admin-worker/worker.test.js && node src/configurator/mapGeminiToTemplate.test.js && node src/configurator/canSendReview.test.js && node src/configurator/measure.halves.test.mjs && node src/configurator/measure.setup.test.mjs && node src/configurator/measure.cross.test.mjs && node src/configurator/measure.readings.test.mjs && node src/configurator/journey.test.mjs && node src/configurator/layout.test.mjs"
+    "test": "node design-worker/worker.test.js && node design-worker/worker.routes.test.js && node contact-worker/worker.test.js && node admin-worker/worker.test.js && node src/configurator/mapGeminiToTemplate.test.js && node src/configurator/canSendReview.test.js && node src/configurator/measure.halves.test.mjs && node src/configurator/measure.setup.test.mjs && node src/configurator/measure.cross.test.mjs && node src/configurator/measure.readings.test.mjs && node src/configurator/measure.returns.test.mjs && node src/configurator/journey.test.mjs && node src/configurator/layout.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
