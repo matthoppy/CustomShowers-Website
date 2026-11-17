@@ -128,25 +128,38 @@ const Gallery = () => {
         <div className="relative">
           <div className="overflow-x-hidden">
             <div ref={scrollContainerRef} className={`flex overflow-x-hidden ${loop ? "" : "justify-center"}`}>
-              {strip.map((project, i) => (
-                <div
-                  key={`${project.photos[0]}-${i}`}
-                  className="relative flex-shrink-0 w-80 h-60 overflow-hidden cursor-pointer group"
-                  onClick={() => setView({ item: i % visible.length, photo: 0 })}
-                >
-                  <img
-                    src={project.photos[0]}
-                    alt={project.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    loading="lazy"
-                  />
-                  {project.photos.length > 1 && (
-                    <span className="absolute top-3 right-3 bg-background/90 text-foreground text-xs font-semibold px-2 py-1">
-                      {project.photos.length} photos
-                    </span>
-                  )}
-                </div>
-              ))}
+              {strip.map((project, i) => {
+                const photoSrc = project.photos[0];
+                const ext = photoSrc.match(/\.(jpe?g|png)$/i)?.[0] || "";
+                const baseSrc = photoSrc.replace(ext, "");
+                const webpSrc = `${baseSrc}.webp`;
+                const webpSrcSet = `${baseSrc}-320w.webp 320w, ${baseSrc}-640w.webp 640w`;
+                
+                return (
+                  <div
+                    key={`${photoSrc}-${i}`}
+                    className="relative flex-shrink-0 w-80 h-60 overflow-hidden cursor-pointer group"
+                    onClick={() => setView({ item: i % visible.length, photo: 0 })}
+                  >
+                    <picture>
+                      <source type="image/webp" srcSet={webpSrcSet} sizes="320px" />
+                      <img
+                        src={photoSrc}
+                        alt={project.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        loading="lazy"
+                        width="320"
+                        height="240"
+                      />
+                    </picture>
+                    {project.photos.length > 1 && (
+                      <span className="absolute top-3 right-3 bg-background/90 text-foreground text-xs font-semibold px-2 py-1">
+                        {project.photos.length} photos
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -194,12 +207,24 @@ const Gallery = () => {
           >
             &#8249;
           </button>
-          <img
-            src={shown.photos[view.photo]}
-            alt={shown.title}
-            className="max-h-[90vh] max-w-[90vw] object-contain shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          />
+          {(() => {
+            const photoSrc = shown.photos[view.photo];
+            const ext = photoSrc.match(/\.(jpe?g|png)$/i)?.[0] || "";
+            const baseSrc = photoSrc.replace(ext, "");
+            const webpSrcSet = `${baseSrc}-640w.webp 640w, ${baseSrc}-960w.webp 960w, ${baseSrc}-1280w.webp 1280w, ${baseSrc}-1600w.webp 1600w, ${baseSrc}.webp`;
+            
+            return (
+              <picture>
+                <source type="image/webp" srcSet={webpSrcSet} sizes="90vw" />
+                <img
+                  src={photoSrc}
+                  alt={shown.title}
+                  className="max-h-[90vh] max-w-[90vw] object-contain shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </picture>
+            );
+          })()}
           <button
             className="absolute right-4 text-white text-5xl leading-none hover:text-white/70 transition-colors px-2"
             onClick={(e) => { e.stopPropagation(); move(1); }}

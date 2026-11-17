@@ -26,9 +26,14 @@ export const business = {
   address: null as PostalAddress | null,
   /** The Google Business Profile, Instagram, Checkatrade and so on: full URLs. */
   sameAs: [] as string[],
-  areaServed: ['London', 'Fulham', 'Chelsea', 'Kensington', 'Hammersmith', 'Wandsworth', 'Westminster'],
+  /** Area served - UK-wide supply */
+  areaServed: { '@type': 'Country', name: 'United Kingdom' },
+  /** Service areas where we have strongest presence */
+  additionalProperty: [
+    { '@type': 'PropertyValue', name: 'Primary Service Area', value: 'London and South East England' },
+  ],
   openingHours: [{ days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], opens: '09:00', closes: '17:30' }],
-  priceRange: '££',
+  priceRange: '££-£££',
   description:
-    'Bespoke frameless shower enclosures in 10mm toughened glass, made to your measurements. Supply only across the UK with installation guides for your fitter; survey and design in London.',
+    'Bespoke frameless shower enclosures in 10mm toughened glass, made to your measurements. Supply-only service with nationwide UK delivery and full installation guides for your fitter.',
 };

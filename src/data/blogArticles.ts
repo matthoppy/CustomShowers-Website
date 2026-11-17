@@ -131,7 +131,7 @@ You receive all glass panels cut to size, hinges, channels or wall profiles, han
 
 You send us your measurements — either from your own site visit or from your bathroom fitter. We review them, advise on any issues (out-of-plumb walls, access constraints, plumbing clashes), and provide a detailed quote.
 
-Once you accept the quote and pay the deposit, we manufacture your glass. Lead time is typically 2–4 weeks. The glass arrives in purpose-built A-frames designed to protect it in transit. You'll receive tracking and a delivery window.
+Once you accept the quote and pay in full, we manufacture your glass. Lead time is typically 2–4 weeks. The glass arrives in purpose-built A-frames designed to protect it in transit. You'll receive tracking and a delivery window.
 
 Your installer fits the glass following the instructions we provide. We're available by email if your fitter has questions during installation.
 

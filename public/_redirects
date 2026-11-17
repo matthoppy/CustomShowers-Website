@@ -2,6 +2,10 @@
 # else is a real 404. The dashboard renders in the browser from app.html,
 # which Pages serves at /app (it redirects *.html to the clean address, so
 # the rewrite must name the clean one).
+
+# Legacy redirects
 /balustrades  /  301
+
+# Admin dashboard
 /admin  /app  200
 /admin/*  /app  200

@@ -58,6 +58,8 @@ export function organisationLd(): Record<string, unknown> {
     description: business.description,
     priceRange: business.priceRange,
     areaServed: business.areaServed,
+    serviceType: 'Supply-only frameless shower enclosures',
+    knowsAbout: ['Frameless shower enclosures', 'Bespoke glass fabrication', '10mm toughened glass', 'Shower hardware'],
     openingHoursSpecification: business.openingHours.map((h) => ({
       '@type': 'OpeningHoursSpecification',
       dayOfWeek: h.days,
@@ -68,6 +70,7 @@ export function organisationLd(): Record<string, unknown> {
   if (business.telephone) ld.telephone = business.telephone;
   if (business.address) ld.address = { '@type': 'PostalAddress', ...business.address };
   if (business.sameAs.length) ld.sameAs = business.sameAs;
+  if (business.additionalProperty) ld.additionalProperty = business.additionalProperty;
   return ld;
 }
 
@@ -152,12 +155,51 @@ export const HOME: PageMeta = page({
   priority: 1,
 });
 
+function supplyOnlyFaqLd(): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: 'Do I need to be in London?',
+        acceptedAnswer: { '@type': 'Answer', text: 'No. We supply across the entire UK. Delivery is available nationwide.' },
+      },
+      {
+        '@type': 'Question',
+        name: 'Who installs the shower?',
+        acceptedAnswer: { '@type': 'Answer', text: 'You arrange installation through your own bathroom fitter, tiler, or builder. We provide the glass and hardware only.' },
+      },
+      {
+        '@type': 'Question',
+        name: 'What if my measurements are slightly off?',
+        acceptedAnswer: { '@type': 'Answer', text: 'Glass is manufactured to a standard industry tolerance of ±3mm. We recommend double-checking measurements before confirming. Once manufacture has started, changes cannot be made.' },
+      },
+      {
+        '@type': 'Question',
+        name: 'What glass thickness do you use?',
+        acceptedAnswer: { '@type': 'Answer', text: 'We supply 10mm toughened safety glass as standard, fully compliant with BS EN 12150.' },
+      },
+      {
+        '@type': 'Question',
+        name: 'Can I choose my own hardware finish?',
+        acceptedAnswer: { '@type': 'Answer', text: 'Yes. We offer hardware in chrome, brushed nickel, matt black, and brushed brass. Specify your preferred finish when requesting a quote.' },
+      },
+      {
+        '@type': 'Question',
+        name: "What's included in a supply-only order?",
+        acceptedAnswer: { '@type': 'Answer', text: 'Glass panels, hinges, channels or wall profiles, handles, seals, and any other hardware specified in your quote. You\'ll also receive custom installation instructions prepared specifically for your shower, with detailed diagrams and measurements to guide your installer.' },
+      },
+    ],
+  };
+}
+
 export const SUPPLY_ONLY: PageMeta = page({
   path: '/supply-only',
   title: 'Supply-Only Frameless Shower Enclosures, UK Delivery | Custom Showers',
   description:
     'Order a made-to-measure frameless shower enclosure for your own fitter to install. Send your measurements, get an itemised quote, and have it delivered anywhere in the UK in 2 to 4 weeks.',
-  jsonLd: [...siteLd(), serviceLd(), breadcrumbLd([{ name: 'Home', path: '/' }, { name: 'Supply only', path: '/supply-only' }])],
+  jsonLd: [...siteLd(), serviceLd(), supplyOnlyFaqLd(), breadcrumbLd([{ name: 'Home', path: '/' }, { name: 'Supply only', path: '/supply-only' }])],
   lastmod: '2026-11-06',
   changefreq: 'monthly',
   priority: 0.8,

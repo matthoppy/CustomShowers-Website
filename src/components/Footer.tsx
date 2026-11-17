@@ -16,9 +16,9 @@ We provide:
 - Quotes are based on information available at the time, including site conditions.
 - If site conditions differ from what was reasonably expected, additional costs may apply.
 
-4. Deposits
-- A 50% deposit is required before manufacture or ordering of materials begins.
-- Work will not commence until the deposit is received.
+4. Payment
+- Payment in full is required before manufacture or ordering of materials begins.
+- Work will not commence until payment is received in full.
 
 5. Bespoke & Made-to-Measure Products
 - Most products are custom-made.
@@ -211,10 +211,10 @@ const TermsContent = () => (
       </ul>
     </section>
     <section>
-      <h2 className="text-base font-semibold mb-1">4. Deposits</h2>
+      <h2 className="text-base font-semibold mb-1">4. Payment</h2>
       <ul className="list-disc pl-5 space-y-0.5">
-        <li>A 50% deposit is required before manufacture or ordering of materials begins.</li>
-        <li>Work will not commence until the deposit is received.</li>
+        <li>Payment in full is required before manufacture or ordering of materials begins.</li>
+        <li>Work will not commence until payment is received in full.</li>
       </ul>
     </section>
     <section>

@@ -34,10 +34,10 @@ const TermsOfTrade = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">4. Deposits</h2>
+            <h2 className="text-xl font-semibold mb-2">4. Payment</h2>
             <ul className="list-disc pl-6 space-y-1">
-              <li>A 50% deposit is required before manufacture or ordering of materials begins.</li>
-              <li>Work will not commence until the deposit is received.</li>
+              <li>Payment in full is required before manufacture or ordering of materials begins.</li>
+              <li>Work will not commence until payment is received in full.</li>
             </ul>
           </section>
 
