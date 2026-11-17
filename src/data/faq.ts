@@ -22,12 +22,12 @@ export const faqs: Faq[] = [
   {
     question: "What areas do you cover?",
     answer:
-      "We supply nationwide across the UK. Our survey team covers London and surrounding areas. For projects outside London, we can work from your measurements or recommend trusted local surveyors.",
+      "We supply nationwide across the UK. We work from your measurements or those provided by your own bathroom fitter.",
   },
   {
     question: "How long does it take from order to delivery?",
     answer:
-      "Lead times vary by order complexity, but most bespoke enclosures are ready within 2–4 weeks from survey sign-off. We'll give you a clear timeline when you book your survey.",
+      "Lead times vary by order complexity, but most bespoke enclosures are ready within 2–4 weeks from order confirmation. We'll give you a clear timeline when you receive your quote.",
   },
   {
     question: "What glass do you use?",
